@@ -1,0 +1,296 @@
+# This file is auto-generated from peribolos.
+# Do not modify this file, instead modify peribolos/knative-sandbox.yaml
+
+aliases:
+  async-component-approvers:
+  - AngeloDanducci
+  - bvennam
+  - julz
+  - maximilien
+  client-wg-leads:
+  - dsimansk
+  - navidshaikh
+  - rhuss
+  client-writers:
+  - dsimansk
+  - navidshaikh
+  - rhuss
+  container-freezer-approvers:
+  - julz
+  - psschwei
+  control-protocol-approvers:
+  - eric-sap
+  - lionelvillard
+  - matzew
+  - travis-minke-sap
+  discovery-approvers:
+  - lberk
+  - n3wscott
+  docs-wg-leads:
+  - abrennan89
+  - csantanapr
+  - snneji
+  docs-writers:
+  - abrennan89
+  - csantanapr
+  - psschwei
+  - snneji
+  eventing-autoscaler-keda-approvers:
+  - zroubalik
+  eventing-awssqs-approvers:
+  - lberk
+  - matzew
+  eventing-camel-approvers:
+  - nicolaferraro
+  eventing-ceph-approvers:
+  - lberk
+  - matzew
+  eventing-couchdb-approvers:
+  - lberk
+  - lionelvillard
+  - matzew
+  eventing-github-approvers:
+  - lberk
+  - matzew
+  eventing-gitlab-approvers:
+  - lberk
+  - matzew
+  - sebgoa
+  - tzununbekov
+  eventing-kafka-approvers:
+  - aliok
+  - davyodom
+  - eric-sap
+  - lberk
+  - matzew
+  - phamilton
+  - pierDipi
+  - steven0711dong
+  - travis-minke-sap
+  eventing-kafka-broker-approvers:
+  - aliok
+  - matzew
+  - pierDipi
+  eventing-kafka-mtsource-approvers:
+  - steven0711dong
+  eventing-kafka-wg-leads:
+  - lionelvillard
+  - travis-minke-sap
+  eventing-kafka-writers:
+  - lionelvillard
+  - travis-minke-sap
+  eventing-kogito-approvers:
+  - ricardozanini
+  - spolti
+  - vaibhavjainwiz
+  eventing-natss-approvers:
+  - zhaojizhuang
+  eventing-prometheus-approvers:
+  - lberk
+  - matzew
+  eventing-rabbitmq-approvers:
+  - chunyilyu
+  - gab-satchi
+  - gabo1208
+  - gvmw
+  - ikvmw
+  - salaboy
+  - xtreme-sameer-vohra
+  eventing-redis-approvers:
+  - aavarghese
+  - lionelvillard
+  - matzew
+  eventing-wg-leads:
+  - lionelvillard
+  - pierDipi
+  eventing-writers:
+  - aliok
+  - lionelvillard
+  - matzew
+  - odacremolbap
+  - pierDipi
+  func-tastic-approvers:
+  - lance
+  - lkingland
+  - matejvasek
+  - nainaz
+  - omerbensaadon
+  - salaboy
+  - zroubalik
+  homebrew-kn-plugins-approvers:
+  - dsimansk
+  - maximilien
+  - rhuss
+  kn-plugin-admin-approvers:
+  - maximilien
+  - navidshaikh
+  - rhuss
+  - zhanggbj
+  kn-plugin-diag-approvers:
+  - cdlliuy
+  - maximilien
+  - navidshaikh
+  kn-plugin-event-approvers:
+  - cardil
+  - rhuss
+  kn-plugin-func-approvers:
+  - lance
+  - lkingland
+  - matejvasek
+  - nainaz
+  - omerbensaadon
+  - salaboy
+  - zroubalik
+  kn-plugin-migration-approvers:
+  - maximilien
+  - zhangtbj
+  kn-plugin-operator-approvers:
+  - csantanapr
+  - dsimansk
+  - houshengbo
+  - maximilien
+  - omerbensaadon
+  - rhuss
+  kn-plugin-quickstart-approvers:
+  - csantanapr
+  - omerbensaadon
+  - psschwei
+  kn-plugin-sample-approvers:
+  - maximilien
+  - navidshaikh
+  - rhuss
+  kn-plugin-service-log-approvers:
+  - rhuss
+  kn-plugin-source-kafka-approvers:
+  - daisy-ycguo
+  - dsimansk
+  - maximilien
+  - navidshaikh
+  - rhuss
+  kn-plugin-source-kamelet-approvers:
+  - christophd
+  - nicolaferraro
+  - rhuss
+  knative-admin:
+  - csantanapr
+  - dprotaso
+  - dsimansk
+  - evankanderson
+  - itsmurugappan
+  - knative-automation
+  - knative-prow-releaser-robot
+  - knative-prow-robot
+  - knative-prow-updater-robot
+  - knative-test-reporter-robot
+  - kvmware
+  - lance
+  - n3wscott
+  - pmorie
+  - psschwei
+  - thisisnotapril
+  - upodroid
+  - vaikas
+  - zroubalik
+  knative-release-leads:
+  - evankanderson
+  - psschwei
+  knative-robots:
+  - knative-automation
+  - knative-prow-releaser-robot
+  - knative-prow-robot
+  - knative-prow-updater-robot
+  - knative-test-reporter-robot
+  kperf-approvers:
+  - maximilien
+  - nader-ziada
+  - psschwei
+  - zhanggbj
+  net-certmanager-approvers:
+  - ZhiminXiang
+  - carlisia
+  - tcnghia
+  net-contour-approvers:
+  - carlisia
+  - dprotaso
+  - tcnghia
+  net-gateway-api-approvers:
+  - carlisia
+  - nak3
+  - tcnghia
+  net-http01-approvers:
+  - carlisia
+  - tcnghia
+  net-istio-approvers:
+  - AngeloDanducci
+  - JRBANCEL
+  - ZhiminXiang
+  - carlisia
+  - nak3
+  - skonto
+  - tcnghia
+  - vagababov
+  net-kourier-approvers:
+  - carlisia
+  - davidor
+  - jmprusi
+  - skonto
+  - tcnghia
+  networking-wg-leads:
+  - nak3
+  operations-wg-leads:
+  - houshengbo
+  operations-writers:
+  - dprotaso
+  - houshengbo
+  - upodroid
+  productivity-leads:
+  - kvmware
+  - upodroid
+  productivity-wg-leads:
+  - kvmware
+  - upodroid
+  productivity-writers:
+  - cardil
+  - chaodaiG
+  - coryrc
+  - kvmware
+  - psschwei
+  - upodroid
+  security-guard-approvers:
+  - davidhadas
+  - maximilien
+  - psschwei
+  - rhuss
+  security-wg-leads:
+  - evankanderson
+  - julz
+  security-writers:
+  - evankanderson
+  - julz
+  serving-wg-leads:
+  - dprotaso
+  serving-writers:
+  - dprotaso
+  - nak3
+  - psschwei
+  steering-committee:
+  - csantanapr
+  - itsmurugappan
+  - lance
+  - pmorie
+  - thisisnotapril
+  - vaikas
+  technical-oversight-committee:
+  - dprotaso
+  - dsimansk
+  - evankanderson
+  - n3wscott
+  - zroubalik
+  ux-wg-leads:
+  - abrennan89
+  - csantanapr
+  - snneji
+  ux-writers:
+  - abrennan89
+  - csantanapr
+  - snneji
