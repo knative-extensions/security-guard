@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/IBM/go-security-plugs v1.3.19
 	go.uber.org/zap v1.22.0
-	knative.dev/serving v0.33.1-0.20220725225524-63523f9d0e97
+	knative.dev/serving v0.33.1-0.20220805183022-16730b2596a7
 )
 
 require (
@@ -61,14 +61,14 @@ require (
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	k8s.io/api v0.23.8 // indirect
-	k8s.io/apimachinery v0.23.8 // indirect
-	k8s.io/client-go v0.23.8 // indirect
-	k8s.io/klog/v2 v2.60.1-0.20220317184644-43cc75f9ae89 // indirect
+	k8s.io/api v0.23.9 // indirect
+	k8s.io/apimachinery v0.23.9 // indirect
+	k8s.io/client-go v0.23.9 // indirect
+	k8s.io/klog/v2 v2.70.2-0.20220707122935-0990e81f1a8f // indirect
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9 // indirect
-	knative.dev/control-protocol v0.0.0-20220711013913-b5a214695a24 // indirect
-	knative.dev/networking v0.0.0-20220723000421-cddb0ff95789 // indirect
-	knative.dev/pkg v0.0.0-20220722175921-6c9c1c6098d5 // indirect
+	knative.dev/control-protocol v0.0.0-20220728062837-75cf857da76a // indirect
+	knative.dev/networking v0.0.0-20220803115018-d2c739da1c1b // indirect
+	knative.dev/pkg v0.0.0-20220805012121-7b8b06028e4f // indirect
 	sigs.k8s.io/json v0.0.0-20211208200746-9f7c6b3444d2 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
