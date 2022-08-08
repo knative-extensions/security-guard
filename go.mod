@@ -1,10 +1,10 @@
-module github.com/davidhadas/security-guard
+module github.com/knative-sandbox/security-guard
 
 go 1.18
 
 require (
-	github.com/IBM/go-security-plugs v1.3.19
 	go.uber.org/zap v1.22.0
+	knative.dev/hack v0.0.0-20220728013938-9dabf7cf62e3
 	knative.dev/serving v0.33.1-0.20220805183022-16730b2596a7
 )
 

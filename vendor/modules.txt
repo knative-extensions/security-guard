@@ -7,9 +7,6 @@ contrib.go.opencensus.io/exporter/prometheus
 # contrib.go.opencensus.io/exporter/zipkin v0.1.2
 ## explicit
 contrib.go.opencensus.io/exporter/zipkin
-# github.com/IBM/go-security-plugs v1.3.19
-## explicit; go 1.17
-github.com/IBM/go-security-plugs/pluginterfaces
 # github.com/beorn7/perks v1.0.1
 ## explicit; go 1.11
 github.com/beorn7/perks/quantile
@@ -416,6 +413,9 @@ k8s.io/utils/trace
 # knative.dev/control-protocol v0.0.0-20220728062837-75cf857da76a
 ## explicit; go 1.17
 knative.dev/control-protocol/pkg/certificates
+# knative.dev/hack v0.0.0-20220728013938-9dabf7cf62e3
+## explicit; go 1.17
+knative.dev/hack
 # knative.dev/networking v0.0.0-20220803115018-d2c739da1c1b
 ## explicit; go 1.18
 knative.dev/networking/pkg/apis/networking

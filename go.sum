@@ -62,8 +62,6 @@ github.com/Azure/go-autorest/logger v0.2.1/go.mod h1:T9E3cAhj2VqvPOtCYAvby9aBXkZ
 github.com/Azure/go-autorest/tracing v0.6.0/go.mod h1:+vhtPC754Xsa23ID7GlGsrdKBpUA79WCAKPPZVC2DeU=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
-github.com/IBM/go-security-plugs v1.3.19 h1:IQvU0rgv5Ga3APdWv7GU0nvMQkomzEVBhZVdv/iW2rc=
-github.com/IBM/go-security-plugs v1.3.19/go.mod h1:AS08Xcjlibx5lNQiQXLfDUt35z3qiCN8JT48bDm0+eM=
 github.com/NYTimes/gziphandler v0.0.0-20170623195520-56545f4a5d46/go.mod h1:3wb06e3pkSAbeQ52E9H9iFoQsEEwGN64994WTCIhntQ=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/PuerkitoBio/purell v1.1.1/go.mod h1:c11w/QuzBsJSee3cPx9rAFu61PvFxuPbtSwDGJws/X0=
@@ -922,6 +920,8 @@ k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9 h1:HNSDgDCrr/6Ly3WEGKZftiE7IY19V
 k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9/go.mod h1:jPW/WVKK9YHAvNhRxK0md/EJ228hCsBRufyofKtW8HA=
 knative.dev/control-protocol v0.0.0-20220728062837-75cf857da76a h1:I4IlZJA6BBsw/eSrt4qJQ9GmjDNC+HCvmccq7vUO70E=
 knative.dev/control-protocol v0.0.0-20220728062837-75cf857da76a/go.mod h1:+5+qcOXiZN0gs7a8a4NaTJd5sAMNipzD41MNzxRKrQs=
+knative.dev/hack v0.0.0-20220728013938-9dabf7cf62e3 h1:1JsQ8ylMK+9yQfuxXvGBux+NOzvNLQyoyTXlupBrfHE=
+knative.dev/hack v0.0.0-20220728013938-9dabf7cf62e3/go.mod h1:t/azP8I/Cygaw+87O7rkAPrNRjCelmtfSzWzu/9TM7I=
 knative.dev/networking v0.0.0-20220803115018-d2c739da1c1b h1:qxVG4TOwaPQi5ep5sWSK67xD0E85dGlLCOfrWtHINgs=
 knative.dev/networking v0.0.0-20220803115018-d2c739da1c1b/go.mod h1:wwhZW0N+qYb81ZsgDI/yxS1dwN+hoi++m01ft+HxG08=
 knative.dev/pkg v0.0.0-20220805012121-7b8b06028e4f h1:kW4K5SsjZ7qMzM8TCqHdDmpv0xKN4Jje4BXhDcByFUI=
