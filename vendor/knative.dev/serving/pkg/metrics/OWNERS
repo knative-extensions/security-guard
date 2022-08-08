@@ -1,0 +1,12 @@
+# The OWNERS file is used by prow to automatically merge approved PRs.
+
+approvers:
+- serving-observability-writers
+- serving-wg-leads
+- networking-wg-leads
+
+reviewers:
+- serving-observability-reviewers
+
+labels:
+- area/monitoring

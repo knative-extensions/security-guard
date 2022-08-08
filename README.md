@@ -14,6 +14,11 @@ Beyond, Situational Awareness, [`guard-gate`](https:pkg/guard-gate) enables bloc
 
 Overall the solution offers both visibility into the security of the service as well as the ability to monitor/block both known patterns and unknown patterns (using a zero day exploits).
 
+<p align="center">
+    <img src="https://github.com/knative-sandbox/security-guard/blob/main/img/GuardInKnative.png" width="700"  />
+</p>
+
+
 ## Solution components
 This project adds:
 1. [`guard-gate`](https:pkg/guard-gate) - the workload security gate
