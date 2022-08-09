@@ -25,7 +25,7 @@ Overall, the solution offers both visibility into the security of the service, a
     <img src="img/GuardInKnative.png" width="700"  />
 </p>
 
-## Solution components
+## Solution Components
 
 This project adds:
 
