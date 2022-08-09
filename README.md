@@ -61,21 +61,24 @@ The **Guardian** object maintains the following configuration parameters:
 1. A learned set of micro-rules updated by [guard-learner](cmd/guard-learner)
 1. A manually configured set of micro-rules that can be updated using `kubectl` or using [guard-ui](cmd/guard-ui)  
 
-Each service has its own respective **Guardian**. New services may use a default **Guardian** for the Kubernetes namespace or may use the default Guard **Guardian**. The following procedure describes how the **Guardian** for a service is found:
+Each service has its own respective **Guardian**. New services may use a default **Guardian** for the Kubernetes namespace or may use the default Guard **Guardian**. The following procedure describes how the **Guardian** for service `servicename` in namespace `namespace` is found. Note that [guard-gate](pkg/guard-gate) may be configured to either work with CRDs (guardians.wsecurity.ibmresearch.com) or with Configmaps `guardian-*` as **Guardians**.
 
-- **Guardian** may reside in a CRD (guardians.wsecurity.ibmresearch.com) under the name '\<servicename\>.\<namespace\>' or in a configmap under the name 'guardian-\<servicename\>'.
-- If a **Guardian** is not found, [guard-gate](pkg/guard-gate) will look for a namespace-default **Guardian** as a starting point under the name  '\<ns\>-\<namespace\>' or in a Configmap under the name 'guardian-\<ns\>-\<namespace\>'.  
-- If a namespace-default **Guardian** is not found, [guard-gate](pkg/guard-gate) will use an empty set of micro-rules as a starting point and will set itself to work in auto-learning mode
+When looking for a service **Guardians**:
+
+- A **Dedicated-Guardian** per service is used (CRD named `<servicename>` or Configmap named `guardian-<servicename>`).
+- If the **Dedicated-Guardian** is not found, a **Namespace-Default -Guardian** is used as a starting point (CRD named `ns-<namespace>` or Configmap named `guardian-ns-<namespace>`).
+- If a **Namespace-Default-Guardian** is not found, a **Default-Guardian** is used as a starting point.
+- Note that the **Default-Guardian** uses auto-learning to help bootstrap new **Guardians**.
 
 See [guard-gate](pkg/guard-gate) for more details on the different Guard working modes.
 
 ## Guard Learner
 
-[guard-learner](cmd/guard-learner) is a standalone service used to learn **Guardian** micro-rules based on inputs from instances of [guard-gate](pkg/guard-gate). [guard-learner](cmd/guard-learner) stores the **Guardian** as a CRD (guardians.wsecurity.ibmresearch.com) under the name \<servicename\>.\<namespace\> or in a configmap under the name 'guardian-\<servicename\>'.
+[guard-learner](cmd/guard-learner) is a standalone service used to learn **Guardian** micro-rules based on inputs from instances of [guard-gate](pkg/guard-gate). [guard-learner](cmd/guard-learner) stores the **Guardian** as a CRD (guardians.wsecurity.ibmresearch.com) under the name `<servicename>.<namespace>` or in a configmap under the name `guardian-<servicename>`.
 
 ## Guard User Interface
 
-Although **Guardian** CRDs and Configmaps can be controlled directly via `kubectl`. An optional [guard-ui](cmd/guard-ui) is offered to simplify and clarify the micro-rules.
+Although **Guardian** CRDs and Configmaps can be controlled directly via `kubectl`, an optional [guard-ui](cmd/guard-ui) is offered to simplify and clarify the micro-rules.
 
 ## Summary
 

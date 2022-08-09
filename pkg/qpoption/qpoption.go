@@ -29,7 +29,7 @@ import (
 	"knative.dev/serving/pkg/queue"
 	"knative.dev/serving/pkg/queue/sharedmain"
 
-	pi "github.com/knative-sandbox/security-guard/pkg/pluginterfaces"
+	pi "knative.dev/security-guard/pkg/pluginterfaces"
 )
 
 // This is a Knative Queue Proxy Option (QPOption) package to manage the life cycle and configrue

@@ -24,7 +24,7 @@ import (
 	"reflect"
 	"testing"
 
-	pi "github.com/knative-sandbox/security-guard/pkg/pluginterfaces"
+	pi "knative.dev/security-guard/pkg/pluginterfaces"
 	"go.uber.org/zap"
 	"knative.dev/serving/pkg/queue/sharedmain"
 )

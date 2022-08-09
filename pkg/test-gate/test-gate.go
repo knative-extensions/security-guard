@@ -20,7 +20,7 @@ import (
 	"context"
 	"net/http"
 
-	pi "github.com/knative-sandbox/security-guard/pkg/pluginterfaces"
+	pi "knative.dev/security-guard/pkg/pluginterfaces"
 )
 
 const version string = "0.0.7"

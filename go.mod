@@ -1,4 +1,4 @@
-module github.com/knative-sandbox/security-guard
+module knative.dev/security-guard
 
 go 1.18
 
