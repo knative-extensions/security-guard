@@ -63,7 +63,7 @@ The **Guardian** object maintains the following configuration parameters:
 
 Each service has its own respective **Guardian**. New services may use a default **Guardian** for the Kubernetes namespace or may use the default Guard **Guardian**. The following procedure describes how the **Guardian** for service `servicename` in namespace `namespace` is found. Note that [guard-gate](pkg/guard-gate) may be configured to either work with CRDs (guardians.wsecurity.ibmresearch.com) or with Configmaps `guardian-*` as **Guardians**.
 
-When looking for a service **Guardians**:
+When looking for a service **Guardian**:
 
 - A **Dedicated-Guardian** per service is used (CRD named `<servicename>` or Configmap named `guardian-<servicename>`).
 - If the **Dedicated-Guardian** is not found, a **Namespace-Default -Guardian** is used as a starting point (CRD named `ns-<namespace>` or Configmap named `guardian-ns-<namespace>`).
@@ -74,7 +74,7 @@ See [guard-gate](pkg/guard-gate) for more details on the different Guard working
 
 ## Guard Learner
 
-[guard-learner](cmd/guard-learner) is a standalone service used to learn **Guardian** micro-rules based on inputs from instances of [guard-gate](pkg/guard-gate). [guard-learner](cmd/guard-learner) stores the **Guardian** as a CRD (guardians.wsecurity.ibmresearch.com) under the name `<servicename>.<namespace>` or in a configmap under the name `guardian-<servicename>`.
+[guard-learner](cmd/guard-learner) is a standalone service used to learn **Guardian** micro-rules based on inputs from instances of [guard-gate](pkg/guard-gate). [guard-learner](cmd/guard-learner) stores the **Guardian** as a CRD (guardians.wsecurity.ibmresearch.com) under the name `<servicename>` or in a Configmap under the name `guardian-<servicename>`.
 
 ## Guard User Interface
 

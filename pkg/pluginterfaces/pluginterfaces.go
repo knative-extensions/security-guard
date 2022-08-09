@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Knative Authors
+Copyright 2022 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ var Log Logger
 //		func NewPlug()  RoundTripPlug {}
 //
 type RoundTripPlug interface {
-	Init(ctx context.Context, c map[string]string, serviceName string, namespace string, logger Logger) context.Context
+	Init(ctx context.Context, config map[string]string, serviceName string, namespace string, logger Logger) context.Context
 	Shutdown()
 	PlugName() string
 	PlugVersion() string

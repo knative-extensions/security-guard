@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Knative Authors
+Copyright 2022 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,8 +22,7 @@ import (
 	"testing"
 )
 
-type plug struct {
-}
+type plug struct{}
 
 func (p *plug) Init(ctx context.Context, c map[string]string, serviceName string, namespace string, logger Logger) context.Context {
 	return ctx
@@ -50,14 +49,15 @@ func TestRegisterPlug(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-	}{
-		{name: "simple", args: args{&plug{}}},
-	}
+	}{{
+		name: "simple",
+		args: args{&plug{}},
+	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			RegisterPlug(tt.args.p)
 			if len(RoundTripPlugs) != 1 {
-				t.Errorf("RegisterPlug error = wromg list length")
+				t.Errorf("RegisterPlug error = wrong list length")
 			}
 		})
 	}

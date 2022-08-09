@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Knative Authors
+Copyright 2022 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -24,63 +24,63 @@ import (
 	"reflect"
 	"testing"
 
-	pi "knative.dev/security-guard/pkg/pluginterfaces"
 	"go.uber.org/zap"
+	pi "knative.dev/security-guard/pkg/pluginterfaces"
 	"knative.dev/serving/pkg/queue/sharedmain"
 )
 
-var myQpextentionPreifx = "my.prefix/"
+var myQpextensionPrefix = "my.prefix/"
 var myAnnotationsPath = "/tmp/annotations"
-var myPlugName = "myplug"
+var myPlugName = "myPlug"
 var sugar *zap.SugaredLogger
 var defaults *sharedmain.Defaults
 var defaults2 *sharedmain.Defaults
 var returnedError error
 
-type myplug struct {
+type myPlug struct {
 	name    string
 	version string
 }
 
-func (p *myplug) PlugName() string {
+func (p *myPlug) PlugName() string {
 	return p.name
 }
 
-func (p *myplug) PlugVersion() string {
+func (p *myPlug) PlugVersion() string {
 	return p.version
 }
 
-func (p *myplug) ApproveRequest(req *http.Request) (*http.Request, error) {
+func (p *myPlug) ApproveRequest(req *http.Request) (*http.Request, error) {
 	return req, nil
 }
 
-func (p *myplug) ApproveResponse(req *http.Request, resp *http.Response) (*http.Response, error) {
+func (p *myPlug) ApproveResponse(req *http.Request, resp *http.Response) (*http.Response, error) {
 	return resp, returnedError
 }
 
-func (p *myplug) Shutdown() {
+func (p *myPlug) Shutdown() {
 	pi.Log.Infof("Plug %s: Shutdown", p.name)
 }
 
-func (p *myplug) Start(ctx context.Context) context.Context {
+func (p *myPlug) Start(ctx context.Context) context.Context {
 	return ctx
 }
 
-func (p *myplug) Init(ctx context.Context, c map[string]string, serviceName string, namespace string, logger pi.Logger) context.Context {
+func (p *myPlug) Init(ctx context.Context, c map[string]string, serviceName string, namespace string, logger pi.Logger) context.Context {
 	return ctx
 }
 
 func initGate() *GateQPOption {
 	n := NewGateQPOption()
 	n.defaults = defaults
-	n.securityPlug = &myplug{name: myPlugName, version: "myver"}
+	n.securityPlug = &myPlug{name: myPlugName, version: "myVer"}
 	return n
 }
 
 func clearAnnotations() {
 	os.Remove(myAnnotationsPath)
 }
-func addConfigAnnotations(a map[string]string) (string, string) {
+func addConfigAnnotations(a map[string]string) {
 	file, err := os.Create(myAnnotationsPath)
 	if err != nil {
 		panic(err)
@@ -89,19 +89,18 @@ func addConfigAnnotations(a map[string]string) (string, string) {
 
 	var buf string
 	for k, v := range a {
-		buf = buf + myQpextentionPreifx + myPlugName + "-config-" + k + "=" + v + "\n"
+		buf = buf + myQpextensionPrefix + myPlugName + "-config-" + k + "=" + v + "\n"
 	}
-	buf = buf + myQpextentionPreifx + "config-k=\n"
-	buf = buf + myQpextentionPreifx + "config-=v\n"
-	buf = buf + myQpextentionPreifx + myPlugName + "con-k=v\n"
-	buf = buf + myQpextentionPreifx + "config=enable\n"
+	buf = buf + myQpextensionPrefix + "config-k=\n"
+	buf = buf + myQpextensionPrefix + "config-=v\n"
+	buf = buf + myQpextensionPrefix + myPlugName + "con-k=v\n"
+	buf = buf + myQpextensionPrefix + "config=enable\n"
 	buf = buf + "boom/config=enable\n"
 	buf = buf + "config=enable\n"
 	file.WriteString(buf)
-	return myAnnotationsPath, myQpextentionPreifx
 }
 
-func addActivateAnnotations(a map[string]string) (string, string) {
+func addActivateAnnotations(a map[string]string) {
 	file, err := os.Create(myAnnotationsPath)
 	if err != nil {
 		panic(err)
@@ -110,14 +109,13 @@ func addActivateAnnotations(a map[string]string) (string, string) {
 
 	var buf string
 	for k, v := range a {
-		buf = buf + myQpextentionPreifx + k + "-activate=" + v + "\n"
+		buf = buf + myQpextensionPrefix + k + "-activate=" + v + "\n"
 	}
-	buf = buf + myQpextentionPreifx + "activate=enable\n"
+	buf = buf + myQpextensionPrefix + "activate=enable\n"
 	buf = buf + "boom/activate=enable\n"
 	buf = buf + "activate=enable\n"
 
 	file.WriteString(buf)
-	return myAnnotationsPath, myQpextentionPreifx
 }
 
 func TestNewGateQPOption(t *testing.T) {
@@ -135,7 +133,7 @@ func TestGateQPOption_RoundTrip(t *testing.T) {
 		req := new(http.Request)
 		addActivateAnnotations(map[string]string{myPlugName: "enable"})
 		annotationsFilePath = myAnnotationsPath
-		qpextentionPreifx = myQpextentionPreifx
+		qpExtensionPrefix = myQpextensionPrefix
 		p.Setup(defaults)
 		clearAnnotations()
 		gotResp, err := p.RoundTrip(req)
@@ -161,14 +159,14 @@ func TestGateQPOption_RoundTrip(t *testing.T) {
 		req := new(http.Request)
 		addActivateAnnotations(map[string]string{myPlugName: "enable"})
 		annotationsFilePath = myAnnotationsPath
-		qpextentionPreifx = myQpextentionPreifx
+		qpExtensionPrefix = myQpextensionPrefix
 		p.Setup(defaults)
 		clearAnnotations()
-		myerr := errors.New("bad")
-		returnedError = myerr
+		myErr := errors.New("bad")
+		returnedError = myErr
 		_, err := p.RoundTrip(req)
 		returnedError = nil
-		if err != myerr {
+		if err != myErr {
 			t.Errorf("GateQPOption.RoundTrip() wrong error was returned")
 			return
 		}
@@ -181,15 +179,20 @@ func TestGateQPOption_ProcessConfigAnnotations(t *testing.T) {
 		name     string
 		config   map[string]string
 		wantResp bool
-	}{
-		{name: "empty", wantResp: true, config: map[string]string{}},
-		{name: "few", wantResp: true, config: map[string]string{"abckey": "abc val", "key": "val", "key123": "val123"}},
-	}
+	}{{
+		name:     "empty",
+		wantResp: true,
+		config:   map[string]string{},
+	}, {
+		name:     "few",
+		wantResp: true,
+		config:   map[string]string{"key1": "abc val", "key": "val", "key123": "val123"},
+	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := initGate()
-			myAnnotations, myQpextentionPreifx := addConfigAnnotations(tt.config)
-			gotResp := p.ProcessAnnotations(myAnnotations, myQpextentionPreifx)
+			addConfigAnnotations(tt.config)
+			gotResp := p.ProcessAnnotations(myAnnotationsPath, myQpextensionPrefix)
 			clearAnnotations()
 			if gotResp != tt.wantResp {
 				t.Errorf("GateQPOption.ProcessAnnotations() gotResp = %v, wantResp %v", gotResp, tt.wantResp)
@@ -208,17 +211,32 @@ func TestGateQPOption_ProcessActivateAnnotations(t *testing.T) {
 		config    map[string]string
 		activated bool
 		wantResp  bool
-	}{
-		{name: "empty", wantResp: true, activated: false, config: map[string]string{}},
-		{name: "other", wantResp: true, activated: false, config: map[string]string{"abckey": "enable"}},
-		{name: "true", wantResp: true, activated: true, config: map[string]string{myPlugName: "enable"}},
-		{name: "false", wantResp: true, activated: false, config: map[string]string{myPlugName: "bla"}},
-	}
+	}{{
+		name:      "empty",
+		wantResp:  true,
+		activated: false,
+		config:    map[string]string{},
+	}, {
+		name:      "other",
+		wantResp:  true,
+		activated: false,
+		config:    map[string]string{"key1": "enable"},
+	}, {
+		name:      "true",
+		wantResp:  true,
+		activated: true,
+		config:    map[string]string{myPlugName: "enable"},
+	}, {
+		name:      "false",
+		wantResp:  true,
+		activated: false,
+		config:    map[string]string{myPlugName: "bla"},
+	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := initGate()
-			myAnnotations, myQpextentionPreifx := addActivateAnnotations(tt.config)
-			gotResp := p.ProcessAnnotations(myAnnotations, myQpextentionPreifx)
+			addActivateAnnotations(tt.config)
+			gotResp := p.ProcessAnnotations(myAnnotationsPath, myQpextensionPrefix)
 			clearAnnotations()
 			if gotResp != tt.wantResp {
 				t.Errorf("GateQPOption.ProcessAnnotations() gotResp = %v, wantResp %v", gotResp, tt.wantResp)
@@ -232,11 +250,10 @@ func TestGateQPOption_ProcessActivateAnnotations(t *testing.T) {
 }
 
 func TestGateQPOption_ProcessNoAnnotations(t *testing.T) {
-
 	t.Run("No annotations", func(t *testing.T) {
 		p := initGate()
 		clearAnnotations()
-		gotResp := p.ProcessAnnotations(myAnnotationsPath, myQpextentionPreifx)
+		gotResp := p.ProcessAnnotations(myAnnotationsPath, myQpextensionPrefix)
 		if gotResp != false {
 			t.Errorf("GateQPOption.ProcessAnnotations() gotResp = %v, wantResp %v", gotResp, false)
 			return
@@ -253,7 +270,7 @@ func TestGateQPOption_Setup(t *testing.T) {
 		p := initGate()
 		addActivateAnnotations(map[string]string{myPlugName: "enable"})
 		annotationsFilePath = myAnnotationsPath
-		qpextentionPreifx = myQpextentionPreifx
+		qpExtensionPrefix = myQpextensionPrefix
 		p.Setup(defaults)
 		clearAnnotations()
 		if !reflect.DeepEqual(p.activated, true) {
@@ -270,7 +287,7 @@ func TestGateQPOption_Setup(t *testing.T) {
 		p := initGate()
 		addActivateAnnotations(map[string]string{myPlugName: "enable"})
 		annotationsFilePath = myAnnotationsPath
-		qpextentionPreifx = myQpextentionPreifx
+		qpExtensionPrefix = myQpextensionPrefix
 		p.Setup(defaults2)
 		clearAnnotations()
 		if !reflect.DeepEqual(p.activated, true) {
@@ -297,21 +314,16 @@ func TestGateQPOption_Setup(t *testing.T) {
 			t.Errorf("GateQPOption.Setup() p.securityPlug  is nil")
 		}
 	})
-
 }
 
 func TestGateQPOption_Shutdown(t *testing.T) {
-
-	t.Run("sutdown", func(t *testing.T) {
+	t.Run("shutdown", func(t *testing.T) {
 		p := initGate()
 		p.Shutdown()
 	})
-
 }
 
-type myDefaultTransport struct {
-	//nextRoundTripper http.RoundTripper // the next roundtripper
-}
+type myDefaultTransport struct{}
 
 func (p *myDefaultTransport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 	return new(http.Response), nil
@@ -345,9 +357,9 @@ func setup() {
 	defaults2.Env.ServingPodIP = "ServingPodIP"
 	defaults2.Env.ServingRevision = "ServingRevision"
 	defaults2.Env.ServingService = ""
-	plug := new(myplug)
+	plug := new(myPlug)
 	plug.name = myPlugName
-	plug.version = "myver"
+	plug.version = "myVer"
 	pi.RegisterPlug(plug)
 
 }

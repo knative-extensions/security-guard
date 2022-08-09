@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Knative Authors
+Copyright 2022 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -66,17 +66,17 @@ func (p *plug) Start(ctx context.Context) context.Context {
 	return ctx
 }
 
-func (p *plug) Init(ctx context.Context, c map[string]string, serviceName string, namespace string, logger pi.Logger) context.Context {
+func (p *plug) Init(ctx context.Context, config map[string]string, serviceName string, namespace string, logger pi.Logger) context.Context {
 
 	pi.Log.Infof("Plug %s: Never use in production", p.name)
 	p.answer = "CU"
 	p.sender = "someone"
-	if c != nil {
-		if v, ok := c["sender"]; ok && v != "" {
+	if config != nil {
+		if v, ok := config["sender"]; ok && v != "" {
 			p.sender = v
 			pi.Log.Debugf("Plug %s: found sender %s", p.name, p.sender)
 		}
-		if v, ok := c["response"]; ok && v != "" {
+		if v, ok := config["response"]; ok && v != "" {
 			p.answer = v
 			pi.Log.Debugf("Plug %s: found answer %s", p.name, p.answer)
 		}

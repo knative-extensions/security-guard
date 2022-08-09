@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Knative Authors
+Copyright 2022 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -32,12 +32,12 @@ import (
 	pi "knative.dev/security-guard/pkg/pluginterfaces"
 )
 
-// This is a Knative Queue Proxy Option (QPOption) package to manage the life cycle and configrue
+// This is a Knative Queue Proxy Option (QPOption) package to manage the life cycle and configure
 // a single security plug.
-// It can be extended in the future to managing multiple securiity plugs by using the rtplugs package
+// It can be extended in the future to managing multiple security plugs by using the rtplugs package
 
 var annotationsFilePath = queue.PodInfoVolumeMountPath + "/" + queue.PodInfoAnnotationsFilename
-var qpextentionPreifx = "qpextention.knative.dev/"
+var qpExtensionPrefix = "qpextension.knative.dev/"
 
 type GateQPOption struct {
 	config           map[string]string
@@ -56,29 +56,28 @@ func (p *GateQPOption) RoundTrip(req *http.Request) (resp *http.Response, err er
 		if recovered := recover(); recovered != nil {
 			pi.Log.Warnf("Recovered from panic during RoundTrip! Recover: %v\n", recovered)
 			pi.Log.Debugf("Stacktrace from panic: \n %s\n" + string(debug.Stack()))
-			err = errors.New("paniced during RoundTrip")
+			err = errors.New("panic during RoundTrip")
 			resp = nil
 		}
 	}()
 
-	if req, err = p.securityPlug.ApproveRequest(req); err == nil {
-		pi.Log.Infof("p %v", p)
-		pi.Log.Infof("p.nextRoundTripper %v", p.nextRoundTripper)
-		if resp, err = p.nextRoundTripper.RoundTrip(req); err == nil {
-			resp, err = p.securityPlug.ApproveResponse(req, resp)
-		}
-	}
-	if err != nil {
+	if req, err = p.securityPlug.ApproveRequest(req); err != nil {
 		pi.Log.Debugf("%s: returning error %v", p.securityPlug.PlugName(), err)
 		resp = nil
+		return
 	}
+
+	if resp, err = p.nextRoundTripper.RoundTrip(req); err == nil {
+		resp, err = p.securityPlug.ApproveResponse(req, resp)
+	}
+
 	return
 }
 
-func (p *GateQPOption) ProcessAnnotations(annotationsPath string, qpextentionPreifx string) bool {
+func (p *GateQPOption) ProcessAnnotations(annotationsPath string, qpExtPrefix string) bool {
 	file, err := os.Open(annotationsPath)
 	if err != nil {
-		p.defaults.Logger.Debugf("Cant find %s. Apperently podInfo is not mounted. os.Open Error %s", annotationsPath, err.Error())
+		p.defaults.Logger.Debugf("Cant find %s. Apparently podInfo is not mounted. os.Open Error %s", annotationsPath, err.Error())
 		return false
 	}
 	defer file.Close()
@@ -92,15 +91,15 @@ func (p *GateQPOption) ProcessAnnotations(annotationsPath string, qpextentionPre
 
 		k := parts[0]
 		v := parts[1]
-		if strings.HasPrefix(k, qpextentionPreifx) && len(k) > len(qpextentionPreifx) {
+		if strings.HasPrefix(k, qpExtPrefix) && len(k) > len(qpExtPrefix) {
 			v = strings.TrimSuffix(strings.TrimPrefix(v, "\""), "\"")
-			k = k[len(qpextentionPreifx):]
-			keyparts := strings.Split(k, "-")
-			if len(keyparts) < 2 {
+			k = k[len(qpExtPrefix):]
+			keyParts := strings.Split(k, "-")
+			if len(keyParts) < 2 {
 				continue
 			}
-			extension := keyparts[0]
-			action := keyparts[1]
+			extension := keyParts[0]
+			action := keyParts[1]
 			if strings.EqualFold(extension, p.securityPlug.PlugName()) {
 				switch action {
 				case "activate":
@@ -108,8 +107,8 @@ func (p *GateQPOption) ProcessAnnotations(annotationsPath string, qpextentionPre
 						p.activated = true
 					}
 				case "config":
-					if len(keyparts) == 3 {
-						extensionKey := keyparts[2]
+					if len(keyParts) == 3 {
+						extensionKey := keyParts[2]
 						p.config[extensionKey] = v
 					}
 				}
@@ -138,9 +137,9 @@ func (p *GateQPOption) Setup(defaults *sharedmain.Defaults) {
 	p.securityPlug = pi.RoundTripPlugs[0]
 	p.defaults = defaults
 	namespace := defaults.Env.ServingNamespace
-	servicName := defaults.Env.ServingService
-	if servicName == "" {
-		servicName = defaults.Env.ServingConfiguration
+	serviceName := defaults.Env.ServingService
+	if serviceName == "" {
+		serviceName = defaults.Env.ServingConfiguration
 	}
 
 	if defaults.Logger == nil {
@@ -152,19 +151,19 @@ func (p *GateQPOption) Setup(defaults *sharedmain.Defaults) {
 
 	// build p.config
 
-	if !p.ProcessAnnotations(annotationsFilePath, qpextentionPreifx) || !p.activated {
+	if !p.ProcessAnnotations(annotationsFilePath, qpExtensionPrefix) || !p.activated {
 		pi.Log.Debugf("%s is not activated", p.securityPlug.PlugName())
 		return
 	}
 
-	pi.Log.Debugf("Activating %s version %s with config %v in pod %s namespace %s", p.securityPlug.PlugName(), p.securityPlug.PlugVersion(), p.config, servicName, namespace)
+	pi.Log.Debugf("Activating %s version %s with config %v in pod %s namespace %s", p.securityPlug.PlugName(), p.securityPlug.PlugVersion(), p.config, serviceName, namespace)
 
 	// setup context
 	if defaults.Ctx == nil {
 		pi.Log.Warnf("Received a nil context\n")
 		defaults.Ctx = context.Background()
 	}
-	defaults.Ctx = p.securityPlug.Init(defaults.Ctx, p.config, servicName, namespace, defaults.Logger)
+	defaults.Ctx = p.securityPlug.Init(defaults.Ctx, p.config, serviceName, namespace, defaults.Logger)
 
 	// setup transport
 	if defaults.Transport == nil {

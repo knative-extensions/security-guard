@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Knative Authors
+Copyright 2022 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ func (d dLog) Sync() error                               { return nil }
 
 var defaultLog dLog
 
-func testinit() *plug {
+func testInit() *plug {
 	p := new(plug)
 	p.version = version
 	p.name = name
@@ -69,7 +69,7 @@ func Test_plug_Initialize(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_ = testinit()
+			_ = testInit()
 		})
 	}
 }
@@ -83,7 +83,7 @@ func Test_plug_Shutdown(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := testinit()
+			p := testInit()
 			p.Shutdown()
 		})
 	}
@@ -99,7 +99,7 @@ func Test_plug_PlugName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := testinit()
+			p := testInit()
 			if got := p.PlugName(); got != tt.want {
 				t.Errorf("plug.PlugName() = %v, want %v", got, tt.want)
 			}
@@ -117,7 +117,7 @@ func Test_plug_PlugVersion(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := testinit()
+			p := testInit()
 			if got := p.PlugVersion(); got != tt.want {
 				t.Errorf("plug.PlugVersion() = %v, want %v", got, tt.want)
 			}
@@ -127,7 +127,7 @@ func Test_plug_PlugVersion(t *testing.T) {
 
 func Test_plug_ApproveResponse(t *testing.T) {
 	t.Run("", func(t *testing.T) {
-		p := testinit()
+		p := testInit()
 
 		req := httptest.NewRequest("GET", "/some/path", nil)
 		respRecorder := httptest.NewRecorder()
@@ -158,7 +158,7 @@ func Test_plug_ApproveResponse(t *testing.T) {
 
 func Test_plug_ApproveRequest(t *testing.T) {
 	t.Run("", func(t *testing.T) {
-		p := testinit()
+		p := testInit()
 		req := httptest.NewRequest("GET", "/some/path", nil)
 		req.Header.Set("name", "value")
 
@@ -188,7 +188,7 @@ func Test_plug_ApproveRequest(t *testing.T) {
 
 func Test_plug_Start(t *testing.T) {
 	t.Run("Start", func(t *testing.T) {
-		p := testinit()
+		p := testInit()
 		ctx := context.Background()
 		if got := p.Start(ctx); !reflect.DeepEqual(got, ctx) {
 			t.Errorf("plug.Start() = %v, want %v", got, ctx)
