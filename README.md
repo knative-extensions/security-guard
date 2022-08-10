@@ -1,3 +1,10 @@
+[![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white)](https://pkg.go.dev/knative.dev/security-guard)
+[![Go Report Card](https://goreportcard.com/badge/knative/seurity-guard)](https://goreportcard.com/report/knative/security-guard)
+[![Releases](https://img.shields.io/github/release-pre/knative/seurity-guard.svg)](https://github.com/knative/seurity-guard/releases)
+[![LICENSE](https://img.shields.io/github/license/knative/seurity-guard.svg)](https://github.com/knative/seurity-guard/blob/main/LICENSE)
+[![Slack Status](https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&style=social)](https://knative.slack.com)
+[![codecov](https://codecov.io/gh/knative/seurity-guard/branch/main/graph/badge.svg)](https://codecov.io/gh/knative/seurity-guard)
+
 # Guard
 
 ## Why Do We Need Guard?
