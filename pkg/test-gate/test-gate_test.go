@@ -27,8 +27,7 @@ import (
 	pi "knative.dev/security-guard/pkg/pluginterfaces"
 )
 
-type dLog struct {
-}
+type dLog struct {}
 
 func (d dLog) Debugf(format string, args ...interface{}) {}
 func (d dLog) Infof(format string, args ...interface{})  {}
