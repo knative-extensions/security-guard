@@ -77,7 +77,7 @@ func (p *GateQPOption) RoundTrip(req *http.Request) (resp *http.Response, err er
 func (p *GateQPOption) ProcessAnnotations(annotationsPath string, qpExtPrefix string) bool {
 	file, err := os.Open(annotationsPath)
 	if err != nil {
-		p.defaults.Logger.Debugf("Cant find %s. Apparently podInfo is not mounted. os.Open Error %s", annotationsPath, err.Error())
+		p.defaults.Logger.Debugf("File %s is can not be opened - is PodInfo mounted? os.Open Error: %s", annotationsPath, err.Error())
 		return false
 	}
 	defer file.Close()
@@ -116,7 +116,7 @@ func (p *GateQPOption) ProcessAnnotations(annotationsPath string, qpExtPrefix st
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		p.defaults.Logger.Infof("Scanner Error %s", err.Error())
+		p.defaults.Logger.Infof("File %s - scanner Error %s", annotationsPath, err.Error())
 		return false
 	}
 	return true
@@ -130,8 +130,12 @@ func (p *GateQPOption) Setup(defaults *sharedmain.Defaults) {
 		}
 	}()
 
-	if (pi.RoundTripPlugs == nil) || len(pi.RoundTripPlugs) != 1 {
-		pi.Log.Infof("Option without a Plug, Or with more than one Plug - Skip Option")
+	if pi.RoundTripPlugs == nil || len(pi.RoundTripPlugs) == 0 {
+		pi.Log.Warnf("Image was created with qpoption package but without a Plug")
+		return
+	}
+	if len(pi.RoundTripPlugs) > 1 {
+		pi.Log.Warnf("Image was created with more then one plug")
 		return
 	}
 	p.securityPlug = pi.RoundTripPlugs[0]
