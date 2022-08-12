@@ -192,7 +192,9 @@ func TestGateQPOption_ProcessConfigAnnotations(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := initGate()
 			addConfigAnnotations(tt.config)
-			gotResp := p.ProcessAnnotations(myAnnotationsPath, myQpextensionPrefix)
+			annotationsFilePath = myAnnotationsPath
+			qpExtensionPrefix = myQpextensionPrefix
+			gotResp := p.ProcessAnnotations()
 			clearAnnotations()
 			if gotResp != tt.wantResp {
 				t.Errorf("GateQPOption.ProcessAnnotations() gotResp = %v, wantResp %v", gotResp, tt.wantResp)
@@ -236,7 +238,9 @@ func TestGateQPOption_ProcessActivateAnnotations(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := initGate()
 			addActivateAnnotations(tt.config)
-			gotResp := p.ProcessAnnotations(myAnnotationsPath, myQpextensionPrefix)
+			annotationsFilePath = myAnnotationsPath
+			qpExtensionPrefix = myQpextensionPrefix
+			gotResp := p.ProcessAnnotations()
 			clearAnnotations()
 			if gotResp != tt.wantResp {
 				t.Errorf("GateQPOption.ProcessAnnotations() gotResp = %v, wantResp %v", gotResp, tt.wantResp)
@@ -253,7 +257,9 @@ func TestGateQPOption_ProcessNoAnnotations(t *testing.T) {
 	t.Run("No annotations", func(t *testing.T) {
 		p := initGate()
 		clearAnnotations()
-		gotResp := p.ProcessAnnotations(myAnnotationsPath, myQpextensionPrefix)
+		annotationsFilePath = myAnnotationsPath
+		qpExtensionPrefix = myQpextensionPrefix
+		gotResp := p.ProcessAnnotations()
 		if gotResp != false {
 			t.Errorf("GateQPOption.ProcessAnnotations() gotResp = %v, wantResp %v", gotResp, false)
 			return

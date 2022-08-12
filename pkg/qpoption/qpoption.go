@@ -53,8 +53,8 @@ func NewGateQPOption() *GateQPOption {
 
 func (p *GateQPOption) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 	defer func() {
-		if recovered := recover(); recovered != nil {
-			pi.Log.Warnf("Recovered from panic during RoundTrip! Recover: %v\n", recovered)
+		if r := recover(); r != nil {
+			pi.Log.Warnf("Recovered from panic during RoundTrip! Recover: %v\n", r)
 			pi.Log.Debugf("Stacktrace from panic: \n %s\n" + string(debug.Stack()))
 			err = errors.New("panic during RoundTrip")
 			resp = nil
@@ -70,14 +70,13 @@ func (p *GateQPOption) RoundTrip(req *http.Request) (resp *http.Response, err er
 	if resp, err = p.nextRoundTripper.RoundTrip(req); err == nil {
 		resp, err = p.securityPlug.ApproveResponse(req, resp)
 	}
-
 	return
 }
 
-func (p *GateQPOption) ProcessAnnotations(annotationsPath string, qpExtPrefix string) bool {
-	file, err := os.Open(annotationsPath)
+func (p *GateQPOption) ProcessAnnotations() bool {
+	file, err := os.Open(annotationsFilePath)
 	if err != nil {
-		p.defaults.Logger.Debugf("File %s is can not be opened - is PodInfo mounted? os.Open Error: %s", annotationsPath, err.Error())
+		p.defaults.Logger.Debugf("File %s cannot be opened - is PodInfo mounted? os.Open Error: %s", annotationsFilePath, err.Error())
 		return false
 	}
 	defer file.Close()
@@ -87,20 +86,27 @@ func (p *GateQPOption) ProcessAnnotations(annotationsPath string, qpExtPrefix st
 	for scanner.Scan() {
 		txt := scanner.Text()
 		txt = strings.ToLower(txt)
+
+		// Annotation structure:
+		// 		either: <qpExtensionPrefix><extension>-activate=s<val>
+		// 		or:     <qpExtensionPrefix><extension>-config-<key>=<val>
 		parts := strings.Split(txt, "=")
 
-		k := parts[0]
-		v := parts[1]
-		if strings.HasPrefix(k, qpExtPrefix) && len(k) > len(qpExtPrefix) {
-			v = strings.TrimSuffix(strings.TrimPrefix(v, "\""), "\"")
-			k = k[len(qpExtPrefix):]
+		k := parts[0] // <qpExtensionPrefix><extension>-*
+		v := parts[1] // <val>
+		if strings.HasPrefix(k, qpExtensionPrefix) && len(k) > len(qpExtensionPrefix) {
+			k = k[len(qpExtensionPrefix):]
+
+			// k structure: <extenion>-activate or <extension>-config-<key>
 			keyParts := strings.Split(k, "-")
 			if len(keyParts) < 2 {
 				continue
 			}
-			extension := keyParts[0]
-			action := keyParts[1]
+			extension := keyParts[0] // <extension>
+			action := keyParts[1]    // activate or config
 			if strings.EqualFold(extension, p.securityPlug.PlugName()) {
+				// remove double quates if exists
+				v = strings.TrimSuffix(strings.TrimPrefix(v, "\""), "\"")
 				switch action {
 				case "activate":
 					if strings.EqualFold(v, "enable") {
@@ -116,7 +122,7 @@ func (p *GateQPOption) ProcessAnnotations(annotationsPath string, qpExtPrefix st
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		p.defaults.Logger.Infof("File %s - scanner Error %s", annotationsPath, err.Error())
+		p.defaults.Logger.Infof("File %s - scanner Error %s", annotationsFilePath, err.Error())
 		return false
 	}
 	return true
@@ -130,15 +136,10 @@ func (p *GateQPOption) Setup(defaults *sharedmain.Defaults) {
 		}
 	}()
 
-	if pi.RoundTripPlugs == nil || len(pi.RoundTripPlugs) == 0 {
-		pi.Log.Warnf("Image was created with qpoption package but without a Plug")
+	if p.securityPlug = pi.GetPlug(); p.securityPlug == nil {
 		return
 	}
-	if len(pi.RoundTripPlugs) > 1 {
-		pi.Log.Warnf("Image was created with more then one plug")
-		return
-	}
-	p.securityPlug = pi.RoundTripPlugs[0]
+
 	p.defaults = defaults
 	namespace := defaults.Env.ServingNamespace
 	serviceName := defaults.Env.ServingService
@@ -155,8 +156,8 @@ func (p *GateQPOption) Setup(defaults *sharedmain.Defaults) {
 
 	// build p.config
 
-	if !p.ProcessAnnotations(annotationsFilePath, qpExtensionPrefix) || !p.activated {
-		pi.Log.Debugf("%s is not activated", p.securityPlug.PlugName())
+	if !p.ProcessAnnotations() || !p.activated {
+		pi.Log.Debugf("No plug was activated")
 		return
 	}
 

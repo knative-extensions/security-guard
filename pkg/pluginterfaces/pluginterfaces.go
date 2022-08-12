@@ -19,6 +19,7 @@ package pluginterfaces
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"go.uber.org/zap"
 )
@@ -54,9 +55,36 @@ func init() {
 	Log = logger.Sugar()
 }
 
-var RoundTripPlugs []RoundTripPlug
+var roundTripPlugs []RoundTripPlug
+
+// GetPlugByName() is called by implementatuions supporting multiple plugs
+func GetPlugByName(name string) RoundTripPlug {
+	if len(roundTripPlugs) == 0 {
+		Log.Warnf("Image was created with qpoption package but without plugs")
+		return nil
+	}
+	for _, p := range roundTripPlugs {
+		if strings.EqualFold(name, p.PlugName()) {
+			return p
+		}
+	}
+	return nil
+}
+
+// GetPlug() is called by implementations supporting a single plug
+func GetPlug() RoundTripPlug {
+	if len(roundTripPlugs) == 0 {
+		Log.Warnf("Image was created with qpoption package but without a plug")
+		return nil
+	}
+	if len(roundTripPlugs) > 1 {
+		Log.Warnf("Image was created with multiple plugs")
+		return nil
+	}
+	return roundTripPlugs[0]
+}
 
 // RegisterPlug() is called from init() function of plugs
 func RegisterPlug(p RoundTripPlug) {
-	RoundTripPlugs = append(RoundTripPlugs, p)
+	roundTripPlugs = append(roundTripPlugs, p)
 }

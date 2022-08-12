@@ -19,6 +19,7 @@ package pluginterfaces
 import (
 	"context"
 	"net/http"
+	"reflect"
 	"testing"
 )
 
@@ -30,7 +31,7 @@ func (p *plug) Init(ctx context.Context, c map[string]string, serviceName string
 
 func (p *plug) Shutdown() {}
 func (p *plug) PlugName() string {
-	return ""
+	return "plug42"
 }
 func (p *plug) PlugVersion() string {
 	return ""
@@ -42,22 +43,54 @@ func (p *plug) ApproveResponse(*http.Request, *http.Response) (*http.Response, e
 	return nil, nil
 }
 
-func TestRegisterPlug(t *testing.T) {
+func TestGetPlug(t *testing.T) {
+	t.Run("no plug", func(t *testing.T) {
+		if got := GetPlug(); got != nil {
+			t.Errorf("GetPlug() = %v, want %v", got, nil)
+		}
+		if got := GetPlugByName("plug42"); got != nil {
+			t.Errorf("GetPlug() = %v, want %v", got, nil)
+		}
+
+		RegisterPlug(&plug{})
+		if got := GetPlug(); !reflect.DeepEqual(got, &plug{}) {
+			t.Errorf("GetPlug() = %v, want %v", got, &plug{})
+		}
+		if got := GetPlugByName("plug41"); got != nil {
+			t.Errorf("GetPlug() = %v, want %v", got, nil)
+		}
+		if got := GetPlugByName("plug42"); !reflect.DeepEqual(got, &plug{}) {
+			t.Errorf("GetPlug() = %v, want %v", got, &plug{})
+		}
+
+		RegisterPlug(&plug{})
+		if got := GetPlug(); got != nil {
+			t.Errorf("GetPlug() = %v, want %v", got, nil)
+		}
+		if got := GetPlugByName("plug41"); got != nil {
+			t.Errorf("GetPlug() = %v, want %v", got, nil)
+		}
+		if got := GetPlugByName("plug42"); !reflect.DeepEqual(got, &plug{}) {
+			t.Errorf("GetPlug() = %v, want %v", got, &plug{})
+		}
+	})
+}
+
+func TestGetPlugByName(t *testing.T) {
 	type args struct {
-		p RoundTripPlug
+		name string
 	}
 	tests := []struct {
 		name string
 		args args
-	}{{
-		name: "simple",
-		args: args{&plug{}},
-	}}
+		want RoundTripPlug
+	}{
+		// TODO: Add test cases.
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			RegisterPlug(tt.args.p)
-			if len(RoundTripPlugs) != 1 {
-				t.Errorf("RegisterPlug error = wrong list length")
+			if got := GetPlugByName(tt.args.name); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetPlugByName() = %v, want %v", got, tt.want)
 			}
 		})
 	}
