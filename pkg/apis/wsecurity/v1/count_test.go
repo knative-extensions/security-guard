@@ -25,13 +25,5 @@ func TestCountProfile_Profile(t *testing.T) {
 		pile := &CountPile{}
 		config := &CountConfig{}
 		ValueProfile_Test(t, profile, pile, config, tt.args.args...)
-		/*
-			t.Run(tt.name, func(t *testing.T) {
-				rp := &CountProfile{
-					val: tt.fields.val,
-				}
-				rp.Profile(tt.args.args...)
-			})
-		*/
 	}
 }
