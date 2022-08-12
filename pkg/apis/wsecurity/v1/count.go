@@ -136,25 +136,44 @@ func (config *CountConfig) Merge(otherValConfig ValueConfig) {
 	var found bool
 	otherConfig := otherValConfig.(*CountConfig)
 	for _, other := range *otherConfig {
-		for _, this := range *config {
+		found = false
+		for idx, this := range *config {
 			if this.Min < other.Min {
+				// Does "this" include "other"?
 				if this.Max > other.Max {
+					// "this" include "other"!
 					found = true
 					break
 				}
-				// mm.Max < v.Max
+				// this.Max < other.Max  - "this" does not include "other"!
 				if this.Max >= other.Min {
+					// "this" overlap with "other" - lets merge them!
 					this.countMerge(&other)
+					(*config)[idx] = this
 					found = true
 					break
 				}
-				// mm.Max < v.Min
-			}
-			// mm.Min > v.Min
-			if this.Min > other.Max {
+				// this.Max < other.Min - no overlap - nothing to do!
 				continue
 			}
+			// this.Min >= other.Min
+			if this.Min > other.Max {
+				// no overlap - nothing to do!
+				continue
+			}
+			// Does "other" include "this"?
+			if this.Max <= other.Max {
+				// "other" include "this"!
+				// swap them
+				this.Min = other.Min
+				this.Max = other.Max
+				(*config)[idx] = this
+				found = true
+				break
+			}
+			// "this" overlap with "other" - lets merge them!
 			this.countMerge(&other)
+			(*config)[idx] = this
 			found = true
 			break
 		}
