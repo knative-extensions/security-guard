@@ -36,7 +36,7 @@ Note:
 - Configs consume piles using Learn()
   - Once a pile is learned by a config, the pile is no longer usable.
 - Configs consume other configs using Fuse()
-  - Once a config is fused to a config, the config is no longer usable.
+  - Once a config is fused to another config, the config is no longer usable.
 
 ## Distributed System
 

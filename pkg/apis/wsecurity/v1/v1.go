@@ -7,9 +7,6 @@ type ValueProfile interface {
 
 	// Return a multiline string ready for logging at indentation depth
 	String(depth int) string
-
-	// Deep Copy - required to enable Code Generation
-	DeepCopyValueProfile() ValueProfile
 }
 
 // A Pile accumulating information from zero or more Values
@@ -29,9 +26,6 @@ type ValuePile interface {
 
 	// Return a multiline string ready for logging at indentation depth
 	String(depth int) string
-
-	// Deep Copy - required to enable Code Generation
-	DeepCopyValuePile() ValuePile
 }
 
 // A Config defining what Value should adhere to
@@ -55,7 +49,4 @@ type ValueConfig interface {
 
 	// Return a multiline string ready for logging at indentation depth
 	String(depth int) string
-
-	// Deep Copy - required to enable Code Generation
-	DeepCopyValueConfig() ValueConfig
 }

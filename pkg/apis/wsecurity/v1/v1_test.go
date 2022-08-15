@@ -58,10 +58,6 @@ func ValueTests_Test(t *testing.T, profiles []ValueProfile, piles []ValuePile, c
 			t.Errorf("profile.String() no string provided")
 		}
 
-		if v := profiles[0].DeepCopyValueProfile(); !reflect.DeepEqual(v, profiles[0]) {
-			t.Errorf("DeepCopyValueProfile() = %v, want %v", v, profiles[0])
-		}
-
 		// Test PileValue
 		for i, profile := range profiles {
 			piles[i].Add(profile)
@@ -74,9 +70,7 @@ func ValueTests_Test(t *testing.T, profiles []ValueProfile, piles []ValuePile, c
 		if str := piles[0].String(3); str == "" {
 			t.Errorf("pile.String()  - no string provided")
 		}
-		if v := piles[0].DeepCopyValuePile(); !reflect.DeepEqual(v, piles[0]) {
-			t.Errorf("DeepCopyValuePile() = %v, want %v", v, piles[0])
-		}
+
 		// Test ConfigValue
 		for i, pile := range piles {
 			configs[i].Learn(pile)
@@ -91,9 +85,6 @@ func ValueTests_Test(t *testing.T, profiles []ValueProfile, piles []ValuePile, c
 			t.Errorf("config.String() no string provided")
 		}
 
-		if v := configs[0].DeepCopyValueConfig(); !reflect.DeepEqual(v, configs[0]) {
-			t.Errorf("DeepCopyValueConfig() produced:\n%v\nShould be:\n%v", v, configs[0])
-		}
 	})
 }
 
@@ -112,10 +103,6 @@ func ValueTests_Test_WithMarshal(t *testing.T, profiles []ValueProfile, piles []
 			t.Errorf("profile.String() no string provided")
 		}
 
-		if v := profile.DeepCopyValueProfile(); !reflect.DeepEqual(v, profile) {
-			t.Errorf("DeepCopyValueProfile() = %v, want %v", v, profile)
-		}
-
 		// Test PileValue
 		pile.Add(profile)
 		pile.Clear()
@@ -127,9 +114,6 @@ func ValueTests_Test_WithMarshal(t *testing.T, profiles []ValueProfile, piles []
 		var bytes []byte
 		if str := pile.String(3); str == "" {
 			t.Errorf("pile.String()  - no string provided")
-		}
-		if v := pile.DeepCopyValuePile(); !reflect.DeepEqual(v, pile) {
-			t.Errorf("DeepCopyValuePile() = %v, want %v", v, pile)
 		}
 		if bytes, err = json.Marshal(pile); err != nil {
 			t.Errorf("json.Marshal Error %v", err.Error())
@@ -151,9 +135,6 @@ func ValueTests_Test_WithMarshal(t *testing.T, profiles []ValueProfile, piles []
 			t.Errorf("config.String() no string provided")
 		}
 
-		if v := config.DeepCopyValueConfig(); !reflect.DeepEqual(v, config) {
-			t.Errorf("DeepCopyValueConfig() produced:\n%v\nShould be:\n%v", v, config)
-		}
 		if bytes, err = json.Marshal(config); err != nil {
 			t.Errorf("json.Marshal Error %v", err.Error())
 		}
@@ -178,17 +159,10 @@ func ValueTests_SimpleTest(t *testing.T, profiles []ValueProfile, piles []ValueP
 			t.Errorf("profile.String() no string provided")
 		}
 
-		if v := profiles[0].DeepCopyValueProfile(); !reflect.DeepEqual(v, profiles[0]) {
-			t.Errorf("DeepCopyValueProfile() = %v, want %v", v, profiles[0])
-		}
-
 		// Test PileValue
 		pile.Add(profiles[0])
 		if str := pile.String(3); str == "" {
 			t.Errorf("pile.String()  - no string provided")
-		}
-		if v := pile.DeepCopyValuePile(); !reflect.DeepEqual(v, pile) {
-			t.Errorf("DeepCopyValuePile() = %v, want %v", v, pile)
 		}
 
 		// test ConfigValue
@@ -204,9 +178,6 @@ func ValueTests_SimpleTest(t *testing.T, profiles []ValueProfile, piles []ValueP
 		}
 		if str := config.String(3); str == "" {
 			t.Errorf("config.String() no string provided")
-		}
-		if v := config.DeepCopyValueConfig(); !reflect.DeepEqual(v, config) {
-			t.Errorf("DeepCopyValueConfig() produced:\n%v\nShould be:\n%v", v, config)
 		}
 	})
 }

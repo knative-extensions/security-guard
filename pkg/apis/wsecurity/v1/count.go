@@ -10,10 +10,6 @@ import (
 // Exposes ValueProfile interface
 type CountProfile uint8
 
-func (profile *CountProfile) DeepCopyValueProfile() ValueProfile {
-	return profile
-}
-
 func (profile *CountProfile) Profile(args ...interface{}) {
 	*profile = CountProfile(args[0].(uint8))
 }
@@ -26,10 +22,6 @@ func (profile *CountProfile) String(depth int) string {
 
 // Exposes ValuePile interface
 type CountPile []uint8
-
-func (pile *CountPile) DeepCopyValuePile() ValuePile {
-	return pile
-}
 
 func (pile *CountPile) Add(valProfile ValueProfile) {
 	profile := *valProfile.(*CountProfile)
@@ -73,10 +65,6 @@ func (cRange *countRange) fuseTwoRanges(otherRange *countRange) bool {
 
 // Exposes ValueConfig interface
 type CountConfig []countRange
-
-func (config *CountConfig) DeepCopyValueConfig() ValueConfig {
-	return config
-}
 
 func (config *CountConfig) Decide(valProfile ValueProfile) string {
 	profile := *valProfile.(*CountProfile)
