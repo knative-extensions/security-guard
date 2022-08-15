@@ -1,6 +1,6 @@
 # Security Data Package
 
-This package serves as the beating hurt of Guard.
+This package serves as the beating heart of Guard.
 
 It defines data structures that meet the [v1 interface](v1.go).
 
