@@ -3,125 +3,113 @@ package v1
 import (
 	"bytes"
 	"fmt"
-	"strings"
 )
 
 //////////////////// CountProfile ////////////////
 
 // Exposes ValueProfile interface
-type CountProfile struct {
-	val uint8
-}
+type CountProfile uint8
 
 func (profile *CountProfile) DeepCopyValueProfile() ValueProfile {
 	return profile
 }
 
 func (profile *CountProfile) Profile(args ...interface{}) {
-	profile.val = args[0].(uint8)
+	*profile = CountProfile(args[0].(uint8))
 }
 
 func (profile *CountProfile) String(depth int) string {
-	var description bytes.Buffer
-	shift := strings.Repeat("  ", depth)
-	description.WriteString("{\n")
-	description.WriteString(shift)
-	description.WriteString(fmt.Sprintf("  Val: %d", profile.val))
-	description.WriteString(shift)
-	description.WriteString("}\n")
-	return description.String()
+	return fmt.Sprintf("%d", uint8(*profile))
 }
 
 //////////////////// CountPile ////////////////
 
 // Exposes ValuePile interface
-type CountPile struct {
-	vals []uint8
-}
+type CountPile []uint8
 
 func (pile *CountPile) DeepCopyValuePile() ValuePile {
 	return pile
 }
 
 func (pile *CountPile) Add(valProfile ValueProfile) {
-	profile := valProfile.(*CountProfile)
-	pile.vals = append(pile.vals, profile.val)
+	profile := *valProfile.(*CountProfile)
+	*pile = append(*pile, uint8(profile))
 }
 
 func (pile *CountPile) Clear() {
-	pile = nil
+	*pile = nil
 }
 
 func (pile *CountPile) Merge(otherValPile ValuePile) {
 	otherPile := otherValPile.(*CountPile)
-	pile.vals = append(pile.vals, otherPile.vals...)
+	*pile = append(*pile, *otherPile...)
 }
 
 func (pile *CountPile) String(depth int) string {
-	var description bytes.Buffer
-	shift := strings.Repeat("  ", depth)
-	description.WriteString("{\n")
-	description.WriteString(shift)
-	description.WriteString(fmt.Sprintf("  Vals: %v", *pile))
-	description.WriteString(shift)
-	description.WriteString("}\n")
-	return description.String()
+	return fmt.Sprintf("%v", *pile)
 }
 
 //////////////////// CountConfig ////////////////
-
-type countMinMax struct {
+type countRange struct {
 	Min uint8 `json:"min"`
 	Max uint8 `json:"max"`
 }
 
-func (minMax *countMinMax) countMerge(otherMinMax *countMinMax) {
-	if minMax.Min > otherMinMax.Min {
-		minMax.Min = otherMinMax.Min
+func (cRange *countRange) fuseTwoRanges(otherRange *countRange) bool {
+	if cRange.Max < otherRange.Min || cRange.Min > otherRange.Max {
+		// no overlap - nothing to do!
+		return false
 	}
-	if minMax.Max < otherMinMax.Max {
-		minMax.Max = otherMinMax.Max
+
+	// There is overlap of some sort
+	if cRange.Min > otherRange.Min {
+		cRange.Min = otherRange.Min
 	}
+	if cRange.Max < otherRange.Max {
+		cRange.Max = otherRange.Max
+	}
+	return true
 }
 
 // Exposes ValueConfig interface
-type CountConfig []countMinMax
+type CountConfig []countRange
 
 func (config *CountConfig) DeepCopyValueConfig() ValueConfig {
 	return config
 }
 
 func (config *CountConfig) Decide(valProfile ValueProfile) string {
-	profile := (*valProfile.(*CountProfile))
-	if profile.val == 0 {
+	profile := *valProfile.(*CountProfile)
+	if profile == 0 {
 		return ""
 	}
 	// v>0
 	if len(*config) == 0 {
-		return fmt.Sprintf("Value %d Not Allowed!", profile.val)
+		return fmt.Sprintf("Value %d Not Allowed!", profile)
 	}
 
 	for j := 0; j < len(*config); j++ {
-		if profile.val < (*config)[j].Min {
+		if uint8(profile) < (*config)[j].Min {
 			break
 		}
-		if profile.val <= (*config)[j].Max { // found ok interval
+		if uint8(profile) <= (*config)[j].Max { // found ok interval
 			return ""
 		}
 	}
-	return fmt.Sprintf("Counter out of Range: %d", profile.val)
+	return fmt.Sprintf("Counter out of Range: %d", profile)
 }
 
+// Learn now offers the simplest single rule support
+// Future: Improve Learn
 func (config *CountConfig) Learn(valPile ValuePile) {
 	pile := valPile.(*CountPile)
-
 	min := uint8(0)
 	max := uint8(0)
-	if len(pile.vals) >= 0 {
-		min = pile.vals[0]
-		max = pile.vals[0]
+	if len(*pile) > 0 {
+		min = (*pile)[0]
+		max = (*pile)[0]
 	}
-	for _, v := range pile.vals {
+	for _, v := range *pile {
 		if min > v {
 			min = v
 		}
@@ -129,55 +117,28 @@ func (config *CountConfig) Learn(valPile ValuePile) {
 			max = v
 		}
 	}
-	*config = append(*config, countMinMax{min, max})
+	*config = append(*config, countRange{min, max})
 }
 
-func (config *CountConfig) Merge(otherValConfig ValueConfig) {
-	var found bool
+// Fuse CountConfig in-place
+// The implementation look to opportunistically merge new entries to existing ones
+// The implementation does now squash entries even if after the Fuse they may be squashed
+// This is done to achieve Fuse in-place
+// Future: Improve Fuse - e.g. by keeping extra entries in Range [0,0] and reusing them
+//                        instead of adding new entries
+func (config *CountConfig) Fuse(otherValConfig ValueConfig) {
+	var fused bool
+
 	otherConfig := otherValConfig.(*CountConfig)
 	for _, other := range *otherConfig {
-		found = false
+		fused = false
 		for idx, this := range *config {
-			if this.Min < other.Min {
-				// Does "this" include "other"?
-				if this.Max > other.Max {
-					// "this" include "other"!
-					found = true
-					break
-				}
-				// this.Max < other.Max  - "this" does not include "other"!
-				if this.Max >= other.Min {
-					// "this" overlap with "other" - lets merge them!
-					this.countMerge(&other)
-					(*config)[idx] = this
-					found = true
-					break
-				}
-				// this.Max < other.Min - no overlap - nothing to do!
-				continue
-			}
-			// this.Min >= other.Min
-			if this.Min > other.Max {
-				// no overlap - nothing to do!
-				continue
-			}
-			// Does "other" include "this"?
-			if this.Max <= other.Max {
-				// "other" include "this"!
-				// swap them
-				this.Min = other.Min
-				this.Max = other.Max
+			if fused = this.fuseTwoRanges(&other); fused {
 				(*config)[idx] = this
-				found = true
 				break
 			}
-			// "this" overlap with "other" - lets merge them!
-			this.countMerge(&other)
-			(*config)[idx] = this
-			found = true
-			break
 		}
-		if !found {
+		if !fused {
 			*config = append(*config, other)
 		}
 	}
