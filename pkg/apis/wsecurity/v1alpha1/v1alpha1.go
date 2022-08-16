@@ -1,12 +1,9 @@
-package v1
+package v1alpha1
 
 // A Profile describing the Value
 type ValueProfile interface {
 	// Profile the data provided in args
 	Profile(args ...interface{})
-
-	// Return a multiline string ready for logging at indentation depth
-	String(depth int) string
 }
 
 // A Pile accumulating information from zero or more Values
@@ -23,9 +20,6 @@ type ValuePile interface {
 
 	// Clear the pile from all profiles and free any memory held by pile
 	Clear()
-
-	// Return a multiline string ready for logging at indentation depth
-	String(depth int) string
 }
 
 // A Config defining what Value should adhere to
@@ -46,7 +40,4 @@ type ValueConfig interface {
 	// (does not guarantee that all issues will be reported)
 	// Profile is unchanged and unaffected by Decide and can be used again
 	Decide(profile ValueProfile) string
-
-	// Return a multiline string ready for logging at indentation depth
-	String(depth int) string
 }

@@ -1,7 +1,6 @@
-package v1
+package v1alpha1
 
 import (
-	"bytes"
 	"fmt"
 )
 
@@ -12,10 +11,6 @@ type CountProfile uint8
 
 func (profile *CountProfile) Profile(args ...interface{}) {
 	*profile = CountProfile(args[0].(uint8))
-}
-
-func (profile *CountProfile) String(depth int) string {
-	return fmt.Sprintf("%d", uint8(*profile))
 }
 
 //////////////////// CountPile ////////////////
@@ -35,10 +30,6 @@ func (pile *CountPile) Clear() {
 func (pile *CountPile) Merge(otherValPile ValuePile) {
 	otherPile := otherValPile.(*CountPile)
 	*pile = append(*pile, *otherPile...)
-}
-
-func (pile *CountPile) String(depth int) string {
-	return fmt.Sprintf("%v", *pile)
 }
 
 //////////////////// CountConfig ////////////////
@@ -67,7 +58,7 @@ func (cRange *countRange) fuseTwoRanges(otherRange *countRange) bool {
 type CountConfig []countRange
 
 func (config *CountConfig) Decide(valProfile ValueProfile) string {
-	profile := *valProfile.(*CountProfile)
+	profile := uint8(*valProfile.(*CountProfile))
 	if profile == 0 {
 		return ""
 	}
@@ -76,15 +67,15 @@ func (config *CountConfig) Decide(valProfile ValueProfile) string {
 		return fmt.Sprintf("Value %d Not Allowed!", profile)
 	}
 
-	for j := 0; j < len(*config); j++ {
-		if uint8(profile) < (*config)[j].Min {
+	for _, cRange := range *config {
+		if profile < cRange.Min {
 			break
 		}
-		if uint8(profile) <= (*config)[j].Max { // found ok interval
+		if profile <= cRange.Max { // found ok interval
 			return ""
 		}
 	}
-	return fmt.Sprintf("Counter out of Range: %d", profile)
+	return fmt.Sprintf("Counter out of Range: %d   ", profile)
 }
 
 // Learn now offers the simplest single rule support
@@ -130,17 +121,4 @@ func (config *CountConfig) Fuse(otherValConfig ValueConfig) {
 			*config = append(*config, other)
 		}
 	}
-}
-
-func (config CountConfig) String(depth int) string {
-	if len(config) == 0 {
-		return "null"
-	}
-	var description bytes.Buffer
-	description.WriteString(fmt.Sprintf("[{Min:%d,Max: %d", config[0].Min, config[0].Max))
-	for j := 1; j < len(config); j++ {
-		description.WriteString(fmt.Sprintf("}, {Min:%d,Max: %d", config[j].Min, config[j].Max))
-	}
-	description.WriteString("}]")
-	return description.String()
 }
