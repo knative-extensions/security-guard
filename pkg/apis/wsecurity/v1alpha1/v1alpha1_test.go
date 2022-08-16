@@ -1,4 +1,4 @@
-package v1
+package v1alpha1
 
 import (
 	"encoding/json"
@@ -36,26 +36,16 @@ func ValueTests_Test(t *testing.T, profiles []ValueProfile, piles []ValuePile, c
 	t.Run("Basics", func(t *testing.T) {
 
 		// Initial Tests
-		profiles[9].String(9)
-		piles[9].String(9)
-		configs[9].String(9)
 		piles[9].Clear()
 		piles[3].Merge(piles[4])
 		configs[3].Fuse(configs[4])
 		configs[5].Learn(piles[5])
 		configs[6].Decide(profiles[0])
 		piles[6].Clear()
-		piles[7].String(7)
-		configs[7].String(7)
-		profiles[2].String(7)
 
 		// Test ProfileValue
 		for i, v := range args {
 			profiles[i].Profile(v...)
-		}
-
-		if str := profiles[0].String(3); str == "" {
-			t.Errorf("profile.String() no string provided")
 		}
 
 		// Test PileValue
@@ -67,9 +57,6 @@ func ValueTests_Test(t *testing.T, profiles []ValueProfile, piles []ValuePile, c
 			piles[0].Merge(piles[i])
 			piles[0].Merge(piles[i])
 		}
-		if str := piles[0].String(3); str == "" {
-			t.Errorf("pile.String()  - no string provided")
-		}
 
 		// Test ConfigValue
 		for i, pile := range piles {
@@ -77,14 +64,9 @@ func ValueTests_Test(t *testing.T, profiles []ValueProfile, piles []ValuePile, c
 			configs[0].Fuse(configs[i])
 			configs[0].Fuse(configs[i])
 			if str := configs[0].Decide(profiles[i]); str != "" {
-				t.Errorf("config.Decide(profile) wrong decission: %s\nFor profile %s\nwhen using config %s\n", str, profiles[i].String(0), configs[0].String(0))
+				t.Errorf("config.Decide(profile) wrong decission: %s\nFor profile %s\nwhen using config %s\n", str, profiles[i], configs[0])
 			}
 		}
-
-		if str := configs[0].String(3); str == "" {
-			t.Errorf("config.String() no string provided")
-		}
-
 	})
 }
 
@@ -99,10 +81,6 @@ func ValueTests_Test_WithMarshal(t *testing.T, profiles []ValueProfile, piles []
 		// Test ProfileValue
 		profile.Profile(args[0]...)
 
-		if str := profile.String(3); str == "" {
-			t.Errorf("profile.String() no string provided")
-		}
-
 		// Test PileValue
 		pile.Add(profile)
 		pile.Clear()
@@ -112,9 +90,6 @@ func ValueTests_Test_WithMarshal(t *testing.T, profiles []ValueProfile, piles []
 		pile.Merge(pile)
 		var err error
 		var bytes []byte
-		if str := pile.String(3); str == "" {
-			t.Errorf("pile.String()  - no string provided")
-		}
 		if bytes, err = json.Marshal(pile); err != nil {
 			t.Errorf("json.Marshal Error %v", err.Error())
 		}
@@ -129,10 +104,6 @@ func ValueTests_Test_WithMarshal(t *testing.T, profiles []ValueProfile, piles []
 
 		if str := config.Decide(profile); str != "" {
 			t.Errorf("config.Decide(profile) wrong decission: %s", str)
-		}
-
-		if str := config.String(3); str == "" {
-			t.Errorf("config.String() no string provided")
 		}
 
 		if bytes, err = json.Marshal(config); err != nil {
@@ -155,15 +126,8 @@ func ValueTests_SimpleTest(t *testing.T, profiles []ValueProfile, piles []ValueP
 			profiles[i].Profile(v...)
 		}
 
-		if str := profiles[0].String(3); str == "" {
-			t.Errorf("profile.String() no string provided")
-		}
-
 		// Test PileValue
 		pile.Add(profiles[0])
-		if str := pile.String(3); str == "" {
-			t.Errorf("pile.String()  - no string provided")
-		}
 
 		// test ConfigValue
 		config.Learn(pile)
@@ -175,9 +139,6 @@ func ValueTests_SimpleTest(t *testing.T, profiles []ValueProfile, piles []ValueP
 		}
 		if str := config.Decide(profiles[2]); str == "" {
 			t.Errorf("config.Decide(profile) expected a reject of %s after learning %s\n", args[2], args[0])
-		}
-		if str := config.String(3); str == "" {
-			t.Errorf("config.String() no string provided")
 		}
 	})
 }
