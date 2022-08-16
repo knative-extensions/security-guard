@@ -1,6 +1,6 @@
 # Security Data Package
 
-This package serves as the beating hurt of Guard.
+This package serves as the beating heart of Guard.
 
 It defines data structures that meet the [v1 interface](v1.go).
 
@@ -17,7 +17,7 @@ The [v1 interface](v1.go) includes three interfaces:
 Per Sample:
 
 1. Profile.Profile(...sample...) - Create a profile from the sample
-1. Config.Decide(profile))  - Decide if it conforms to the config rules
+1. Config.Decide(profile)  - Decide if it conforms to the config rules
 1. Pile.Add(profile)  - Add it to a pile.
 
 Periodically:
