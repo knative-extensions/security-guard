@@ -37,7 +37,7 @@ import (
 // It can be extended in the future to managing multiple security plugs by using the rtplugs package
 
 var annotationsFilePath = queue.PodInfoVolumeMountPath + "/" + queue.PodInfoAnnotationsFilename
-var qpExtensionPrefix = "qpextension.knative.dev/"
+var qpOptionPrefix = "qpoption.knative.dev/"
 
 type GateQPOption struct {
 	config           map[string]string
@@ -88,14 +88,14 @@ func (p *GateQPOption) ProcessAnnotations() bool {
 		txt = strings.ToLower(txt)
 
 		// Annotation structure:
-		// 		either: <qpExtensionPrefix><extension>-activate=s<val>
-		// 		or:     <qpExtensionPrefix><extension>-config-<key>=<val>
+		// 		either: <qpOptionPrefix><extension>-activate=s<val>
+		// 		or:     <qpOptionPrefix><extension>-config-<key>=<val>
 		parts := strings.Split(txt, "=")
 
-		k := parts[0] // <qpExtensionPrefix><extension>-*
+		k := parts[0] // <qpOptionPrefix><extension>-*
 		v := parts[1] // <val>
-		if strings.HasPrefix(k, qpExtensionPrefix) && len(k) > len(qpExtensionPrefix) {
-			k = k[len(qpExtensionPrefix):]
+		if strings.HasPrefix(k, qpOptionPrefix) && len(k) > len(qpOptionPrefix) {
+			k = k[len(qpOptionPrefix):]
 
 			// k structure: <extenion>-activate or <extension>-config-<key>
 			keyParts := strings.Split(k, "-")
