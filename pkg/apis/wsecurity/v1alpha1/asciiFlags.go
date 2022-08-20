@@ -61,8 +61,12 @@ func nameFlags(flags uint32) string {
 // Exposes ValueProfile interface
 type AsciiFlagsProfile uint32
 
-func (profile *AsciiFlagsProfile) Profile(args ...interface{}) {
-	*profile = AsciiFlagsProfile(args[0].(uint32))
+func (profile *AsciiFlagsProfile) ProfileI(args ...interface{}) {
+	profile.Profile(args[0].(uint32))
+}
+
+func (profile *AsciiFlagsProfile) Profile(val uint32) {
+	*profile = AsciiFlagsProfile(val)
 }
 
 //////////////////// AsciiFlagsPile ////////////////
@@ -70,18 +74,24 @@ func (profile *AsciiFlagsProfile) Profile(args ...interface{}) {
 // Exposes ValuePile interface
 type AsciiFlagsPile uint32
 
-func (pile *AsciiFlagsPile) Add(valProfile ValueProfile) {
-	profile := valProfile.(*AsciiFlagsProfile)
-	*pile |= AsciiFlagsPile(*profile)
+func (pile *AsciiFlagsPile) AddI(valProfile ValueProfile) {
+	pile.Add(*valProfile.(*AsciiFlagsProfile))
+}
+
+func (pile *AsciiFlagsPile) Add(profile AsciiFlagsProfile) {
+	*pile |= AsciiFlagsPile(profile)
 }
 
 func (pile *AsciiFlagsPile) Clear() {
 	*pile = 0
 }
 
-func (pile *AsciiFlagsPile) Merge(otherValPile ValuePile) {
-	otherPile := otherValPile.(*AsciiFlagsPile)
-	*pile |= *otherPile
+func (pile *AsciiFlagsPile) MergeI(otherValPile ValuePile) {
+	pile.Merge(*otherValPile.(*AsciiFlagsPile))
+}
+
+func (pile *AsciiFlagsPile) Merge(otherPile AsciiFlagsPile) {
+	*pile |= otherPile
 }
 
 //////////////////// AsciiFlagsConfig ////////////////
@@ -89,21 +99,29 @@ func (pile *AsciiFlagsPile) Merge(otherValPile ValuePile) {
 // Exposes ValueConfig interface
 type AsciiFlagsConfig uint32
 
-func (config *AsciiFlagsConfig) Decide(valProfile ValueProfile) string {
-	profile := valProfile.(*AsciiFlagsProfile)
+func (config *AsciiFlagsConfig) DecideI(valProfile ValueProfile) string {
+	return config.Decide(*valProfile.(*AsciiFlagsProfile))
+}
 
-	if flags := AsciiFlagsConfig(*profile) & ^*config; flags != 0 {
+func (config *AsciiFlagsConfig) Decide(profile AsciiFlagsProfile) string {
+	if flags := AsciiFlagsConfig(profile) & ^*config; flags != 0 {
 		return fmt.Sprintf("Unexpected Flags %s (0x%x) in Value", nameFlags(uint32(flags)), flags)
 	}
 	return ""
 }
 
-func (config *AsciiFlagsConfig) Learn(valPile ValuePile) {
-	pile := valPile.(*AsciiFlagsPile)
-	*config = AsciiFlagsConfig(*pile)
+func (config *AsciiFlagsConfig) LearnI(valPile ValuePile) {
+	config.Learn(*valPile.(*AsciiFlagsPile))
 }
 
-func (config *AsciiFlagsConfig) Fuse(otherValConfig ValueConfig) {
-	otherConfig := otherValConfig.(*AsciiFlagsConfig)
-	*config |= *otherConfig
+func (config *AsciiFlagsConfig) Learn(pile AsciiFlagsPile) {
+	*config = AsciiFlagsConfig(pile)
+}
+
+func (config *AsciiFlagsConfig) FuseI(otherValConfig ValueConfig) {
+	config.Fuse(*otherValConfig.(*AsciiFlagsConfig))
+}
+
+func (config *AsciiFlagsConfig) Fuse(otherConfig AsciiFlagsConfig) {
+	*config |= otherConfig
 }

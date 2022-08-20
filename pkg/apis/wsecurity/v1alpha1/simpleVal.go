@@ -109,8 +109,11 @@ type SimpleValProfile struct {
 // mainly english letters and/or digits (ascii)
 // potentially some small content of special chars
 // typically no unicode
-func (profile *SimpleValProfile) Profile(args ...interface{}) {
-	str := args[0].(string)
+func (profile *SimpleValProfile) ProfileI(args ...interface{}) {
+	profile.Profile(args[0].(string))
+}
+
+func (profile *SimpleValProfile) Profile(str string) {
 	var flags uint32
 	unicodeFlags := []uint32{}
 	digitCounter := uint(0)
@@ -239,30 +242,37 @@ type SimpleValPile struct {
 	UnicodeFlags FlagSlicePile
 }
 
-func (pile *SimpleValPile) Add(valProfile ValueProfile) {
-	profile := valProfile.(*SimpleValProfile)
-	pile.Digits.Add(&profile.Digits)
-	pile.Letters.Add(&profile.Letters)
-	pile.Sequences.Add(&profile.Sequences)
-	pile.Spaces.Add(&profile.Spaces)
-	pile.Unicodes.Add(&profile.Unicodes)
-	pile.NonReadables.Add(&profile.NonReadables)
-	pile.SpecialChars.Add(&profile.SpecialChars)
-	pile.Flags.Add(&profile.Flags)
-	pile.UnicodeFlags.Add(&profile.UnicodeFlags)
+func (pile *SimpleValPile) AddI(valProfile ValueProfile) {
+	pile.Add(valProfile.(*SimpleValProfile))
 }
 
-func (pile *SimpleValPile) Merge(otherValPile ValuePile) {
-	otherPile := otherValPile.(*SimpleValPile)
-	pile.Digits.Merge(&otherPile.Digits)
-	pile.Letters.Merge(&otherPile.Digits)
-	pile.Sequences.Merge(&otherPile.Letters)
-	pile.Spaces.Merge(&otherPile.Spaces)
-	pile.Unicodes.Merge(&otherPile.Unicodes)
-	pile.NonReadables.Merge(&otherPile.NonReadables)
-	pile.SpecialChars.Merge(&otherPile.SpecialChars)
-	pile.Flags.Merge(&otherPile.Flags)
-	pile.UnicodeFlags.Merge(&otherPile.UnicodeFlags)
+func (pile *SimpleValPile) Add(profile *SimpleValProfile) {
+
+	pile.Digits.Add(profile.Digits)
+	pile.Letters.Add(profile.Letters)
+	pile.Sequences.Add(profile.Sequences)
+	pile.Spaces.Add(profile.Spaces)
+	pile.Unicodes.Add(profile.Unicodes)
+	pile.NonReadables.Add(profile.NonReadables)
+	pile.SpecialChars.Add(profile.SpecialChars)
+	pile.Flags.Add(profile.Flags)
+	pile.UnicodeFlags.Add(profile.UnicodeFlags)
+}
+
+func (pile *SimpleValPile) MergeI(otherValPile ValuePile) {
+	pile.Merge(otherValPile.(*SimpleValPile))
+}
+
+func (pile *SimpleValPile) Merge(otherPile *SimpleValPile) {
+	pile.Digits.Merge(otherPile.Digits)
+	pile.Letters.Merge(otherPile.Digits)
+	pile.Sequences.Merge(otherPile.Letters)
+	pile.Spaces.Merge(otherPile.Spaces)
+	pile.Unicodes.Merge(otherPile.Unicodes)
+	pile.NonReadables.Merge(otherPile.NonReadables)
+	pile.SpecialChars.Merge(otherPile.SpecialChars)
+	pile.Flags.Merge(otherPile.Flags)
+	pile.UnicodeFlags.Merge(otherPile.UnicodeFlags)
 }
 
 func (pile *SimpleValPile) Clear() {
@@ -293,62 +303,67 @@ type SimpleValConfig struct {
 	//Mandatory    bool           `json:"mandatory"`
 }
 
-func (config *SimpleValConfig) Learn(valPile ValuePile) {
-	if valPile == nil {
-		return
-	}
-	pile := valPile.(*SimpleValPile)
-	config.Digits.Learn(&pile.Digits)
-	config.Spaces.Learn(&pile.Spaces)
-	config.Unicodes.Learn(&pile.Unicodes)
-	config.NonReadables.Learn(&pile.NonReadables)
-	config.Letters.Learn(&pile.Letters)
-	config.SpecialChars.Learn(&pile.SpecialChars)
-	config.Sequences.Learn(&pile.Sequences)
-	config.Flags.Learn(&pile.Flags)
-	config.UnicodeFlags.Learn(&pile.UnicodeFlags)
+func (config *SimpleValConfig) LearnI(valPile ValuePile) {
+	config.Learn(valPile.(*SimpleValPile))
+}
+func (config *SimpleValConfig) Learn(pile *SimpleValPile) {
+	config.Digits.Learn(pile.Digits)
+	config.Spaces.Learn(pile.Spaces)
+	config.Unicodes.Learn(pile.Unicodes)
+	config.NonReadables.Learn(pile.NonReadables)
+	config.Letters.Learn(pile.Letters)
+	config.SpecialChars.Learn(pile.SpecialChars)
+	config.Sequences.Learn(pile.Sequences)
+	config.Flags.Learn(pile.Flags)
+	config.UnicodeFlags.Learn(pile.UnicodeFlags)
 }
 
-func (config *SimpleValConfig) Fuse(otherValConfig ValueConfig) {
-	otherConfig := otherValConfig.(*SimpleValConfig)
-	config.Digits.Fuse(&otherConfig.Digits)
-	config.Spaces.Fuse(&otherConfig.Spaces)
-	config.Unicodes.Fuse(&otherConfig.Unicodes)
-	config.NonReadables.Fuse(&otherConfig.NonReadables)
-	config.Letters.Fuse(&otherConfig.Letters)
-	config.SpecialChars.Fuse(&otherConfig.SpecialChars)
-	config.Sequences.Fuse(&otherConfig.Sequences)
-	config.Flags.Fuse(&otherConfig.Flags)
-	config.UnicodeFlags.Fuse(&otherConfig.UnicodeFlags)
+func (config *SimpleValConfig) FuseI(otherValConfig ValueConfig) {
+	config.Fuse(otherValConfig.(*SimpleValConfig))
 }
 
-func (config *SimpleValConfig) Decide(valProfile ValueProfile) string {
-	profile := valProfile.(*SimpleValProfile)
-	if ret := config.Flags.Decide(&profile.Flags); ret != "" {
+func (config *SimpleValConfig) Fuse(otherConfig *SimpleValConfig) {
+	config.Digits.Fuse(otherConfig.Digits)
+	config.Spaces.Fuse(otherConfig.Spaces)
+	config.Unicodes.Fuse(otherConfig.Unicodes)
+	config.NonReadables.Fuse(otherConfig.NonReadables)
+	config.Letters.Fuse(otherConfig.Letters)
+	config.SpecialChars.Fuse(otherConfig.SpecialChars)
+	config.Sequences.Fuse(otherConfig.Sequences)
+	config.Flags.Fuse(otherConfig.Flags)
+	config.UnicodeFlags.Fuse(otherConfig.UnicodeFlags)
+}
+
+func (config *SimpleValConfig) DecideI(valProfile ValueProfile) string {
+	return config.Decide(valProfile.(*SimpleValProfile))
+}
+
+func (config *SimpleValConfig) Decide(profile *SimpleValProfile) string {
+	if ret := config.Flags.Decide(profile.Flags); ret != "" {
 		return ret
 	}
-	if ret := config.UnicodeFlags.Decide(&profile.UnicodeFlags); ret != "" {
+	if ret := config.UnicodeFlags.Decide(profile.UnicodeFlags); ret != "" {
 		return ret
 	}
-	if ret := config.Spaces.Decide(&profile.Spaces); ret != "" {
+	if ret := config.Spaces.Decide(profile.Spaces); ret != "" {
 		return fmt.Sprintf("Spaces: %s", ret)
 	}
-	if ret := config.Unicodes.Decide(&profile.Unicodes); ret != "" {
+	if ret := config.Unicodes.Decide(profile.Unicodes); ret != "" {
 		return fmt.Sprintf("Unicodes: %s", ret)
 	}
-	if ret := config.NonReadables.Decide(&profile.NonReadables); ret != "" {
+	if ret := config.NonReadables.Decide(profile.NonReadables); ret != "" {
 		return fmt.Sprintf("NonReadables: %s", ret)
 	}
-	if ret := config.Digits.Decide(&profile.Digits); ret != "" {
+	if ret := config.Digits.Decide(profile.Digits); ret != "" {
 		return fmt.Sprintf("Digits: %s", ret)
 	}
-	if ret := config.Letters.Decide(&profile.Letters); ret != "" {
+	if ret := config.Letters.Decide(profile.Letters); ret != "" {
 		return fmt.Sprintf("Letters: %s", ret)
 	}
-	if ret := config.SpecialChars.Decide(&profile.SpecialChars); ret != "" {
+	if ret := config.SpecialChars.Decide(profile.SpecialChars); ret != "" {
 		return fmt.Sprintf("SpecialChars: %s", ret)
 	}
-	if ret := config.Sequences.Decide(&profile.Sequences); ret != "" {
+	if ret := config.Sequences.Decide(profile.Sequences); ret != "" {
 		return fmt.Sprintf("Sequences: %s", ret)
 	}
 	return ""
