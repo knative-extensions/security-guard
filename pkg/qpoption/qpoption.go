@@ -26,7 +26,6 @@ import (
 	"strings"
 
 	"go.uber.org/zap"
-	"knative.dev/serving/pkg/queue"
 	"knative.dev/serving/pkg/queue/sharedmain"
 
 	pi "knative.dev/security-guard/pkg/pluginterfaces"
@@ -36,7 +35,7 @@ import (
 // a single security plug.
 // It can be extended in the future to managing multiple security plugs by using the rtplugs package
 
-var annotationsFilePath = queue.PodInfoVolumeMountPath + "/" + queue.PodInfoAnnotationsFilename
+var annotationsFilePath = sharedmain.PodInfoAnnotationsPath
 var qpOptionPrefix = "qpoption.knative.dev/"
 
 type GateQPOption struct {
