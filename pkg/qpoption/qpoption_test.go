@@ -29,7 +29,7 @@ import (
 	"knative.dev/serving/pkg/queue/sharedmain"
 )
 
-var myQpextensionPrefix = "my.prefix/"
+var myQPOptionPrefix = "my.prefix/"
 var myAnnotationsPath = "/tmp/annotations"
 var myPlugName = "myPlug"
 var sugar *zap.SugaredLogger
@@ -89,12 +89,12 @@ func addConfigAnnotations(a map[string]string) {
 
 	var buf string
 	for k, v := range a {
-		buf = buf + myQpextensionPrefix + myPlugName + "-config-" + k + "=" + v + "\n"
+		buf = buf + myQPOptionPrefix + myPlugName + "-config-" + k + "=" + v + "\n"
 	}
-	buf = buf + myQpextensionPrefix + "config-k=\n"
-	buf = buf + myQpextensionPrefix + "config-=v\n"
-	buf = buf + myQpextensionPrefix + myPlugName + "con-k=v\n"
-	buf = buf + myQpextensionPrefix + "config=enable\n"
+	buf = buf + myQPOptionPrefix + "config-k=\n"
+	buf = buf + myQPOptionPrefix + "config-=v\n"
+	buf = buf + myQPOptionPrefix + myPlugName + "con-k=v\n"
+	buf = buf + myQPOptionPrefix + "config=enable\n"
 	buf = buf + "boom/config=enable\n"
 	buf = buf + "config=enable\n"
 	file.WriteString(buf)
@@ -109,9 +109,9 @@ func addActivateAnnotations(a map[string]string) {
 
 	var buf string
 	for k, v := range a {
-		buf = buf + myQpextensionPrefix + k + "-activate=" + v + "\n"
+		buf = buf + myQPOptionPrefix + k + "-activate=" + v + "\n"
 	}
-	buf = buf + myQpextensionPrefix + "activate=enable\n"
+	buf = buf + myQPOptionPrefix + "activate=enable\n"
 	buf = buf + "boom/activate=enable\n"
 	buf = buf + "activate=enable\n"
 
@@ -133,7 +133,7 @@ func TestGateQPOption_RoundTrip(t *testing.T) {
 		req := new(http.Request)
 		addActivateAnnotations(map[string]string{myPlugName: "enable"})
 		annotationsFilePath = myAnnotationsPath
-		qpExtensionPrefix = myQpextensionPrefix
+		qpOptionPrefix = myQPOptionPrefix
 		p.Setup(defaults)
 		clearAnnotations()
 		gotResp, err := p.RoundTrip(req)
@@ -159,7 +159,7 @@ func TestGateQPOption_RoundTrip(t *testing.T) {
 		req := new(http.Request)
 		addActivateAnnotations(map[string]string{myPlugName: "enable"})
 		annotationsFilePath = myAnnotationsPath
-		qpExtensionPrefix = myQpextensionPrefix
+		qpOptionPrefix = myQPOptionPrefix
 		p.Setup(defaults)
 		clearAnnotations()
 		myErr := errors.New("bad")
@@ -193,7 +193,7 @@ func TestGateQPOption_ProcessConfigAnnotations(t *testing.T) {
 			p := initGate()
 			addConfigAnnotations(tt.config)
 			annotationsFilePath = myAnnotationsPath
-			qpExtensionPrefix = myQpextensionPrefix
+			qpOptionPrefix = myQPOptionPrefix
 			gotResp := p.ProcessAnnotations()
 			clearAnnotations()
 			if gotResp != tt.wantResp {
@@ -239,7 +239,7 @@ func TestGateQPOption_ProcessActivateAnnotations(t *testing.T) {
 			p := initGate()
 			addActivateAnnotations(tt.config)
 			annotationsFilePath = myAnnotationsPath
-			qpExtensionPrefix = myQpextensionPrefix
+			qpOptionPrefix = myQPOptionPrefix
 			gotResp := p.ProcessAnnotations()
 			clearAnnotations()
 			if gotResp != tt.wantResp {
@@ -258,7 +258,7 @@ func TestGateQPOption_ProcessNoAnnotations(t *testing.T) {
 		p := initGate()
 		clearAnnotations()
 		annotationsFilePath = myAnnotationsPath
-		qpExtensionPrefix = myQpextensionPrefix
+		qpOptionPrefix = myQPOptionPrefix
 		gotResp := p.ProcessAnnotations()
 		if gotResp != false {
 			t.Errorf("GateQPOption.ProcessAnnotations() gotResp = %v, wantResp %v", gotResp, false)
@@ -276,7 +276,7 @@ func TestGateQPOption_Setup(t *testing.T) {
 		p := initGate()
 		addActivateAnnotations(map[string]string{myPlugName: "enable"})
 		annotationsFilePath = myAnnotationsPath
-		qpExtensionPrefix = myQpextensionPrefix
+		qpOptionPrefix = myQPOptionPrefix
 		p.Setup(defaults)
 		clearAnnotations()
 		if !reflect.DeepEqual(p.activated, true) {
@@ -293,7 +293,7 @@ func TestGateQPOption_Setup(t *testing.T) {
 		p := initGate()
 		addActivateAnnotations(map[string]string{myPlugName: "enable"})
 		annotationsFilePath = myAnnotationsPath
-		qpExtensionPrefix = myQpextensionPrefix
+		qpOptionPrefix = myQPOptionPrefix
 		p.Setup(defaults2)
 		clearAnnotations()
 		if !reflect.DeepEqual(p.activated, true) {

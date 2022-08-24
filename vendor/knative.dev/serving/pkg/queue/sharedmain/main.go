@@ -71,18 +71,23 @@ const (
 
 	// keyPath is the path for the server certificate key mounted by queue-proxy.
 	keyPath = queue.CertDirectory + "/" + certificates.SecretPKKey
+
+	// PodInfoAnnotationsPath is an exported path for the annotations file
+	// This path is used by QP Options (Extensions).
+	PodInfoAnnotationsPath = queue.PodInfoDirectory + "/" + queue.PodInfoAnnotationsFilename
 )
 
 type config struct {
-	ContainerConcurrency     int    `split_words:"true" required:"true"`
-	QueueServingPort         string `split_words:"true" required:"true"`
-	QueueServingTLSPort      string `split_words:"true" required:"true"`
-	UserPort                 string `split_words:"true" required:"true"`
-	RevisionTimeoutSeconds   int    `split_words:"true" required:"true"`
-	MaxDurationSeconds       int    `split_words:"true"` // optional
-	ServingReadinessProbe    string `split_words:"true"` // optional
-	EnableProfiling          bool   `split_words:"true"` // optional
-	EnableHTTP2AutoDetection bool   `split_words:"true"` // optional
+	ContainerConcurrency                int    `split_words:"true" required:"true"`
+	QueueServingPort                    string `split_words:"true" required:"true"`
+	QueueServingTLSPort                 string `split_words:"true" required:"true"`
+	UserPort                            string `split_words:"true" required:"true"`
+	RevisionTimeoutSeconds              int    `split_words:"true" required:"true"`
+	RevisionResponseStartTimeoutSeconds int    `split_words:"true"` // optional
+	RevisionIdleTimeoutSeconds          int    `split_words:"true"` // optional
+	ServingReadinessProbe               string `split_words:"true"` // optional
+	EnableProfiling                     bool   `split_words:"true"` // optional
+	EnableHTTP2AutoDetection            bool   `split_words:"true"` // optional
 
 	// Logging configuration
 	ServingLoggingConfig         string `split_words:"true" required:"true"`
@@ -187,7 +192,18 @@ func Main(opts ...Option) error {
 		zap.String(logkey.Pod, env.ServingPod))
 
 	d.Logger = logger
-	d.Transport = buildTransport(env, logger)
+	d.Transport = buildTransport(env)
+
+	if env.TracingConfigBackend != tracingconfig.None {
+		oct := tracing.NewOpenCensusTracer(tracing.WithExporterFull(env.ServingPod, env.ServingPodIP, logger))
+		oct.ApplyConfig(&tracingconfig.Config{
+			Backend:        env.TracingConfigBackend,
+			Debug:          env.TracingConfigDebug,
+			ZipkinEndpoint: env.TracingConfigZipkinEndpoint,
+			SampleRate:     env.TracingConfigSampleRate,
+		})
+		defer oct.Shutdown(context.Background())
+	}
 
 	// allow extensions to read d and return modified context and transport
 	for _, opts := range opts {
@@ -226,11 +242,11 @@ func Main(opts ...Option) error {
 	// Enable TLS when certificate is mounted.
 	tlsEnabled := exists(logger, certPath) && exists(logger, keyPath)
 
-	mainServer, drain := buildServer(d.Ctx, env, d.Transport, probe, stats, logger, concurrencyendpoint, false)
+	mainServer, drainer := buildServer(d.Ctx, env, d.Transport, probe, stats, logger, concurrencyendpoint, false)
 	httpServers := map[string]*http.Server{
 		"main":    mainServer,
 		"metrics": buildMetricsServer(protoStatReporter),
-		"admin":   buildAdminServer(logger, drain),
+		"admin":   buildAdminServer(d.Ctx, logger, drainer),
 	}
 	if env.EnableProfiling {
 		httpServers["profile"] = profiling.NewServer(profiling.NewHandler(logger, true))
@@ -241,10 +257,10 @@ func Main(opts ...Option) error {
 	// See also https://github.com/knative/serving/issues/12808.
 	var tlsServers map[string]*http.Server
 	if tlsEnabled {
-		mainTLSServer, drain := buildServer(d.Ctx, env, d.Transport, probe, stats, logger, concurrencyendpoint, true /* enable TLS */)
+		mainTLSServer, drainer := buildServer(d.Ctx, env, d.Transport, probe, stats, logger, concurrencyendpoint, true /* enable TLS */)
 		tlsServers = map[string]*http.Server{
 			"tlsMain":  mainTLSServer,
-			"tlsAdmin": buildAdminServer(logger, drain),
+			"tlsAdmin": buildAdminServer(d.Ctx, logger, drainer),
 		}
 		// Drop admin http server as we Use TLS for the admin server.
 		// TODO: The drain created with mainServer above is lost. Unify the two drain.
@@ -284,7 +300,7 @@ func Main(opts ...Option) error {
 		}
 		logger.Info("Received TERM signal, attempting to gracefully shutdown servers.")
 		logger.Infof("Sleeping %v to allow K8s propagation of non-ready state", drainSleepDuration)
-		drain()
+		drainer.Drain()
 
 		// Removing the main server from the shutdown logic as we've already shut it down.
 		delete(httpServers, "main")
@@ -320,7 +336,7 @@ func buildProbe(logger *zap.SugaredLogger, encodedProbe string, autodetectHTTP2 
 }
 
 func buildServer(ctx context.Context, env config, transport http.RoundTripper, probeContainer func() bool, stats *netstats.RequestStats, logger *zap.SugaredLogger,
-	ce *queue.ConcurrencyEndpoint, enableTLS bool) (server *http.Server, drain func()) {
+	ce *queue.ConcurrencyEndpoint, enableTLS bool) (*http.Server, *pkghandler.Drainer) {
 	// TODO: If TLS is enabled, execute probes twice and tracking two different sets of container health.
 
 	target := net.JoinHostPort("127.0.0.1", env.UserPort)
@@ -336,12 +352,15 @@ func buildServer(ctx context.Context, env config, transport http.RoundTripper, p
 	metricsSupported := supportsMetrics(ctx, logger, env, enableTLS)
 	tracingEnabled := env.TracingConfigBackend != tracingconfig.None
 	concurrencyStateEnabled := env.ConcurrencyStateEndpoint != ""
-	firstByteTimeout := time.Duration(env.RevisionTimeoutSeconds) * time.Second
-	// hardcoded to always disable idle timeout for now, will expose this later
+	timeout := time.Duration(env.RevisionTimeoutSeconds) * time.Second
+	var responseStartTimeout time.Duration
+	if env.RevisionResponseStartTimeoutSeconds != 0 {
+		responseStartTimeout = time.Duration(env.RevisionResponseStartTimeoutSeconds) * time.Second
+	}
 	var idleTimeout time.Duration
-
-	maxDurationTimeout := time.Duration(env.MaxDurationSeconds) * time.Second
-
+	if env.RevisionIdleTimeoutSeconds != 0 {
+		idleTimeout = time.Duration(env.RevisionIdleTimeoutSeconds) * time.Second
+	}
 	// Create queue handler chain.
 	// Note: innermost handlers are specified first, ie. the last handler in the chain will be executed first.
 	var composedHandler http.Handler = httpProxy
@@ -361,7 +380,7 @@ func buildServer(ctx context.Context, env config, transport http.RoundTripper, p
 	}
 	composedHandler = queue.ProxyHandler(breaker, stats, tracingEnabled, composedHandler)
 	composedHandler = queue.ForwardedShimHandler(composedHandler)
-	composedHandler = handler.NewTimeoutHandler(composedHandler, "request timeout", firstByteTimeout, idleTimeout, maxDurationTimeout)
+	composedHandler = handler.NewTimeoutHandler(composedHandler, "request timeout", timeout, responseStartTimeout, idleTimeout)
 
 	if metricsSupported {
 		composedHandler = requestMetricsHandler(logger, composedHandler, env)
@@ -386,13 +405,13 @@ func buildServer(ctx context.Context, env config, transport http.RoundTripper, p
 	}
 
 	if enableTLS {
-		return pkgnet.NewServer(":"+env.QueueServingTLSPort, composedHandler), drainer.Drain
+		return pkgnet.NewServer(":"+env.QueueServingTLSPort, composedHandler), drainer
 	}
 
-	return pkgnet.NewServer(":"+env.QueueServingPort, composedHandler), drainer.Drain
+	return pkgnet.NewServer(":"+env.QueueServingPort, composedHandler), drainer
 }
 
-func buildTransport(env config, logger *zap.SugaredLogger) http.RoundTripper {
+func buildTransport(env config) http.RoundTripper {
 	maxIdleConns := 1000 // TODO: somewhat arbitrary value for CC=0, needs experimental validation.
 	if env.ContainerConcurrency > 0 {
 		maxIdleConns = env.ContainerConcurrency
@@ -403,14 +422,6 @@ func buildTransport(env config, logger *zap.SugaredLogger) http.RoundTripper {
 	if env.TracingConfigBackend == tracingconfig.None {
 		return transport
 	}
-
-	oct := tracing.NewOpenCensusTracer(tracing.WithExporterFull(env.ServingPod, env.ServingPodIP, logger))
-	oct.ApplyConfig(&tracingconfig.Config{
-		Backend:        env.TracingConfigBackend,
-		Debug:          env.TracingConfigDebug,
-		ZipkinEndpoint: env.TracingConfigZipkinEndpoint,
-		SampleRate:     env.TracingConfigSampleRate,
-	})
 
 	return &ochttp.Transport{
 		Base:        transport,
@@ -452,11 +463,25 @@ func supportsMetrics(ctx context.Context, logger *zap.SugaredLogger, env config,
 	return true
 }
 
-func buildAdminServer(logger *zap.SugaredLogger, drain func()) *http.Server {
+func buildAdminServer(ctx context.Context, logger *zap.SugaredLogger, drainer *pkghandler.Drainer) *http.Server {
 	adminMux := http.NewServeMux()
 	adminMux.HandleFunc(queue.RequestQueueDrainPath, func(w http.ResponseWriter, r *http.Request) {
-		logger.Info("Attached drain handler from user-container")
-		drain()
+		logger.Info("Attached drain handler from user-container", r)
+
+		go func() {
+			select {
+			case <-ctx.Done():
+			case <-time.After(time.Second):
+				// If the context isn't done then the queue proxy didn't
+				// receive a TERM signal. Thus the user-container's
+				// liveness probes are triggering the container to restart
+				// and we shouldn't block that
+				drainer.Reset()
+			}
+		}()
+
+		drainer.Drain()
+		w.WriteHeader(http.StatusOK)
 	})
 
 	return &http.Server{
