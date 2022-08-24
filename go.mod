@@ -4,8 +4,8 @@ go 1.18
 
 require (
 	go.uber.org/zap v1.22.0
-	knative.dev/hack v0.0.0-20220728013938-9dabf7cf62e3
-	knative.dev/serving v0.33.1-0.20220805183022-16730b2596a7
+	knative.dev/hack v0.0.0-20220823140917-8d1e4ccf9dc3
+	knative.dev/serving v0.34.0
 )
 
 require (
@@ -66,9 +66,9 @@ require (
 	k8s.io/client-go v0.23.9 // indirect
 	k8s.io/klog/v2 v2.70.2-0.20220707122935-0990e81f1a8f // indirect
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9 // indirect
-	knative.dev/control-protocol v0.0.0-20220728062837-75cf857da76a // indirect
-	knative.dev/networking v0.0.0-20220803115018-d2c739da1c1b // indirect
-	knative.dev/pkg v0.0.0-20220805012121-7b8b06028e4f // indirect
+	knative.dev/control-protocol v0.0.0-20220818153549-f18dbde7d9bd // indirect
+	knative.dev/networking v0.0.0-20220818010248-e51df7cdf571 // indirect
+	knative.dev/pkg v0.0.0-20220818004048-4a03844c0b15 // indirect
 	sigs.k8s.io/json v0.0.0-20211208200746-9f7c6b3444d2 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect

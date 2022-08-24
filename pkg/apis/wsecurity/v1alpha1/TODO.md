@@ -5,11 +5,11 @@
 Items to review:
 
 * Regarding consumed objects - choose between:
-  * decide to DeepCopy always and not affect other items
+  * ~~decide to DeepCopy always and not affect other items~~
   * decide to Clear other items always
   * decide to Clear other items only if we consume them such that we never reach silent data corruption
   * decide to make only some DataTypes exposed (e.g. avoid exposing low-level data types such as count and do Clear() only on exposed DataTypes
-mark the other data type as "consumed" (not sure if this will make more sense than simply clearing them)
+  * ~~mark the other data type as "consumed" (not sure if this will make more sense than simply clearing them)~~
 * Decide - "Would it be better to return an error instead of a string", "Take a look at the pattern here for errors... you can define an accumulator for errors like so: [knative/pkg/blob/main/apis/field_error.go](https://github.com/knative/pkg/blob/main/apis/field_error.go#L196") - discuss the options and what should be done.
 * v1alpha1_test.go:
 
