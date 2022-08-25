@@ -3,9 +3,10 @@ module knative.dev/security-guard
 go 1.18
 
 require (
+	github.com/hashicorp/golang-lru v0.5.4
 	go.uber.org/zap v1.22.0
 	knative.dev/hack v0.0.0-20220823140917-8d1e4ccf9dc3
-	knative.dev/serving v0.34.0
+	knative.dev/serving v0.34.1
 )
 
 require (
@@ -29,7 +30,6 @@ require (
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
-	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
