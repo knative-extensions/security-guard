@@ -42,7 +42,7 @@ func (profile *IpSetProfile) Profile(args ...interface{}) {
 //////////////////// IpSetPile ////////////////
 
 // Exposes ValuePile interface
-// During json.Marsjal(), IpSetPile exposes only the List
+// During json.Marshal(), IpSetPile exposes only the List
 // After json.Unmarshal(), the map will be nil even when the List is not empty
 // If the map is nil, it should be populated from the information in List
 // If the map is populated it is always kept in-sync with the information in List
