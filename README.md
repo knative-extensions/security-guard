@@ -1,5 +1,6 @@
 [![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white)](https://pkg.go.dev/knative.dev/security-guard)
-[![Go Report Card](https://goreportcard.com/badge/knative.dev/security-guard)](https://goreportcard.com/report/knative.dev/security-guard)[![Releases](https://img.shields.io/github/release-pre/knative-sandbox/security-guard.svg)](https://github.com/knative-sandbox/seurity-guard/releases)
+[![Go Report Card](https://goreportcard.com/badge/knative.dev/security-guard)](https://goreportcard.com/report/knative.dev/security-guard)
+[![Releases](https://img.shields.io/github/release-pre/knative-sandbox/security-guard.svg)](https://github.com/knative-sandbox/seurity-guard/releases)
 [![LICENSE](https://img.shields.io/github/license/knative-sandbox/security-guard.svg)](https://github.com/knative-sandbox/seurity-guard/blob/main/LICENSE)
 [![Slack Status](https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&style=social)](https://knative.slack.com)
 [![codecov](https://codecov.io/gh/knative-sandbox/security-guard/branch/main/graph/badge.svg)](https://codecov.io/gh/knative-sandbox/security-guard)
