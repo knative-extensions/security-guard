@@ -1,9 +1,9 @@
 [![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white)](https://pkg.go.dev/knative.dev/security-guard)
-[![Go Report Card](https://goreportcard.com/badge/knative-sandbox/seurity-guard)](https://goreportcard.com/report/knative-sandbox/security-guard)
-[![Releases](https://img.shields.io/github/release-pre/knative-sandbox/seurity-guard.svg)](https://github.com/knative-sandbox/seurity-guard/releases)
-[![LICENSE](https://img.shields.io/github/license/knative-sandbox/seurity-guard.svg)](https://github.com/knative-sandbox/seurity-guard/blob/main/LICENSE)
+[![Go Report Card](https://goreportcard.com/badge/knative.dev/security-guard)](https://goreportcard.com/report/knative.dev/security-guard)
+[![Releases](https://img.shields.io/github/release-pre/knative-sandbox/security-guard.svg)](https://github.com/knative-sandbox/seurity-guard/releases)
+[![LICENSE](https://img.shields.io/github/license/knative-sandbox/security-guard.svg)](https://github.com/knative-sandbox/seurity-guard/blob/main/LICENSE)
 [![Slack Status](https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&style=social)](https://knative.slack.com)
-[![codecov](https://codecov.io/gh/knative-sandbox/seurity-guard/branch/main/graph/badge.svg)](https://codecov.io/gh/knative-sandbox/seurity-guard)
+[![codecov](https://codecov.io/gh/knative-sandbox/security-guard/branch/main/graph/badge.svg)](https://codecov.io/gh/knative-sandbox/security-guard)
 
 <h1><img src="img/guard.png" width="80"/> Guard</h1>
 
