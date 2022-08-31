@@ -21,7 +21,7 @@ func mergeFlagSlices(base []uint32, extra []uint32) []uint32 {
 // Exposes ValueProfile interface
 type FlagSliceProfile []uint32
 
-func (profile *FlagSliceProfile) ProfileI(args ...interface{}) {
+func (profile *FlagSliceProfile) profileI(args ...interface{}) {
 	profile.Profile(args[0].([]uint32))
 }
 
@@ -36,7 +36,7 @@ func (profile *FlagSliceProfile) Profile(vals []uint32) {
 // Exposes ValuePile interface
 type FlagSlicePile []uint32
 
-func (pile *FlagSlicePile) AddI(valProfile ValueProfile) {
+func (pile *FlagSlicePile) addI(valProfile ValueProfile) {
 	pile.Add(*valProfile.(*FlagSliceProfile))
 }
 
@@ -48,7 +48,7 @@ func (pile *FlagSlicePile) Clear() {
 	*pile = nil
 }
 
-func (pile *FlagSlicePile) MergeI(otherValPile ValuePile) {
+func (pile *FlagSlicePile) mergeI(otherValPile ValuePile) {
 	pile.Merge(*otherValPile.(*FlagSlicePile))
 }
 
@@ -61,7 +61,7 @@ func (pile *FlagSlicePile) Merge(otherPile FlagSlicePile) {
 // Exposes ValueConfig interface
 type FlagSliceConfig []uint32
 
-func (config *FlagSliceConfig) DecideI(valProfile ValueProfile) string {
+func (config *FlagSliceConfig) decideI(valProfile ValueProfile) string {
 	return config.Decide(*valProfile.(*FlagSliceProfile))
 }
 
@@ -78,7 +78,7 @@ func (config *FlagSliceConfig) Decide(profile FlagSliceProfile) string {
 	return ""
 }
 
-func (config *FlagSliceConfig) LearnI(valPile ValuePile) {
+func (config *FlagSliceConfig) learnI(valPile ValuePile) {
 	config.Learn(*valPile.(*FlagSlicePile))
 }
 
@@ -86,7 +86,7 @@ func (config *FlagSliceConfig) Learn(pile FlagSlicePile) {
 	*config = FlagSliceConfig(pile)
 }
 
-func (config *FlagSliceConfig) FuseI(otherValConfig ValueConfig) {
+func (config *FlagSliceConfig) fuseI(otherValConfig ValueConfig) {
 	config.Fuse(*otherValConfig.(*FlagSliceConfig))
 }
 

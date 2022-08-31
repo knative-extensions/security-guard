@@ -109,7 +109,7 @@ type SimpleValProfile struct {
 // mainly english letters and/or digits (ascii)
 // potentially some small content of special chars
 // typically no unicode
-func (profile *SimpleValProfile) ProfileI(args ...interface{}) {
+func (profile *SimpleValProfile) profileI(args ...interface{}) {
 	profile.Profile(args[0].(string))
 }
 
@@ -242,7 +242,7 @@ type SimpleValPile struct {
 	UnicodeFlags FlagSlicePile
 }
 
-func (pile *SimpleValPile) AddI(valProfile ValueProfile) {
+func (pile *SimpleValPile) addI(valProfile ValueProfile) {
 	pile.Add(valProfile.(*SimpleValProfile))
 }
 
@@ -259,7 +259,7 @@ func (pile *SimpleValPile) Add(profile *SimpleValProfile) {
 	pile.UnicodeFlags.Add(profile.UnicodeFlags)
 }
 
-func (pile *SimpleValPile) MergeI(otherValPile ValuePile) {
+func (pile *SimpleValPile) mergeI(otherValPile ValuePile) {
 	pile.Merge(otherValPile.(*SimpleValPile))
 }
 
@@ -303,7 +303,7 @@ type SimpleValConfig struct {
 	//Mandatory    bool           `json:"mandatory"`
 }
 
-func (config *SimpleValConfig) LearnI(valPile ValuePile) {
+func (config *SimpleValConfig) learnI(valPile ValuePile) {
 	config.Learn(valPile.(*SimpleValPile))
 }
 func (config *SimpleValConfig) Learn(pile *SimpleValPile) {
@@ -318,7 +318,7 @@ func (config *SimpleValConfig) Learn(pile *SimpleValPile) {
 	config.UnicodeFlags.Learn(pile.UnicodeFlags)
 }
 
-func (config *SimpleValConfig) FuseI(otherValConfig ValueConfig) {
+func (config *SimpleValConfig) fuseI(otherValConfig ValueConfig) {
 	config.Fuse(otherValConfig.(*SimpleValConfig))
 }
 
@@ -334,7 +334,7 @@ func (config *SimpleValConfig) Fuse(otherConfig *SimpleValConfig) {
 	config.UnicodeFlags.Fuse(otherConfig.UnicodeFlags)
 }
 
-func (config *SimpleValConfig) DecideI(valProfile ValueProfile) string {
+func (config *SimpleValConfig) decideI(valProfile ValueProfile) string {
 	return config.Decide(valProfile.(*SimpleValProfile))
 }
 

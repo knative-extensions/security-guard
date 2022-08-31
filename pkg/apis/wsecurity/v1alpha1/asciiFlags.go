@@ -61,7 +61,7 @@ func nameFlags(flags uint32) string {
 // Exposes ValueProfile interface
 type AsciiFlagsProfile uint32
 
-func (profile *AsciiFlagsProfile) ProfileI(args ...interface{}) {
+func (profile *AsciiFlagsProfile) profileI(args ...interface{}) {
 	profile.Profile(args[0].(uint32))
 }
 
@@ -74,7 +74,7 @@ func (profile *AsciiFlagsProfile) Profile(val uint32) {
 // Exposes ValuePile interface
 type AsciiFlagsPile uint32
 
-func (pile *AsciiFlagsPile) AddI(valProfile ValueProfile) {
+func (pile *AsciiFlagsPile) addI(valProfile ValueProfile) {
 	pile.Add(*valProfile.(*AsciiFlagsProfile))
 }
 
@@ -86,7 +86,7 @@ func (pile *AsciiFlagsPile) Clear() {
 	*pile = 0
 }
 
-func (pile *AsciiFlagsPile) MergeI(otherValPile ValuePile) {
+func (pile *AsciiFlagsPile) mergeI(otherValPile ValuePile) {
 	pile.Merge(*otherValPile.(*AsciiFlagsPile))
 }
 
@@ -99,7 +99,7 @@ func (pile *AsciiFlagsPile) Merge(otherPile AsciiFlagsPile) {
 // Exposes ValueConfig interface
 type AsciiFlagsConfig uint32
 
-func (config *AsciiFlagsConfig) DecideI(valProfile ValueProfile) string {
+func (config *AsciiFlagsConfig) decideI(valProfile ValueProfile) string {
 	return config.Decide(*valProfile.(*AsciiFlagsProfile))
 }
 
@@ -110,7 +110,7 @@ func (config *AsciiFlagsConfig) Decide(profile AsciiFlagsProfile) string {
 	return ""
 }
 
-func (config *AsciiFlagsConfig) LearnI(valPile ValuePile) {
+func (config *AsciiFlagsConfig) learnI(valPile ValuePile) {
 	config.Learn(*valPile.(*AsciiFlagsPile))
 }
 
@@ -118,7 +118,7 @@ func (config *AsciiFlagsConfig) Learn(pile AsciiFlagsPile) {
 	*config = AsciiFlagsConfig(pile)
 }
 
-func (config *AsciiFlagsConfig) FuseI(otherValConfig ValueConfig) {
+func (config *AsciiFlagsConfig) fuseI(otherValConfig ValueConfig) {
 	config.Fuse(*otherValConfig.(*AsciiFlagsConfig))
 }
 

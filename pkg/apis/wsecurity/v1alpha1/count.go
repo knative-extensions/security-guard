@@ -9,7 +9,7 @@ import (
 // Exposes ValueProfile interface
 type CountProfile uint8
 
-func (profile *CountProfile) ProfileI(args ...interface{}) {
+func (profile *CountProfile) profileI(args ...interface{}) {
 	profile.Profile(args[0].(uint8))
 }
 
@@ -22,7 +22,7 @@ func (profile *CountProfile) Profile(val uint8) {
 // Exposes ValuePile interface
 type CountPile []uint8
 
-func (pile *CountPile) AddI(valProfile ValueProfile) {
+func (pile *CountPile) addI(valProfile ValueProfile) {
 	pile.Add(*valProfile.(*CountProfile))
 }
 
@@ -34,7 +34,7 @@ func (pile *CountPile) Clear() {
 	*pile = nil
 }
 
-func (pile *CountPile) MergeI(otherValPile ValuePile) {
+func (pile *CountPile) mergeI(otherValPile ValuePile) {
 	pile.Merge(*otherValPile.(*CountPile))
 }
 
@@ -67,7 +67,7 @@ func (cRange *countRange) fuseTwoRanges(otherRange *countRange) bool {
 // Exposes ValueConfig interface
 type CountConfig []countRange
 
-func (config *CountConfig) DecideI(valProfile ValueProfile) string {
+func (config *CountConfig) decideI(valProfile ValueProfile) string {
 	return config.Decide(*valProfile.(*CountProfile))
 }
 
@@ -93,7 +93,7 @@ func (config *CountConfig) Decide(profile CountProfile) string {
 
 // Learn now offers the simplest single rule support
 // Future: Improve Learn
-func (config *CountConfig) LearnI(valPile ValuePile) {
+func (config *CountConfig) learnI(valPile ValuePile) {
 	config.Learn(*valPile.(*CountPile))
 }
 
@@ -121,7 +121,7 @@ func (config *CountConfig) Learn(pile CountPile) {
 // This is done to achieve Fuse in-place
 // Future: Improve Fuse - e.g. by keeping extra entries in Range [0,0] and reusing them
 //                        instead of adding new entries
-func (config *CountConfig) FuseI(otherValConfig ValueConfig) {
+func (config *CountConfig) fuseI(otherValConfig ValueConfig) {
 	config.Fuse(*otherValConfig.(*CountConfig))
 }
 
