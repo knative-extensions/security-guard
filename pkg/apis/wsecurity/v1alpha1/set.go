@@ -10,20 +10,24 @@ import (
 // A Slice of tokens
 type SetProfile []string
 
-func (profile *SetProfile) Profile(args ...interface{}) {
+func (profile *SetProfile) profileI(args ...interface{}) {
 	switch v := args[0].(type) {
 	case string:
-		*profile = append(*profile, v)
+		profile.ProfileString(v)
 	case []string:
-		*profile = nil
-		for _, token := range v {
-			if token != "" {
-				*profile = append(*profile, token)
-			}
-		}
+		profile.ProfileStringSlice(v)
 	default:
 		panic("Unsupported type in SetProfile")
 	}
+}
+
+func (profile *SetProfile) ProfileString(str string) {
+	*profile = []string{str}
+}
+
+func (profile *SetProfile) ProfileStringSlice(strSlice []string) {
+	*profile = make(SetProfile, len(strSlice))
+	copy(*profile, strSlice)
 }
 
 //////////////////// SetPile ////////////////
@@ -38,26 +42,27 @@ type SetPile struct {
 	m    map[string]bool
 }
 
-func (pile *SetPile) Add(valProfile ValueProfile) {
-	profile := []string(*valProfile.(*SetProfile))
+func (pile *SetPile) addI(valProfile ValueProfile) {
+	pile.Add(valProfile.(*SetProfile))
+}
 
-	if profile == nil {
+func (pile *SetPile) Add(profile *SetProfile) {
+	if *profile == nil {
 		return
 	}
 	if pile.m == nil {
-		pile.m = make(map[string]bool, len(pile.List)+len(profile))
+		pile.m = make(map[string]bool, len(pile.List)+len(*profile))
 		// Populate the map from the information in List
 		for _, v := range pile.List {
 			pile.m[v] = true
 		}
 	}
-	for _, v := range profile {
+	for _, v := range *profile {
 		if !pile.m[v] {
 			pile.m[v] = true
 			pile.List = append(pile.List, v)
 		}
 	}
-
 }
 
 func (pile *SetPile) Clear() {
@@ -65,9 +70,11 @@ func (pile *SetPile) Clear() {
 	pile.List = nil
 }
 
-func (pile *SetPile) Merge(otherValPile ValuePile) {
-	otherPile := otherValPile.(*SetPile)
+func (pile *SetPile) mergeI(otherValPile ValuePile) {
+	pile.Merge(otherValPile.(*SetPile))
+}
 
+func (pile *SetPile) Merge(otherPile *SetPile) {
 	if pile.List == nil {
 		pile.List = otherPile.List
 		pile.m = otherPile.m
@@ -101,10 +108,12 @@ type SetConfig struct {
 	m    map[string]bool
 }
 
-func (config *SetConfig) Decide(valProfile ValueProfile) string {
-	profile := []string(*valProfile.(*SetProfile))
+func (config *SetConfig) decideI(valProfile ValueProfile) string {
+	return config.Decide(valProfile.(*SetProfile))
+}
 
-	if profile == nil {
+func (config *SetConfig) Decide(profile *SetProfile) string {
+	if *profile == nil {
 		return ""
 	}
 
@@ -115,7 +124,7 @@ func (config *SetConfig) Decide(valProfile ValueProfile) string {
 			config.m[v] = true
 		}
 	}
-	for _, v := range profile {
+	for _, v := range *profile {
 		if !config.m[v] {
 			return fmt.Sprintf("Unexpected key %s in Set   ", v)
 		}
@@ -124,16 +133,20 @@ func (config *SetConfig) Decide(valProfile ValueProfile) string {
 	return ""
 }
 
-func (config *SetConfig) Learn(valPile ValuePile) {
-	pile := valPile.(*SetPile)
+func (config *SetConfig) learnI(valPile ValuePile) {
+	config.Learn(valPile.(*SetPile))
+}
 
+func (config *SetConfig) Learn(pile *SetPile) {
 	config.List = pile.List
 	config.m = pile.m
 }
 
-func (config *SetConfig) Fuse(otherValConfig ValueConfig) {
-	otherConfig := otherValConfig.(*SetConfig)
+func (config *SetConfig) fuseI(otherValConfig ValueConfig) {
+	config.Fuse(otherValConfig.(*SetConfig))
+}
 
+func (config *SetConfig) Fuse(otherConfig *SetConfig) {
 	if config.List == nil {
 		config.List = otherConfig.List
 		config.m = otherConfig.m

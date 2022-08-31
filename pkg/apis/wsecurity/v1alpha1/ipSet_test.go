@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	"fmt"
 	"net"
 	"testing"
 )
@@ -103,24 +102,23 @@ func TestIpSet_Config(t *testing.T) {
 		IpSet6Private := new(IpSetProfile)
 		IpSet6Unspecified := new(IpSetProfile)
 
-		fmt.Println(net.ParseIP("111.7.1.126"))
-		IpSet1first.Profile([]net.IP{net.ParseIP("111.7.1.126")})
-		IpSet1second.Profile([]net.IP{net.ParseIP("111.7.1.129")})
-		IpSet1Test.Profile([]net.IP{net.ParseIP("111.7.1.70")})
-		IpSet1Loopback.Profile([]net.IP{net.ParseIP("127.1.5.70")})
-		IpSet1Private.Profile([]net.IP{net.ParseIP("10.17.33.70")})
-		IpSet1Unspecified.Profile([]net.IP{net.ParseIP("0.0.0.0")})
-		IpSet2first.Profile([]net.IP{net.ParseIP("111.7.2.10")})
-		IpSet2second.Profile([]net.IP{net.ParseIP("111.7.2.20")})
-		IpSet2Test.Profile([]net.IP{net.ParseIP("111.7.2.15")})
-		IpSet2Bad.Profile([]net.IP{net.ParseIP("111.7.2.200")})
-		IpSet6first.Profile([]net.IP{net.ParseIP("ff02::1:ff07")})
-		IpSet6second.Profile([]net.IP{net.ParseIP("ff02::1:ff09")})
-		IpSet6Test.Profile([]net.IP{net.ParseIP("ff02::1:ff08")})
-		IpSet6Bad.Profile([]net.IP{net.ParseIP("ff02::2:ff08")})
-		IpSet6Loopback.Profile([]net.IP{net.ParseIP("::1")})
-		IpSet6Private.Profile([]net.IP{net.ParseIP("fc00::3")})
-		IpSet6Unspecified.Profile([]net.IP{net.ParseIP("::")})
+		IpSet1first.ProfileIPSlice([]net.IP{net.ParseIP("111.7.1.126")})
+		IpSet1second.ProfileIPSlice([]net.IP{net.ParseIP("111.7.1.129")})
+		IpSet1Test.ProfileIPSlice([]net.IP{net.ParseIP("111.7.1.70")})
+		IpSet1Loopback.ProfileIPSlice([]net.IP{net.ParseIP("127.1.5.70")})
+		IpSet1Private.ProfileIPSlice([]net.IP{net.ParseIP("10.17.33.70")})
+		IpSet1Unspecified.ProfileIPSlice([]net.IP{net.ParseIP("0.0.0.0")})
+		IpSet2first.ProfileIPSlice([]net.IP{net.ParseIP("111.7.2.10")})
+		IpSet2second.ProfileIPSlice([]net.IP{net.ParseIP("111.7.2.20")})
+		IpSet2Test.ProfileIPSlice([]net.IP{net.ParseIP("111.7.2.15")})
+		IpSet2Bad.ProfileIPSlice([]net.IP{net.ParseIP("111.7.2.200")})
+		IpSet6first.ProfileIPSlice([]net.IP{net.ParseIP("ff02::1:ff07")})
+		IpSet6second.ProfileIPSlice([]net.IP{net.ParseIP("ff02::1:ff09")})
+		IpSet6Test.ProfileIPSlice([]net.IP{net.ParseIP("ff02::1:ff08")})
+		IpSet6Bad.ProfileIPSlice([]net.IP{net.ParseIP("ff02::2:ff08")})
+		IpSet6Loopback.ProfileIPSlice([]net.IP{net.ParseIP("::1")})
+		IpSet6Private.ProfileIPSlice([]net.IP{net.ParseIP("fc00::3")})
+		IpSet6Unspecified.ProfileIPSlice([]net.IP{net.ParseIP("::")})
 
 		// A case where a new IP inflate the CIDR to a C subnet
 		pile1 := new(IpSetPile)

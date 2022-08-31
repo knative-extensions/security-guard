@@ -9,33 +9,49 @@ import (
 //////////////////// IpSetProfile ////////////////
 
 // Exposes ValueProfile interface
-// A Slice of IPs
 type IpSetProfile []net.IP
 
-func (profile *IpSetProfile) Profile(args ...interface{}) {
+func (profile *IpSetProfile) profileI(args ...interface{}) {
 	switch v := args[0].(type) {
 	case string:
-		if len(v) > 0 {
-			if ip := net.ParseIP(v); ip != nil {
-				*profile = append(*profile, ip)
-			}
-		}
-
+		profile.ProfileString(v)
 	case net.IP:
-		if v != nil {
-			*profile = append(*profile, v)
-		}
+		profile.ProfileIP(v)
 	case []net.IP:
-		*profile = nil
-		for _, ip := range v {
-			if ip != nil {
-				dup := make(net.IP, len(ip))
-				copy(dup, ip)
-				*profile = append(*profile, dup)
-			}
-		}
+		profile.ProfileIPSlice(v)
 	default:
 		panic("Unsupported type in IpSetProfile")
+	}
+}
+
+func (profile *IpSetProfile) ProfileString(str string) {
+	*profile = nil
+	if len(str) > 0 {
+		if ip := net.ParseIP(str); ip != nil {
+
+			if ipv4 := ip.To4(); ipv4 != nil {
+				ip = ipv4
+			}
+			*profile = append(*profile, ip)
+		}
+	}
+}
+
+func (profile *IpSetProfile) ProfileIP(ip net.IP) {
+	*profile = nil
+	if ip != nil {
+		*profile = IpSetProfile{ip}
+	}
+}
+
+func (profile *IpSetProfile) ProfileIPSlice(ipSlice []net.IP) {
+	*profile = make(IpSetProfile, len(ipSlice))
+	for i, ip := range ipSlice {
+		if ip != nil {
+			dup := make(net.IP, len(ip))
+			copy(dup, ip)
+			(*profile)[i] = dup
+		}
 	}
 }
 
@@ -51,9 +67,11 @@ type IpSetPile struct {
 	m    map[string]bool
 }
 
-func (pile *IpSetPile) Add(valProfile ValueProfile) {
-	profile := valProfile.(*IpSetProfile)
+func (pile *IpSetPile) addI(valProfile ValueProfile) {
+	pile.Add(valProfile.(*IpSetProfile))
+}
 
+func (pile *IpSetPile) Add(profile *IpSetProfile) {
 	if pile.m == nil {
 		pile.m = make(map[string]bool, len(pile.List)+16)
 		// Populate the map from the information in List
@@ -75,9 +93,11 @@ func (pile *IpSetPile) Clear() {
 	pile.List = nil
 }
 
-func (pile *IpSetPile) Merge(otherValPile ValuePile) {
-	otherPile := otherValPile.(*IpSetPile)
+func (pile *IpSetPile) mergeI(otherValPile ValuePile) {
+	pile.Merge(otherValPile.(*IpSetPile))
+}
 
+func (pile *IpSetPile) Merge(otherPile *IpSetPile) {
 	if pile.List == nil {
 		pile.List = otherPile.List
 		pile.m = otherPile.m
@@ -104,20 +124,21 @@ func (pile *IpSetPile) Merge(otherValPile ValuePile) {
 
 type CIDR net.IPNet
 
+func (cidr *CIDR) lastIP() net.IP {
+	var lastIp net.IP = make(net.IP, len(cidr.IP))
+	copy(lastIp, cidr.IP)
+	for i, b := range cidr.Mask {
+		lastIp[i] |= ^b
+	}
+	return lastIp
+}
+
 // Return true if cidr include the ip range of otherCidr
 func (cidr *CIDR) Include(otherCidr CIDR) bool {
 	// Check first IP of otherCidr
 	if (*net.IPNet)(cidr).Contains(otherCidr.IP) {
 		// Check last IP of otherCidr
-		var lastIp net.IP = make(net.IP, len(otherCidr.IP))
-		copy(lastIp, otherCidr.IP)
-		fmt.Println("lastIp", len(lastIp))
-		fmt.Println("otherCidr.IP", len(otherCidr.IP))
-		fmt.Println("otherCidr.Mask", len(otherCidr.Mask))
-		for i, b := range otherCidr.Mask {
-			lastIp[i] |= ^b
-		}
-		return (*net.IPNet)(cidr).Contains(lastIp)
+		return (*net.IPNet)(cidr).Contains(otherCidr.lastIP())
 	}
 	return false
 }
@@ -161,49 +182,38 @@ func (cidr *CIDR) InflateBy(ip net.IP) bool {
 // Exposes ValueConfig interface
 type IpSetConfig []CIDR
 
-func (config *IpSetConfig) Decide(valProfile ValueProfile) string {
-	profile := (valProfile.(*IpSetProfile))
+func (config *IpSetConfig) decideI(valProfile ValueProfile) string {
+	return config.Decide((valProfile.(*IpSetProfile)))
+}
 
-	for _, cidr := range *config {
-		fmt.Println("Start Decide config ", (net.IPNet(cidr)).IP.String(), (net.IPNet(cidr)).Mask.String())
-	}
-	for _, ip := range *profile {
-		fmt.Println("Start Decide profile ", ip.String())
-	}
-	fmt.Println("Start Decide", *config, *profile)
+func (config *IpSetConfig) Decide(profile *IpSetProfile) string {
 	if len(*profile) == 0 {
-		fmt.Println("len(*profile) == 0")
 		return ""
 	}
 
 LoopProfileIPs:
 	for _, ip := range *profile {
-		fmt.Println("IP in Decide", ip)
 		if ip.IsUnspecified() || ip.IsLoopback() || ip.IsPrivate() {
-			fmt.Println("ip.IsUnspecified() || ip.IsLoopback() || ip.IsPrivate() ", ip)
 			continue LoopProfileIPs
 		}
 		for _, subnet := range *config {
-			fmt.Println("IP in Decide", ip, "Subnet", subnet)
 			if (*net.IPNet)(&subnet).Contains(ip) {
-				fmt.Println("(*net.IPNet)(&subnet).Contains(ip)")
 				continue LoopProfileIPs
 			}
 		}
-		fmt.Println("IP not allowed")
 		return fmt.Sprintf("IP %s not allowed", ip.String())
 	}
-	fmt.Println("Decide done")
-
 	return ""
 }
 
 // Learn currently offers a rough and simple CIDR support
 // Learn try to add IPs to current CIDRs by inflating the CIDRs.
 // When no CIDR can be inflated to include the IP, Learn adds a new CIDR for this IP
-func (config *IpSetConfig) Learn(valPile ValuePile) {
-	pile := valPile.(*IpSetPile)
+func (config *IpSetConfig) learnI(valPile ValuePile) {
+	config.Learn(valPile.(*IpSetPile))
+}
 
+func (config *IpSetConfig) Learn(pile *IpSetPile) {
 	*config = nil
 LoopPileIPs:
 	for _, ip := range pile.List {
@@ -225,12 +235,19 @@ LoopPileIPs:
 // The implementation look to opportunistically skip new entries
 // The implementation does not squash new and old entries
 // Future: Improve Fuse to squash consecutive cidrs
-func (config *IpSetConfig) Fuse(otherValConfig ValueConfig) {
-	otherConfig := otherValConfig.(*IpSetConfig)
+func (config *IpSetConfig) fuseI(otherValConfig ValueConfig) {
+	config.Fuse(otherValConfig.(*IpSetConfig))
+}
 
+func (config *IpSetConfig) Fuse(otherConfig *IpSetConfig) {
 LoopOtherCidrs:
 	for _, otherCidr := range *otherConfig {
 		for idx, myCidr := range *config {
+			if myCidr.InflateBy(otherCidr.IP) {
+				if myCidr.InflateBy(otherCidr.lastIP()) {
+					continue LoopOtherCidrs
+				}
+			}
 			if myCidr.Include(otherCidr) {
 				continue LoopOtherCidrs
 			}

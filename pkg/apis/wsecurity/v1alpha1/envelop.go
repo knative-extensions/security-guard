@@ -15,10 +15,11 @@ type EnvelopProfile struct {
 	CompletionTime CountProfile `json:"completiontime"`
 }
 
-func (profile *EnvelopProfile) Profile(args ...interface{}) {
-	reqTime := args[0].(time.Time)
-	respTime := args[1].(time.Time)
-	endTime := args[2].(time.Time)
+func (profile *EnvelopProfile) profileI(args ...interface{}) {
+	profile.Profile(args[0].(time.Time), args[1].(time.Time), args[2].(time.Time))
+}
+
+func (profile *EnvelopProfile) Profile(reqTime time.Time, respTime time.Time, endTime time.Time) {
 
 	completionTime := endTime.Sub(reqTime).Seconds()
 	if completionTime > 255 {
@@ -43,10 +44,13 @@ type EnvelopPile struct {
 	CompletionTime CountPile `json:"completiontime"`
 }
 
-func (pile *EnvelopPile) Add(valProfile ValueProfile) {
-	profile := valProfile.(*EnvelopProfile)
-	pile.CompletionTime.Add(&profile.CompletionTime)
-	pile.ResponseTime.Add(&profile.ResponseTime)
+func (pile *EnvelopPile) addI(valProfile ValueProfile) {
+	pile.Add(valProfile.(*EnvelopProfile))
+}
+
+func (pile *EnvelopPile) Add(profile *EnvelopProfile) {
+	pile.CompletionTime.Add(profile.CompletionTime)
+	pile.ResponseTime.Add(profile.ResponseTime)
 }
 
 func (pile *EnvelopPile) Clear() {
@@ -54,10 +58,13 @@ func (pile *EnvelopPile) Clear() {
 	pile.ResponseTime.Clear()
 }
 
-func (pile *EnvelopPile) Merge(otherValPile ValuePile) {
-	otherPile := otherValPile.(*EnvelopPile)
-	pile.CompletionTime.Merge(&otherPile.CompletionTime)
-	pile.ResponseTime.Merge(&otherPile.ResponseTime)
+func (pile *EnvelopPile) mergeI(otherValPile ValuePile) {
+	pile.Merge(otherValPile.(*EnvelopPile))
+}
+
+func (pile *EnvelopPile) Merge(otherPile *EnvelopPile) {
+	pile.CompletionTime.Merge(otherPile.CompletionTime)
+	pile.ResponseTime.Merge(otherPile.ResponseTime)
 }
 
 //////////////////// EnvelopConfig ////////////////
@@ -68,31 +75,37 @@ type EnvelopConfig struct {
 	CompletionTime CountConfig `json:"completiontime"`
 }
 
-func (config *EnvelopConfig) Decide(valProfile ValueProfile) string {
-	profile := valProfile.(*EnvelopProfile)
+func (config *EnvelopConfig) decideI(valProfile ValueProfile) string {
+	return config.Decide(valProfile.(*EnvelopProfile))
+}
 
+func (config *EnvelopConfig) Decide(profile *EnvelopProfile) string {
 	var ret string
-	ret = config.ResponseTime.Decide(&profile.ResponseTime)
+	ret = config.ResponseTime.Decide(profile.ResponseTime)
 	if ret != "" {
 		return fmt.Sprintf("ResponseTime: %s", ret)
 	}
-	ret = config.CompletionTime.Decide(&profile.CompletionTime)
+	ret = config.CompletionTime.Decide(profile.CompletionTime)
 	if ret != "" {
 		return fmt.Sprintf("CompletionTime: %s", ret)
 	}
 	return ""
 }
 
-func (config *EnvelopConfig) Learn(valPile ValuePile) {
-	pile := valPile.(*EnvelopPile)
-
-	config.CompletionTime.Learn(&pile.CompletionTime)
-	config.ResponseTime.Learn(&pile.ResponseTime)
+func (config *EnvelopConfig) learnI(valPile ValuePile) {
+	config.Learn(valPile.(*EnvelopPile))
 }
 
-func (config *EnvelopConfig) Fuse(otherValConfig ValueConfig) {
-	otherConfig := otherValConfig.(*EnvelopConfig)
+func (config *EnvelopConfig) Learn(pile *EnvelopPile) {
+	config.CompletionTime.Learn(pile.CompletionTime)
+	config.ResponseTime.Learn(pile.ResponseTime)
+}
 
-	config.CompletionTime.Fuse(&otherConfig.CompletionTime)
-	config.ResponseTime.Fuse(&otherConfig.ResponseTime)
+func (config *EnvelopConfig) fuseI(otherValConfig ValueConfig) {
+	config.Fuse(otherValConfig.(*EnvelopConfig))
+}
+
+func (config *EnvelopConfig) Fuse(otherConfig *EnvelopConfig) {
+	config.CompletionTime.Fuse(otherConfig.CompletionTime)
+	config.ResponseTime.Fuse(otherConfig.ResponseTime)
 }
