@@ -93,14 +93,14 @@ const ( // sequence types
 
 // Exposes ValueProfile interface
 type SimpleValProfile struct {
-	Flags        AsciiFlagsProfile
-	NonReadables CountProfile
-	Spaces       CountProfile
-	Unicodes     CountProfile
 	Digits       CountProfile
 	Letters      CountProfile
+	Spaces       CountProfile
 	SpecialChars CountProfile
+	NonReadables CountProfile
+	Unicodes     CountProfile
 	Sequences    CountProfile
+	Flags        AsciiFlagsProfile
 	UnicodeFlags FlagSliceProfile
 }
 
@@ -231,14 +231,14 @@ func (profile *SimpleValProfile) Profile(str string) {
 
 // Exposes ValuePile interface
 type SimpleValPile struct {
-	Flags        AsciiFlagsPile
-	NonReadables CountPile
-	Spaces       CountPile
-	Unicodes     CountPile
 	Digits       CountPile
 	Letters      CountPile
+	Spaces       CountPile
 	SpecialChars CountPile
+	NonReadables CountPile
+	Unicodes     CountPile
 	Sequences    CountPile
+	Flags        AsciiFlagsPile
 	UnicodeFlags FlagSlicePile
 }
 
@@ -247,14 +247,13 @@ func (pile *SimpleValPile) addI(valProfile ValueProfile) {
 }
 
 func (pile *SimpleValPile) Add(profile *SimpleValProfile) {
-
-	pile.Digits.Add(profile.Digits)
 	pile.Letters.Add(profile.Letters)
-	pile.Sequences.Add(profile.Sequences)
+	pile.Digits.Add(profile.Digits)
 	pile.Spaces.Add(profile.Spaces)
-	pile.Unicodes.Add(profile.Unicodes)
-	pile.NonReadables.Add(profile.NonReadables)
 	pile.SpecialChars.Add(profile.SpecialChars)
+	pile.NonReadables.Add(profile.NonReadables)
+	pile.Unicodes.Add(profile.Unicodes)
+	pile.Sequences.Add(profile.Sequences)
 	pile.Flags.Add(profile.Flags)
 	pile.UnicodeFlags.Add(profile.UnicodeFlags)
 }
@@ -265,12 +264,12 @@ func (pile *SimpleValPile) mergeI(otherValPile ValuePile) {
 
 func (pile *SimpleValPile) Merge(otherPile *SimpleValPile) {
 	pile.Digits.Merge(otherPile.Digits)
-	pile.Letters.Merge(otherPile.Digits)
-	pile.Sequences.Merge(otherPile.Letters)
+	pile.Letters.Merge(otherPile.Letters)
 	pile.Spaces.Merge(otherPile.Spaces)
-	pile.Unicodes.Merge(otherPile.Unicodes)
-	pile.NonReadables.Merge(otherPile.NonReadables)
 	pile.SpecialChars.Merge(otherPile.SpecialChars)
+	pile.NonReadables.Merge(otherPile.NonReadables)
+	pile.Unicodes.Merge(otherPile.Unicodes)
+	pile.Sequences.Merge(otherPile.Sequences)
 	pile.Flags.Merge(otherPile.Flags)
 	pile.UnicodeFlags.Merge(otherPile.UnicodeFlags)
 }
@@ -278,11 +277,11 @@ func (pile *SimpleValPile) Merge(otherPile *SimpleValPile) {
 func (pile *SimpleValPile) Clear() {
 	pile.Digits.Clear()
 	pile.Letters.Clear()
-	pile.Sequences.Clear()
 	pile.Spaces.Clear()
-	pile.Unicodes.Clear()
-	pile.NonReadables.Clear()
 	pile.SpecialChars.Clear()
+	pile.NonReadables.Clear()
+	pile.Unicodes.Clear()
+	pile.Sequences.Clear()
 	pile.Flags.Clear()
 	pile.UnicodeFlags.Clear()
 }
@@ -291,14 +290,14 @@ func (pile *SimpleValPile) Clear() {
 
 // Exposes ValueConfig interface
 type SimpleValConfig struct {
-	Flags        AsciiFlagsConfig `json:"flags"`
-	NonReadables CountConfig      `json:"nonreadables"`
-	Spaces       CountConfig      `json:"spaces"`
-	Unicodes     CountConfig      `json:"unicodes"`
 	Digits       CountConfig      `json:"digits"`
 	Letters      CountConfig      `json:"letters"`
+	Spaces       CountConfig      `json:"spaces"`
 	SpecialChars CountConfig      `json:"schars"`
+	NonReadables CountConfig      `json:"nonreadables"`
+	Unicodes     CountConfig      `json:"unicodes"`
 	Sequences    CountConfig      `json:"sequences"`
+	Flags        AsciiFlagsConfig `json:"flags"`
 	UnicodeFlags FlagSliceConfig  `json:"unicodeFlags"`
 	//Mandatory    bool           `json:"mandatory"`
 }
@@ -308,11 +307,11 @@ func (config *SimpleValConfig) learnI(valPile ValuePile) {
 }
 func (config *SimpleValConfig) Learn(pile *SimpleValPile) {
 	config.Digits.Learn(pile.Digits)
-	config.Spaces.Learn(pile.Spaces)
-	config.Unicodes.Learn(pile.Unicodes)
-	config.NonReadables.Learn(pile.NonReadables)
 	config.Letters.Learn(pile.Letters)
+	config.Spaces.Learn(pile.Spaces)
 	config.SpecialChars.Learn(pile.SpecialChars)
+	config.NonReadables.Learn(pile.NonReadables)
+	config.Unicodes.Learn(pile.Unicodes)
 	config.Sequences.Learn(pile.Sequences)
 	config.Flags.Learn(pile.Flags)
 	config.UnicodeFlags.Learn(pile.UnicodeFlags)
@@ -324,11 +323,11 @@ func (config *SimpleValConfig) fuseI(otherValConfig ValueConfig) {
 
 func (config *SimpleValConfig) Fuse(otherConfig *SimpleValConfig) {
 	config.Digits.Fuse(otherConfig.Digits)
-	config.Spaces.Fuse(otherConfig.Spaces)
-	config.Unicodes.Fuse(otherConfig.Unicodes)
-	config.NonReadables.Fuse(otherConfig.NonReadables)
 	config.Letters.Fuse(otherConfig.Letters)
+	config.Spaces.Fuse(otherConfig.Spaces)
 	config.SpecialChars.Fuse(otherConfig.SpecialChars)
+	config.NonReadables.Fuse(otherConfig.NonReadables)
+	config.Unicodes.Fuse(otherConfig.Unicodes)
 	config.Sequences.Fuse(otherConfig.Sequences)
 	config.Flags.Fuse(otherConfig.Flags)
 	config.UnicodeFlags.Fuse(otherConfig.UnicodeFlags)
@@ -339,32 +338,32 @@ func (config *SimpleValConfig) decideI(valProfile ValueProfile) string {
 }
 
 func (config *SimpleValConfig) Decide(profile *SimpleValProfile) string {
-	if ret := config.Flags.Decide(profile.Flags); ret != "" {
-		return ret
-	}
-	if ret := config.UnicodeFlags.Decide(profile.UnicodeFlags); ret != "" {
-		return ret
-	}
-	if ret := config.Spaces.Decide(profile.Spaces); ret != "" {
-		return fmt.Sprintf("Spaces: %s", ret)
-	}
-	if ret := config.Unicodes.Decide(profile.Unicodes); ret != "" {
-		return fmt.Sprintf("Unicodes: %s", ret)
-	}
-	if ret := config.NonReadables.Decide(profile.NonReadables); ret != "" {
-		return fmt.Sprintf("NonReadables: %s", ret)
+	if ret := config.Letters.Decide(profile.Letters); ret != "" {
+		return fmt.Sprintf("Letters: %s", ret)
 	}
 	if ret := config.Digits.Decide(profile.Digits); ret != "" {
 		return fmt.Sprintf("Digits: %s", ret)
 	}
-	if ret := config.Letters.Decide(profile.Letters); ret != "" {
-		return fmt.Sprintf("Letters: %s", ret)
+	if ret := config.Spaces.Decide(profile.Spaces); ret != "" {
+		return fmt.Sprintf("Spaces: %s", ret)
 	}
 	if ret := config.SpecialChars.Decide(profile.SpecialChars); ret != "" {
 		return fmt.Sprintf("SpecialChars: %s", ret)
 	}
+	if ret := config.NonReadables.Decide(profile.NonReadables); ret != "" {
+		return fmt.Sprintf("NonReadables: %s", ret)
+	}
+	if ret := config.Unicodes.Decide(profile.Unicodes); ret != "" {
+		return fmt.Sprintf("Unicodes: %s", ret)
+	}
 	if ret := config.Sequences.Decide(profile.Sequences); ret != "" {
 		return fmt.Sprintf("Sequences: %s", ret)
+	}
+	if ret := config.Flags.Decide(profile.Flags); ret != "" {
+		return fmt.Sprintf("Special Chars Used: %s", ret)
+	}
+	if ret := config.UnicodeFlags.Decide(profile.UnicodeFlags); ret != "" {
+		return fmt.Sprintf("Unicode Blocks: %s", ret)
 	}
 	return ""
 }
