@@ -107,7 +107,7 @@ func (pile *KeyValPile) Merge(otherPile *KeyValPile) {
 
 // Exposes ValueConfig interface
 type KeyValConfig struct {
-	Vals          map[string]*SimpleValConfig `json:"vals"`          // Profile the value of whitelisted keys
+	Vals          map[string]*SimpleValConfig `json:"vals"`          // Profile the value of known keys
 	OtherVals     *SimpleValConfig            `json:"otherVals"`     // Profile the values of other keys
 	OtherKeynames *SimpleValConfig            `json:"otherKeynames"` // Profile the keynames of other keys
 }
