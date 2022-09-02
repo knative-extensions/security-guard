@@ -37,33 +37,33 @@ func ValueTests_Test(t *testing.T, profiles []ValueProfile, piles []ValuePile, c
 
 		// Initial Tests
 		piles[9].Clear()
-		piles[3].Merge(piles[4])
-		configs[3].Fuse(configs[4])
-		configs[5].Learn(piles[5])
-		configs[6].Decide(profiles[0])
+		piles[3].mergeI(piles[4])
+		configs[3].fuseI(configs[4])
+		configs[5].learnI(piles[5])
+		configs[6].decideI(profiles[0])
 		piles[6].Clear()
 
 		// Test ProfileValue
 		for i, v := range args {
-			profiles[i].Profile(v...)
+			profiles[i].profileI(v...)
 		}
 
 		// Test PileValue
 		for i, profile := range profiles {
-			piles[i].Add(profile)
+			piles[i].addI(profile)
 			piles[i].Clear()
-			piles[i].Add(profile)
-			piles[i].Add(profile)
-			piles[0].Merge(piles[i])
-			piles[0].Merge(piles[i])
+			piles[i].addI(profile)
+			piles[i].addI(profile)
+			piles[0].mergeI(piles[i])
+			piles[0].mergeI(piles[i])
 		}
 
 		// Test ConfigValue
 		for i, pile := range piles {
-			configs[i].Learn(pile)
-			configs[0].Fuse(configs[i])
-			configs[0].Fuse(configs[i])
-			if str := configs[0].Decide(profiles[i]); str != "" {
+			configs[i].learnI(pile)
+			configs[0].fuseI(configs[i])
+			configs[0].fuseI(configs[i])
+			if str := configs[0].decideI(profiles[i]); str != "" {
 				t.Errorf("config.Decide(profile) wrong decission: %s\nFor profile %s\nwhen using config %s\n", str, profiles[i], configs[0])
 			}
 		}
@@ -79,15 +79,15 @@ func ValueTests_Test_WithMarshal(t *testing.T, profiles []ValueProfile, piles []
 	t.Run("Basics", func(t *testing.T) {
 
 		// Test ProfileValue
-		profile.Profile(args[0]...)
+		profile.profileI(args[0]...)
 
 		// Test PileValue
-		pile.Add(profile)
+		pile.addI(profile)
 		pile.Clear()
-		pile.Add(profile)
-		pile.Add(profile)
-		pile.Merge(pile)
-		pile.Merge(pile)
+		pile.addI(profile)
+		pile.addI(profile)
+		pile.mergeI(pile)
+		pile.mergeI(pile)
 		var err error
 		var bytes []byte
 		if bytes, err = json.Marshal(pile); err != nil {
@@ -98,11 +98,11 @@ func ValueTests_Test_WithMarshal(t *testing.T, profiles []ValueProfile, piles []
 			t.Errorf("bytes: %s", string(bytes))
 		}
 		// Test ConfigValue
-		config.Learn(pile)
-		config.Fuse(config)
-		config.Fuse(config)
+		config.learnI(pile)
+		config.fuseI(config)
+		config.fuseI(config)
 
-		if str := config.Decide(profile); str != "" {
+		if str := config.decideI(profile); str != "" {
 			t.Errorf("config.Decide(profile) wrong decission: %s", str)
 		}
 
@@ -123,21 +123,21 @@ func ValueTests_SimpleTest(t *testing.T, profiles []ValueProfile, piles []ValueP
 	t.Run("Basics", func(t *testing.T) {
 		// Test ProfileValue
 		for i, v := range args {
-			profiles[i].Profile(v...)
+			profiles[i].profileI(v...)
 		}
 
 		// Test PileValue
-		pile.Add(profiles[0])
+		pile.addI(profiles[0])
 
 		// test ConfigValue
-		config.Learn(pile)
-		if str := config.Decide(profiles[0]); str != "" {
+		config.learnI(pile)
+		if str := config.decideI(profiles[0]); str != "" {
 			t.Errorf("config.Decide(profile) wrong decission: %s", str)
 		}
-		if str := config.Decide(profiles[1]); str == "" {
+		if str := config.decideI(profiles[1]); str == "" {
 			t.Errorf("config.Decide(profile) expected a reject of %s after learning %s\n", args[1], args[0])
 		}
-		if str := config.Decide(profiles[2]); str == "" {
+		if str := config.decideI(profiles[2]); str == "" {
 			t.Errorf("config.Decide(profile) expected a reject of %s after learning %s\n", args[2], args[0])
 		}
 	})
@@ -198,19 +198,19 @@ func ValueTests_TestAdd(t *testing.T, profiles []ValueProfile, piles []ValuePile
 	args := toSlice(arguments)
 	t.Run("Basics", func(t *testing.T) {
 		// Test ProfileValue
-		profiles[0].Profile(args[0]...)
-		profiles[1].Profile(args[1]...)
+		profiles[0].profileI(args[0]...)
+		profiles[1].profileI(args[1]...)
 
 		// Test PileValue
-		piles[0].Add(profiles[0])
-		piles[0].Add(profiles[1])
+		piles[0].addI(profiles[0])
+		piles[0].addI(profiles[1])
 
 		// test ConfigValue
-		configs[0].Learn(piles[0])
-		if str := configs[0].Decide(profiles[0]); str != "" {
+		configs[0].learnI(piles[0])
+		if str := configs[0].decideI(profiles[0]); str != "" {
 			t.Errorf("config.Decide(profile) wrong decission: %s", str)
 		}
-		if str := configs[0].Decide(profiles[1]); str != "" {
+		if str := configs[0].decideI(profiles[1]); str != "" {
 			t.Errorf("config.Decide(profile) wrong decission: %s", str)
 		}
 	})
@@ -221,20 +221,20 @@ func ValueTests_TestMerge(t *testing.T, profiles []ValueProfile, piles []ValuePi
 	t.Run("Basics", func(t *testing.T) {
 
 		// Test ProfileValue
-		profiles[0].Profile(args[0]...)
-		profiles[1].Profile(args[1]...)
+		profiles[0].profileI(args[0]...)
+		profiles[1].profileI(args[1]...)
 
 		// Test PileValue
-		piles[0].Add(profiles[0])
-		piles[1].Add(profiles[1])
-		piles[0].Merge(piles[1])
+		piles[0].addI(profiles[0])
+		piles[1].addI(profiles[1])
+		piles[0].mergeI(piles[1])
 
 		// test ConfigValue
-		configs[0].Learn(piles[0])
-		if str := configs[0].Decide(profiles[0]); str != "" {
+		configs[0].learnI(piles[0])
+		if str := configs[0].decideI(profiles[0]); str != "" {
 			t.Errorf("config.Decide(profile) wrong decission: %s", str)
 		}
-		if str := configs[0].Decide(profiles[1]); str != "" {
+		if str := configs[0].decideI(profiles[1]); str != "" {
 			t.Errorf("config.Decide(profile) wrong decission: %s", str)
 		}
 	})
@@ -245,21 +245,21 @@ func ValueTests_TestFuse(t *testing.T, profiles []ValueProfile, piles []ValuePil
 	t.Run("Basics", func(t *testing.T) {
 
 		// Test ProfileValue
-		profiles[0].Profile(args[0]...)
-		profiles[1].Profile(args[1]...)
+		profiles[0].profileI(args[0]...)
+		profiles[1].profileI(args[1]...)
 
 		// Test PileValue
-		piles[0].Add(profiles[0])
-		piles[1].Add(profiles[1])
+		piles[0].addI(profiles[0])
+		piles[1].addI(profiles[1])
 
 		// test ConfigValue
-		configs[0].Learn(piles[0])
-		configs[1].Learn(piles[1])
-		configs[0].Fuse(configs[1])
-		if str := configs[0].Decide(profiles[0]); str != "" {
+		configs[0].learnI(piles[0])
+		configs[1].learnI(piles[1])
+		configs[0].fuseI(configs[1])
+		if str := configs[0].decideI(profiles[0]); str != "" {
 			t.Errorf("config.Decide(profile) wrong decission: %s", str)
 		}
-		if str := configs[0].Decide(profiles[1]); str != "" {
+		if str := configs[0].decideI(profiles[1]); str != "" {
 			t.Errorf("config.Decide(profile) wrong decission: %s", str)
 		}
 	})
