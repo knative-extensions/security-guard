@@ -34,8 +34,7 @@ type StructuredProfile struct {
 
 // Profile a generic json
 // Limited array support - data in arrays is stringified and analyzed with SimpleVal
-// I.e. Implementation supports only array of strings
-// Future - reconsider array support
+// Implementation supports only array of strings
 func (profile *StructuredProfile) profileI(args ...interface{}) {
 	profile.Profile(args[0])
 }
@@ -61,7 +60,6 @@ func (profile *StructuredProfile) Profile(data interface{}) {
 		}
 	case reflect.Map:
 		profile.Kind = KindObject
-		//("JsonProfile Profile is a map! \n")
 		profile.Kv = make(map[string]*StructuredProfile, rData.Len())
 		for _, key := range rData.MapKeys() {
 			k := key.String()
@@ -82,7 +80,7 @@ func (profile *StructuredProfile) Profile(data interface{}) {
 		profile.Vals = make([]SimpleValProfile, 1)
 		profile.Vals[0].Profile(data.(string))
 	default:
-		// Should support json kinds only
+		// Support json kinds only
 		panic(fmt.Sprintf("StructuredProfile.Profile() unsupported Kind: %v", rData.Kind()))
 	}
 }

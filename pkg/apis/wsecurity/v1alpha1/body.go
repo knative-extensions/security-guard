@@ -31,12 +31,6 @@ func (profile *BodyProfile) ProfileStructured(data interface{}) {
 	profile.Structured.Profile(data)
 }
 
-/*
-// Future: Missing implementation
-func (profile *BodyProfile) String(depth int) string {
-	return "Missing Implementation"
-}
-*/
 //////////////////// BodyPile ////////////////
 
 // Exposes ValuePile interface
@@ -45,12 +39,10 @@ type BodyPile struct {
 	Structured   *StructuredPile `json:"structured"`
 }
 
-// Future: Missing implementation
 func (pile *BodyPile) addI(valProfile ValueProfile) {
 	pile.Add(valProfile.(*BodyProfile))
 }
 
-// Future: TBD - what to do when one is nil and the other is not
 func (pile *BodyPile) Add(profile *BodyProfile) {
 	if profile.Structured != nil {
 		if pile.Structured == nil {
@@ -66,18 +58,15 @@ func (pile *BodyPile) Add(profile *BodyProfile) {
 	}
 }
 
-// Future: Missing implementation
 func (pile *BodyPile) Clear() {
 	pile.Structured = nil
 	pile.Unstructured = nil
 }
 
-// Future: Missing implementation
 func (pile *BodyPile) mergeI(otherValPile ValuePile) {
 	pile.Merge(otherValPile.(*BodyPile))
 }
 
-// Future: TBD - what to do when one is nil and the other is not
 func (pile *BodyPile) Merge(otherPile *BodyPile) {
 	if otherPile.Structured != nil {
 		if pile.Structured == nil {
@@ -95,11 +84,6 @@ func (pile *BodyPile) Merge(otherPile *BodyPile) {
 
 	}
 }
-
-// Future: Missing implementation
-//func (pile *BodyPile) String(depth int) string {
-//	return "Missing Implementation"
-//}
 
 //////////////////// BodyConfig ////////////////
 
@@ -137,12 +121,10 @@ func (config *BodyConfig) Decide(profile *BodyProfile) string {
 	return ""
 }
 
-// Future: Missing implementation
 func (config *BodyConfig) learnI(valPile ValuePile) {
 	config.Learn(valPile.(*BodyPile))
 }
 
-// Future: Missing implementation
 func (config *BodyConfig) Learn(pile *BodyPile) {
 	if pile.Structured != nil {
 		if config.Structured == nil {
@@ -158,12 +140,10 @@ func (config *BodyConfig) Learn(pile *BodyPile) {
 	}
 }
 
-// Future: Missing implementation
 func (config *BodyConfig) fuseI(otherValConfig ValueConfig) {
 	config.Fuse(otherValConfig.(*BodyConfig))
 }
 
-// Future: Missing implementation
 func (config *BodyConfig) Fuse(otherConfig *BodyConfig) {
 	if otherConfig.Structured != nil {
 		if config.Structured == nil {
