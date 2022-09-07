@@ -26,12 +26,10 @@ gobin="${GOBIN:-$(go env GOPATH)/bin}"
 gosrc="${GOBIN:-$(go env GOPATH)/src}"
 projfullpath="$(cd ${SCRIPT_ROOT}; pwd)"
 boilerplate="${projfullpath}/scripts/boilerplate.go.txt"
-proj="github.com/knative-sandbox/security-guard"
-pkgapis="${proj}/pkg/apis/wsecurity/v1"
-outpack="${proj}/pkg/generated/clientset" 
 
-echo "pkgapis ${pkgapis}"
-echo "outpack ${outpack}"
+proj="knative.dev/security-guard"
+pkgapis="${proj}/pkg/apis/wsecurity/v1alpha1"
+outpack="${proj}/pkg/generated/clientset" 
 
 echo "Generating deepcopy funcs"
 "${gobin}/deepcopy-gen" \
