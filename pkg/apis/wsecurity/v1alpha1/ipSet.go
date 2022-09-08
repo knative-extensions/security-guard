@@ -27,8 +27,7 @@ func (profile *IpSetProfile) profileI(args ...interface{}) {
 func (profile *IpSetProfile) ProfileString(str string) {
 	*profile = nil
 	if len(str) > 0 {
-		if ip := net.ParseIP(str); ip != nil {
-
+		if ip := net.ParseIP(str); ip != nil && !ip.IsUnspecified() && !ip.IsLoopback() && !ip.IsPrivate() {
 			if ipv4 := ip.To4(); ipv4 != nil {
 				ip = ipv4
 			}
@@ -39,18 +38,19 @@ func (profile *IpSetProfile) ProfileString(str string) {
 
 func (profile *IpSetProfile) ProfileIP(ip net.IP) {
 	*profile = nil
-	if ip != nil {
+	if ip != nil && !ip.IsUnspecified() && !ip.IsLoopback() && !ip.IsPrivate() {
 		*profile = IpSetProfile{ip}
 	}
 }
 
 func (profile *IpSetProfile) ProfileIPSlice(ipSlice []net.IP) {
-	*profile = make(IpSetProfile, len(ipSlice))
-	for i, ip := range ipSlice {
-		if ip != nil {
+	*profile = nil
+	for _, ip := range ipSlice {
+
+		if ip != nil && !ip.IsUnspecified() && !ip.IsLoopback() && !ip.IsPrivate() {
 			dup := make(net.IP, len(ip))
 			copy(dup, ip)
-			(*profile)[i] = dup
+			*profile = append(*profile, dup)
 		}
 	}
 }
