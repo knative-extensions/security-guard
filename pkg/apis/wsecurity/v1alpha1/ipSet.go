@@ -234,7 +234,7 @@ LoopPileIPs:
 // Fuse CidrSetConfig
 // The implementation look to opportunistically skip new entries
 // The implementation does not squash new and old entries
-// The implementation does not fuse to squash consecutive cidrs
+// Future: Improve Fuse to squash consecutive cidrs
 func (config *IpSetConfig) fuseI(otherValConfig ValueConfig) {
 	config.Fuse(otherValConfig.(*IpSetConfig))
 }
