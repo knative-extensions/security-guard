@@ -5,8 +5,8 @@ go 1.18
 require (
 	github.com/hashicorp/golang-lru v0.5.4
 	go.uber.org/zap v1.22.0
-	knative.dev/hack v0.0.0-20220907111718-6c301965af4c
-	knative.dev/serving v0.34.1-0.20220907123719-78f8af6e71a9
+	knative.dev/hack v0.0.0-20220908170219-36b2b3c7a245
+	knative.dev/serving v0.34.1-0.20220907152620-8eb8629b1c89
 )
 
 require (
@@ -66,7 +66,7 @@ require (
 	k8s.io/client-go v0.23.9 // indirect
 	k8s.io/klog/v2 v2.70.2-0.20220707122935-0990e81f1a8f // indirect
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9 // indirect
-	knative.dev/control-protocol v0.0.0-20220901015322-a445e807f6a7 // indirect
+	knative.dev/control-protocol v0.0.0-20220905133527-ca2ee058ed65 // indirect
 	knative.dev/networking v0.0.0-20220831065816-215bac90b28b // indirect
 	knative.dev/pkg v0.0.0-20220826162920-93b66e6a8700 // indirect
 	sigs.k8s.io/json v0.0.0-20211208200746-9f7c6b3444d2 // indirect
