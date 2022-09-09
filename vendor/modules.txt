@@ -410,10 +410,10 @@ k8s.io/utils/internal/third_party/forked/golang/net
 k8s.io/utils/lru
 k8s.io/utils/net
 k8s.io/utils/trace
-# knative.dev/control-protocol v0.0.0-20220901015322-a445e807f6a7
+# knative.dev/control-protocol v0.0.0-20220905133527-ca2ee058ed65
 ## explicit; go 1.18
 knative.dev/control-protocol/pkg/certificates
-# knative.dev/hack v0.0.0-20220907111718-6c301965af4c
+# knative.dev/hack v0.0.0-20220908170219-36b2b3c7a245
 ## explicit; go 1.18
 knative.dev/hack
 # knative.dev/networking v0.0.0-20220831065816-215bac90b28b
@@ -451,7 +451,7 @@ knative.dev/pkg/tracing/propagation
 knative.dev/pkg/tracing/propagation/tracecontextb3
 knative.dev/pkg/tracker
 knative.dev/pkg/websocket
-# knative.dev/serving v0.34.1-0.20220907123719-78f8af6e71a9
+# knative.dev/serving v0.34.1-0.20220907152620-8eb8629b1c89
 ## explicit; go 1.18
 knative.dev/serving/pkg/activator
 knative.dev/serving/pkg/apis/autoscaling
