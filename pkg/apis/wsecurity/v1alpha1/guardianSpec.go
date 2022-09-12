@@ -14,6 +14,7 @@ type GuardianSpec struct {
 	Control    *Ctrl              `json:"control"`           // Control
 }
 
+// AutoActivate is a Guardian operation mode that is useful for security automation of new services
 func (g *GuardianSpec) AutoActivate() {
 	if g.Control == nil {
 		g.Control = new(Ctrl)
@@ -22,10 +23,4 @@ func (g *GuardianSpec) AutoActivate() {
 	g.Control.Learn = true
 	g.Control.Force = true
 	g.Control.Alert = true
-}
-
-func (g *GuardianSpec) Reconcile() {
-	if g.Control == nil {
-		g.Control = new(Ctrl)
-	}
 }
