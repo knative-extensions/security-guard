@@ -45,4 +45,4 @@ group "Deepcopy Gen"
 ${GOPATH}/bin/deepcopy-gen \
   -O zz_generated.deepcopy \
   --go-header-file "${boilerplate}" \
-  -i knative.dev/security-guard/pkg/apis/wsecurity/v1alpha1 
+  -i knative.dev/security-guard/pkg/apis/wsecurity/v1alpha1
