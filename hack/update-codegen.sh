@@ -23,7 +23,7 @@ source $(dirname $0)/../vendor/knative.dev/hack/codegen-library.sh
 # If we run with -mod=vendor here, then generate-groups.sh looks for vendor files in the wrong place.
 export GOFLAGS=-mod=
 
-boilerplate="${REPO_ROOT_DIR}/scripts/boilerplate.go.txt"
+boilerplate="${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt"
 
 echo "=== Update Codegen for $MODULE_NAME"
 
