@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/hashicorp/golang-lru v0.5.4
 	go.uber.org/zap v1.22.0
-	knative.dev/hack v0.0.0-20220912134332-103cdb35f0d3
+	knative.dev/hack v0.0.0-20220913095247-7556452c2b54
 	knative.dev/serving v0.34.1-0.20220912213846-67255a6d0acb
 )
 
