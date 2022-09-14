@@ -25,8 +25,8 @@ import (
 	fakediscovery "k8s.io/client-go/discovery/fake"
 	"k8s.io/client-go/testing"
 	clientset "knative.dev/security-guard/pkg/client/clientset/versioned"
-	wsecurityv1alpha1 "knative.dev/security-guard/pkg/client/clientset/versioned/typed/wsecurity/v1alpha1"
-	fakewsecurityv1alpha1 "knative.dev/security-guard/pkg/client/clientset/versioned/typed/wsecurity/v1alpha1/fake"
+	guardv1alpha1 "knative.dev/security-guard/pkg/client/clientset/versioned/typed/guard/v1alpha1"
+	fakeguardv1alpha1 "knative.dev/security-guard/pkg/client/clientset/versioned/typed/guard/v1alpha1/fake"
 )
 
 // NewSimpleClientset returns a clientset that will respond with the provided objects.
@@ -79,7 +79,7 @@ var (
 	_ testing.FakeClient  = &Clientset{}
 )
 
-// WsecurityV1alpha1 retrieves the WsecurityV1alpha1Client
-func (c *Clientset) WsecurityV1alpha1() wsecurityv1alpha1.WsecurityV1alpha1Interface {
-	return &fakewsecurityv1alpha1.FakeWsecurityV1alpha1{Fake: &c.Fake}
+// GuardV1alpha1 retrieves the GuardV1alpha1Client
+func (c *Clientset) GuardV1alpha1() guardv1alpha1.GuardV1alpha1Interface {
+	return &fakeguardv1alpha1.FakeGuardV1alpha1{Fake: &c.Fake}
 }

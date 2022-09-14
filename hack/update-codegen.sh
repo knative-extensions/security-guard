@@ -35,7 +35,7 @@ group "Kubernetes Codegen"
 #                  instead of the $GOPATH directly. For normal projects this can be dropped.
 ${CODEGEN_PKG}/generate-groups.sh "client" \
   knative.dev/security-guard/pkg/client knative.dev/security-guard/pkg/apis \
-   "wsecurity:v1alpha1" \
+   "guard:v1alpha1" \
   --go-header-file "${boilerplate}"
 
 
@@ -45,4 +45,4 @@ group "Deepcopy Gen"
 ${GOPATH}/bin/deepcopy-gen \
   -O zz_generated.deepcopy \
   --go-header-file "${boilerplate}" \
-  -i knative.dev/security-guard/pkg/apis/wsecurity/v1alpha1
+  -i knative.dev/security-guard/pkg/apis/guard/v1alpha1

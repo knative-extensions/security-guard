@@ -24,14 +24,14 @@ import (
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	wsecurityv1alpha1 "knative.dev/security-guard/pkg/apis/wsecurity/v1alpha1"
+	guardv1alpha1 "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
 )
 
 var Scheme = runtime.NewScheme()
 var Codecs = serializer.NewCodecFactory(Scheme)
 var ParameterCodec = runtime.NewParameterCodec(Scheme)
 var localSchemeBuilder = runtime.SchemeBuilder{
-	wsecurityv1alpha1.AddToScheme,
+	guardv1alpha1.AddToScheme,
 }
 
 // AddToScheme adds all types of this clientset into the given scheme. This allows composition

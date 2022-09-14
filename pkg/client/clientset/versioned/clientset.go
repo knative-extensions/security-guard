@@ -25,24 +25,24 @@ import (
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
-	wsecurityv1alpha1 "knative.dev/security-guard/pkg/client/clientset/versioned/typed/wsecurity/v1alpha1"
+	guardv1alpha1 "knative.dev/security-guard/pkg/client/clientset/versioned/typed/guard/v1alpha1"
 )
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
-	WsecurityV1alpha1() wsecurityv1alpha1.WsecurityV1alpha1Interface
+	GuardV1alpha1() guardv1alpha1.GuardV1alpha1Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
 // version included in a Clientset.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	wsecurityV1alpha1 *wsecurityv1alpha1.WsecurityV1alpha1Client
+	guardV1alpha1 *guardv1alpha1.GuardV1alpha1Client
 }
 
-// WsecurityV1alpha1 retrieves the WsecurityV1alpha1Client
-func (c *Clientset) WsecurityV1alpha1() wsecurityv1alpha1.WsecurityV1alpha1Interface {
-	return c.wsecurityV1alpha1
+// GuardV1alpha1 retrieves the GuardV1alpha1Client
+func (c *Clientset) GuardV1alpha1() guardv1alpha1.GuardV1alpha1Interface {
+	return c.guardV1alpha1
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -89,7 +89,7 @@ func NewForConfigAndClient(c *rest.Config, httpClient *http.Client) (*Clientset,
 
 	var cs Clientset
 	var err error
-	cs.wsecurityV1alpha1, err = wsecurityv1alpha1.NewForConfigAndClient(&configShallowCopy, httpClient)
+	cs.guardV1alpha1, err = guardv1alpha1.NewForConfigAndClient(&configShallowCopy, httpClient)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +114,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
-	cs.wsecurityV1alpha1 = wsecurityv1alpha1.New(c)
+	cs.guardV1alpha1 = guardv1alpha1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs
