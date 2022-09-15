@@ -8,4 +8,4 @@ Additionally, profiles are piled together and sent to the [guard-service](../../
 
 To access Guardians, guard-gate uses either the [guard-service](../../cmd/guard-service/README.md) or the [guard-kubemgr](../guard-kubemgr/README.md) package.
 
-See [Guard Architecture](./ARCHITECTURE) to learn about how Guard process and learn internally security data.
+See [Guard Architecture](/ARCHITECTURE.md) to learn about how Guard process and learn internally security data.
