@@ -38,7 +38,7 @@ This project adds:
 
 1. [guard-gate](pkg/guard-gate) - the workload security gate that is located in front of each service
 1. A **Guardian**  - an object implemented as either a CRD or a Configmap maintaining a set of micro-rules per service
-1. [guard-learner](cmd/guard-learner) - a learner service to auto learn the micro-rules stored in the **Guardian**
+1. [guard-service](cmd/guard-service) - a learner service to auto learn the micro-rules stored in the **Guardian**
 1. [guard-ui](cmd/guard-ui) - a user interface web app to simplify manual configuration of micro-rules
 
 In addition, the project adds:
@@ -46,6 +46,9 @@ In addition, the project adds:
 1. [qpoption](pkg/qpoption) - a package to enable using [guard-gate](pkg/guard-gate) with Knative Queue Proxy Option
 1. [test-gate](pkg/test-gate) - a package to enable testing Knative Queue Proxy Options named
 1. [pluginterfaces](pkg/pluginterfaces) - a base package to enable registration and interfacing security gates
+
+See [Guard Architecture](./ARCHITECTURE) to learn about how Guard process and learn internally security data.
+
 
 ## Guard Gate
 
@@ -65,10 +68,10 @@ Note that [guard-gate](pkg/guard-gate) can also be used for more generic Kuberne
 The **Guardian** object maintains the following configuration parameters:
 
 1. A control object which defines the working mode of Guard in relation to the service
-1. A learned set of micro-rules updated by [guard-learner](cmd/guard-learner)
+1. A learned set of micro-rules updated by [guard-service](cmd/guard-service)
 1. A manually configured set of micro-rules that can be updated using `kubectl` or using [guard-ui](cmd/guard-ui)  
 
-Each service has its own respective **Guardian**. New services may use a default **Guardian** for the Kubernetes namespace or may use the default Guard **Guardian**. The following procedure describes how the **Guardian** for service `servicename` in namespace `namespace` is found. Note that [guard-gate](pkg/guard-gate) may be configured to either work with CRDs (guardians.wsecurity.ibmresearch.com) or with Configmaps `guardian-*` as **Guardians**.
+Each service has its own respective **Guardian**. New services may use a default **Guardian** for the Kubernetes namespace or may use the default Guard **Guardian**. The following procedure describes how the **Guardian** for service `servicename` in namespace `namespace` is found. Note that [guard-gate](pkg/guard-gate) may be configured to either work with CRDs (guardians.guard.security.knative.dev) or with Configmaps `guardian-*` as **Guardians**.
 
 When looking for a service **Guardian**:
 
@@ -79,9 +82,11 @@ When looking for a service **Guardian**:
 
 See [guard-gate](pkg/guard-gate) for more details on the different Guard working modes.
 
-## Guard Learner
+## Guard Service
 
-[guard-learner](cmd/guard-learner) is a standalone service used to learn **Guardian** micro-rules based on inputs from instances of [guard-gate](pkg/guard-gate). [guard-learner](cmd/guard-learner) stores the **Guardian** as a CRD (guardians.wsecurity.ibmresearch.com) under the name `<servicename>` or in a Configmap under the name `guardian-<servicename>`.
+[guard-service](cmd/guard-service) is a standalone service used to learn **Guardian** micro-rules based on inputs from instances of [guard-gate](pkg/guard-gate). [guard-service](cmd/guard-service) stores the **Guardian** as a CRD (guardians.guard.security.knative.dev) under the name `<servicename>` or in a Configmap under the name `guardian-<servicename>`.
+
+Additionally, [guard-service](cmd/guard-service) cache Guardians and serve [guard-gate](pkg/guard-gate) requests to get a copy of the Guardian. This is done to reduce the load on KubeApi since any deployed Knative pod requires to access a copy of the Guardian on startup.
 
 ## Guard User Interface
 
