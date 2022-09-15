@@ -47,7 +47,7 @@ In addition, the project adds:
 1. [test-gate](pkg/test-gate) - a package to enable testing Knative Queue Proxy Options named
 1. [pluginterfaces](pkg/pluginterfaces) - a base package to enable registration and interfacing security gates
 
-See [Guard Architecture](./ARCHITECTURE) to learn about how Guard process and learn internally security data.
+See [Guard Architecture](ARCHITECTURE.md) to learn about how Guard process and learn internally security data.
 
 ## Guard Gate
 
