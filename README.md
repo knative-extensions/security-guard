@@ -49,7 +49,6 @@ In addition, the project adds:
 
 See [Guard Architecture](./ARCHITECTURE) to learn about how Guard process and learn internally security data.
 
-
 ## Guard Gate
 
 [guard-gate](pkg/guard-gate) can be loaded as a knative queue proxy option using [qpoption](pkg/qpoption)

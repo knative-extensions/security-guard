@@ -1,6 +1,6 @@
 # Guard Gate
 
-guard-gate is a go package that can be attached to a go reverse proxy in order to extract profiles about requests, responses and teh pod it is running at.
+guard-gate is a go package that can be attached to a go reverse proxy in order to extract profiles about requests, responses and the pod it is running at.
 
 Each profile is compared to the criteria defined in the Guardian allowing the guard-gate to alert about misbehavior or block misbehavers.
 
