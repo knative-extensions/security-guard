@@ -345,7 +345,7 @@ func (k *KubeMgr) Set(ns string, sid string, isCm bool, guardianSpec *spec.Guard
 // GetGuardian - Returns a Guardian that was read from Crd or from ConfigMap or an auto-activated Guardian
 // Never returns nil
 //    ns is the namespace being used
-//    sid is teh service identifier being used
+//    sid is the service identifier being used
 //    cm if true a ConfigMap, otherwise a CRD
 //    autoActivate  - if true, when a default guardian is returned, set it to auto activate mod
 func (k *KubeMgr) GetGuardian(ns string, sid string, cm bool, autoActivate bool) *spec.GuardianSpec {
