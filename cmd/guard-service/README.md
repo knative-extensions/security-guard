@@ -10,4 +10,4 @@ Guardians are based on the [guard.security.knative.dev](../../pkg/apis/guard/v1a
 
 To access Guardians, guard-service uses the [guard-kubemgr](../guard-kubemgr/README.md) package.
 
-See [Guard Architecture](./ARCHITECTURE) to learn about how Guard process and learn internally security data.
+See [Guard Architecture](ARCHITECTURE.md) to learn about how Guard process and learn internally security data.
