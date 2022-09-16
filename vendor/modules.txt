@@ -794,7 +794,7 @@ knative.dev/pkg/tracing/propagation
 knative.dev/pkg/tracing/propagation/tracecontextb3
 knative.dev/pkg/tracker
 knative.dev/pkg/websocket
-# knative.dev/serving v0.34.1-0.20220914230604-c832f358b92f
+# knative.dev/serving v0.34.1-0.20220915131205-d6ab4640ebb2
 ## explicit; go 1.18
 knative.dev/serving/pkg/activator
 knative.dev/serving/pkg/apis/autoscaling
