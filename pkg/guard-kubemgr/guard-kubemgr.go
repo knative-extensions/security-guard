@@ -41,6 +41,15 @@ import (
 // Guardians are composed of a set of micro-rules to control a guard-gate
 // Guardians are stored either as a CRD or in a ConfigMap depending on the system used
 
+type KubeMgrInterface interface {
+	InitConfigs()
+	Read(ns string, sid string, isCm bool) (*spec.GuardianSpec, error)
+	Create(ns string, sid string, isCm bool, guardianSpec *spec.GuardianSpec) error
+	Set(ns string, sid string, isCm bool, guardianSpec *spec.GuardianSpec) error
+	GetGuardian(ns string, sid string, cm bool, autoActivate bool) *spec.GuardianSpec
+	// Will be added in nxt PR: Watch(ns string, cmFlag bool, set func(ns string, sid string, cmFlag bool, g *spec.GuardianSpec))
+}
+
 // KubeMgr manages Guardian CRDs and Guardian CMs
 type KubeMgr struct {
 	// Function for returning k8s config
@@ -53,7 +62,7 @@ type KubeMgr struct {
 	crdClient guardv1alpha1.GuardV1alpha1Interface
 }
 
-func NewKubeMgr() *KubeMgr {
+func NewKubeMgr() KubeMgrInterface {
 	k := new(KubeMgr)
 	k.getConfigFunc = rest.InClusterConfig
 	return k

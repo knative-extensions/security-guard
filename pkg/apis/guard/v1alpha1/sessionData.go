@@ -45,6 +45,7 @@ func (profile *SessionDataProfile) Profile(req *http.Request, cip net.IP, resp *
 
 // Exposes ValuePile interface
 type SessionDataPile struct {
+	Count    uint32      `json:"count"`
 	Req      ReqPile     `json:"req"`
 	Resp     RespPile    `json:"resp"`
 	ReqBody  BodyPile    `json:"reqbody"`
@@ -58,6 +59,7 @@ func (pile *SessionDataPile) addI(valProfile ValueProfile) {
 }
 
 func (pile *SessionDataPile) Add(profile *SessionDataProfile) {
+	pile.Count++
 	pile.Req.Add(&profile.Req)
 	pile.Resp.Add(&profile.Resp)
 	pile.ReqBody.Add(&profile.ReqBody)
@@ -67,6 +69,7 @@ func (pile *SessionDataPile) Add(profile *SessionDataProfile) {
 }
 
 func (pile *SessionDataPile) Clear() {
+	pile.Count = 0
 	pile.Req.Clear()
 	pile.Resp.Clear()
 	pile.ReqBody.Clear()
@@ -80,6 +83,7 @@ func (pile *SessionDataPile) mergeI(otherValPile ValuePile) {
 }
 
 func (pile *SessionDataPile) Merge(otherPile *SessionDataPile) {
+	pile.Count += otherPile.Count
 	pile.Req.Merge(&otherPile.Req)
 	pile.Resp.Merge(&otherPile.Resp)
 	pile.ReqBody.Merge(&otherPile.ReqBody)

@@ -113,7 +113,7 @@ func TestKubeMgr_ReadCm(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			k := NewKubeMgr()
+			k := new(KubeMgr)
 			k.getConfigFunc = fakeGetInclusterConfig
 			k.cmClient = tt.fields.kclientset
 			k.crdClient = guardfake.NewSimpleClientset().GuardV1alpha1()
@@ -168,7 +168,7 @@ func TestKubeMgr_ReadCrd(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			k := NewKubeMgr()
+			k := new(KubeMgr)
 			k.getConfigFunc = fakeGetInclusterConfig
 			k.cmClient = k8sfake.NewSimpleClientset()
 			k.crdClient = tt.fields.gclientset
@@ -188,7 +188,7 @@ func TestKubeMgr_ReadCrd(t *testing.T) {
 func TestKubeMgr_CreateCm(t *testing.T) {
 
 	t.Run("create", func(t *testing.T) {
-		k := NewKubeMgr()
+		k := new(KubeMgr)
 		k.getConfigFunc = fakeGetInclusterConfig
 		k.cmClient = k8sfake.NewSimpleClientset()
 		k.crdClient = guardfake.NewSimpleClientset().GuardV1alpha1()
@@ -221,7 +221,7 @@ func TestKubeMgr_CreateCm(t *testing.T) {
 func TestKubeMgr_CreateCrd(t *testing.T) {
 	t.Run("create", func(t *testing.T) {
 
-		k := NewKubeMgr()
+		k := new(KubeMgr)
 		k.getConfigFunc = fakeGetInclusterConfig
 		k.cmClient = k8sfake.NewSimpleClientset()
 		k.crdClient = guardfake.NewSimpleClientset().GuardV1alpha1()
@@ -320,7 +320,7 @@ func TestKubeMgr_SetCm(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var err error
 			var got *spec.GuardianSpec
-			k := NewKubeMgr()
+			k := new(KubeMgr)
 			k.getConfigFunc = fakeGetInclusterConfig
 			k.cmClient = tt.fields.kclientset
 			k.crdClient = guardfake.NewSimpleClientset().GuardV1alpha1()
@@ -384,8 +384,7 @@ func TestKubeMgr_SetCrd(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
-			k := NewKubeMgr()
+			k := new(KubeMgr)
 			k.getConfigFunc = fakeGetInclusterConfig
 			k.cmClient = k8sfake.NewSimpleClientset()
 			k.crdClient = tt.fields.gclientset
@@ -471,7 +470,7 @@ func TestKubeMgr_ReadGuardian(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			k := NewKubeMgr()
+			k := new(KubeMgr)
 			k.getConfigFunc = fakeGetInclusterConfig
 
 			// Use ns.sid
