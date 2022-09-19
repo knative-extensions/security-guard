@@ -25,28 +25,19 @@ var maxPileCount = uint32(1000)
 
 // A cached record kept by guard-service for each deployed service
 type serviceRecord struct {
-	// namespace of the deployed service
-	ns string
-	// name of the deployed service
-	sid string
-	// indicate if the deployed service uses a ConfigMap (or CRD)
-	cmFlag bool
-	// a copy of the cached deployed service Guardian
-	guardianSpec *spec.GuardianSpec
-	// the deployed service Pile and a counter indicating the number of profiles piled
-	pile spec.SessionDataPile
+	ns           string               // namespace of the deployed service
+	sid          string               // name of the deployed service
+	cmFlag       bool                 // indicate if the deployed service uses a ConfigMap (or CRD)
+	guardianSpec *spec.GuardianSpec   // a copy of the cached deployed service Guardian
+	pile         spec.SessionDataPile // the deployed service Pile
 }
 
 // service cache maintaining a cached record per deployed service
 type services struct {
-	// KubeMgr to access KuebApi during cache misses
-	kmgr guardKubeMgr.KubeMgrInterface
-	// the cache
-	cache map[string]*serviceRecord
-	// list of namespaces to watch for changes in ConfigMaps and CRDs
-	namespaces map[string]bool
-	// list of cache keys to periodically process during a tick()
-	tickerKeys []string
+	kmgr       guardKubeMgr.KubeMgrInterface // KubeMgr to access KuebApi during cache misses
+	cache      map[string]*serviceRecord     // the cache
+	namespaces map[string]bool               // list of namespaces to watch for changes in ConfigMaps and CRDs
+	tickerKeys []string                      // list of cache keys to periodically process during a tick()
 }
 
 // determine the cacheKey from its components
