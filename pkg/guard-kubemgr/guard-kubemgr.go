@@ -47,7 +47,7 @@ type KubeMgrInterface interface {
 	Create(ns string, sid string, isCm bool, guardianSpec *spec.GuardianSpec) error
 	Set(ns string, sid string, isCm bool, guardianSpec *spec.GuardianSpec) error
 	GetGuardian(ns string, sid string, cm bool, autoActivate bool) *spec.GuardianSpec
-	Watch(ns string, cmFlag bool, set func(ns string, sid string, cmFlag bool, g *spec.GuardianSpec))
+	// Will be added in nxt PR: Watch(ns string, cmFlag bool, set func(ns string, sid string, cmFlag bool, g *spec.GuardianSpec))
 }
 
 // KubeMgr manages Guardian CRDs and Guardian CMs
