@@ -88,7 +88,9 @@ func Test_services_tick(t *testing.T) {
 	log = utils.CreateLogger("debug")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := newServices()
+			s := new(services)
+			s.cache = make(map[string]*serviceRecord, 64)
+			s.namespaces = make(map[string]bool, 4)
 			s.kmgr = new(fakeKmgr)
 
 			s.tick()
