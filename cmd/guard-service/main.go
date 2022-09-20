@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	"go.uber.org/zap"
 	utils "knative.dev/security-guard/pkg/guard-utils"
@@ -29,9 +30,14 @@ import (
 
 var log *zap.SugaredLogger
 
+const (
+	serviceIntervalDefault = 5 * time.Minute
+)
+
 type config struct {
 	GuardServiceLogLevel string `split_words:"true" required:"false"`
 	GuardServicePort     string `split_words:"true" required:"false"`
+	GuardServiceInterval string `split_words:"true" required:"false"`
 }
 
 type learner struct {
@@ -40,20 +46,20 @@ type learner struct {
 }
 
 func (l *learner) fetchConfig(w http.ResponseWriter, req *http.Request) {
+	// WILL BE ADDED IN NEXT PR
 }
 
 func (l *learner) processPile(w http.ResponseWriter, req *http.Request) {
-	w.Write([]byte{})
+	// WILL BE ADDED IN NEXT PR
 }
 
-func (l *learner) mainEventLoop(quit chan int) {
-
+func (l *learner) mainEventLoop(quit chan string) {
 	for {
 		select {
 		case <-l.pileLearnTicker.Ch():
 			l.services.tick()
-		case <-quit:
-			log.Info("mainEventLoop was asked to quit!")
+		case reason := <-quit:
+			log.Info("mainEventLoop was asked to quit! - Reason: %s", reason)
 			return
 		}
 	}
@@ -70,6 +76,7 @@ func main() {
 	l := new(learner)
 	l.services = newServices()
 	log = utils.CreateLogger(env.GuardServiceLogLevel)
+	l.pileLearnTicker.Parse(env.GuardServiceInterval, serviceIntervalDefault)
 	l.pileLearnTicker.Start()
 
 	http.HandleFunc("/config", l.fetchConfig)
@@ -81,11 +88,11 @@ func main() {
 	}
 
 	// start a mainLoop
-	quit := make(chan int)
+	quit := make(chan string)
 	go l.mainEventLoop(quit)
 
 	log.Infof("Starting guard-learner on %s", target)
 	err := http.ListenAndServe(target, nil)
 	log.Infof("Failed to start %v", err)
-	quit <- 0
+	quit <- "ListenAndServe failed"
 }

@@ -58,7 +58,7 @@ func newServices() *services {
 	return s
 }
 
-// periodical background work to ensure small piles eventually are stored using KubeApi
+// Periodical background work to ensure small piles eventually are stored using KubeApi
 // uses a single KubeMgr.Set() per tick(), a tick is 5 seconds by default
 // For 1000 deployed active but slow services, it may take an hour and a half to store the config in KubeAPI()
 func (s *services) tick() {

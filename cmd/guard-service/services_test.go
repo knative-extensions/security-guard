@@ -119,7 +119,7 @@ func Test_services_tick(t *testing.T) {
 				t.Errorf("Expected sid to be 'sid1'")
 			}
 			r1 := s.get("ns", "sid1", false)
-			if r9 == nil {
+			if r1 == nil {
 				t.Errorf("Expected record received nil")
 			}
 			profile1 := &spec.SessionDataProfile{}
