@@ -42,7 +42,7 @@ type config struct {
 
 type learner struct {
 	services        *services
-	pileLearnTicker utils.Ticker
+	pileLearnTicker *utils.Ticker
 }
 
 func (l *learner) fetchConfig(w http.ResponseWriter, req *http.Request) {
@@ -54,12 +54,14 @@ func (l *learner) processPile(w http.ResponseWriter, req *http.Request) {
 }
 
 func (l *learner) mainEventLoop(quit chan string) {
+	log.Infof("l.pileLearnTicker %v", l.pileLearnTicker)
+
 	for {
 		select {
 		case <-l.pileLearnTicker.Ch():
 			l.services.tick()
 		case reason := <-quit:
-			log.Info("mainEventLoop was asked to quit! - Reason: %s", reason)
+			log.Infof("mainEventLoop was asked to quit! - Reason: %s", reason)
 			return
 		}
 	}
@@ -75,6 +77,7 @@ func main() {
 
 	l := new(learner)
 	l.services = newServices()
+	l.pileLearnTicker = new(utils.Ticker)
 	log = utils.CreateLogger(env.GuardServiceLogLevel)
 	l.pileLearnTicker.Parse(env.GuardServiceInterval, serviceIntervalDefault)
 	l.pileLearnTicker.Start()
