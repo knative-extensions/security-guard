@@ -26,6 +26,15 @@ import (
 	utils "knative.dev/security-guard/pkg/guard-utils"
 )
 
+func addToPile(s *services) {
+	profile1 := &spec.SessionDataProfile{}
+	profile1.Req.Method.ProfileString("Get")
+	pile1 := spec.SessionDataPile{}
+	pile1.Add(profile1)
+	r1 := s.get("ns", "sid1", false)
+	s.merge(r1, &pile1)
+}
+
 func Test_learner_mainEventLoop(t *testing.T) {
 	log = utils.CreateLogger("x")
 	quit := make(chan string)
@@ -41,12 +50,7 @@ func Test_learner_mainEventLoop(t *testing.T) {
 	ticker.Parse("", 1000)
 	ticker.Start()
 
-	profile1 := &spec.SessionDataProfile{}
-	profile1.Req.Method.ProfileString("Get")
-	pile1 := spec.SessionDataPile{}
-	pile1.Add(profile1)
-	r1 := s.get("ns", "sid1", false)
-	s.merge(r1, &pile1)
+	addToPile(s)
 
 	t.Run("simple", func(t *testing.T) {
 		l := &learner{
@@ -57,6 +61,7 @@ func Test_learner_mainEventLoop(t *testing.T) {
 			t.Errorf("Expected 1 in pile  have %d", s.cache["sid1.ns"].pile.Count)
 		}
 
+		// Start event loop
 		go l.mainEventLoop(quit)
 
 		<-time.After(100 * time.Millisecond)
@@ -65,6 +70,19 @@ func Test_learner_mainEventLoop(t *testing.T) {
 			t.Errorf("Expected 0 in pile  have %d", s.cache["sid1.ns"].pile.Count)
 		}
 		quit <- "test done"
+		// Asked event loop to quit
+		<-time.After(100 * time.Millisecond)
+
+		addToPile(s)
+		if s.cache["sid1.ns"].pile.Count != 1 {
+			t.Errorf("Expected 1 in pile  have %d", s.cache["sid1.ns"].pile.Count)
+		}
+
+		<-time.After(100 * time.Millisecond)
+
+		if s.cache["sid1.ns"].pile.Count != 1 {
+			t.Errorf("Expected 1 in pile  have %d", s.cache["sid1.ns"].pile.Count)
+		}
 	})
 
 }
