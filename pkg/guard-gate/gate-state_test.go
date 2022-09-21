@@ -49,14 +49,19 @@ func Test_gateState_loadConfig(t *testing.T) {
 		if gs.criteria == nil || gs.ctrl == nil {
 			t.Error("nil after load")
 		}
-		gs.profileAndDecidePod()
-		gs.monitorPod = true
-		gs.criteria.Active = true
-		gateCanceled = 0
+		gs.criteria.Active = false
 		gs.profileAndDecidePod()
 		if gateCanceled != 0 {
 			t.Error("expected no cancel")
 		}
+
+		// this test only checks if panic
+		// we cant be sure what the response will be as it depends on the /proc
+		gs.monitorPod = true
+		gs.criteria.Active = true
+		gateCanceled = 0
+		gs.profileAndDecidePod()
+
 		var pp spec.PodProfile
 		gs.monitorPod = false
 		gs.copyPodProfile(&pp)
@@ -68,7 +73,7 @@ func Test_gateState_loadConfig(t *testing.T) {
 		gs.addStat("XX")
 		gs.addStat("XX")
 		if ret := gs.stat.Log(); ret != "map[XX:2]" {
-			t.Errorf("expected stat.log to be %s rceived %s", "map[XX:2]", ret)
+			t.Errorf("expected stat.log to be %s received %s", "map[XX:2]", ret)
 		}
 		if gs.shouldBlock() != false {
 			t.Error("expected false in shouldBlock")
