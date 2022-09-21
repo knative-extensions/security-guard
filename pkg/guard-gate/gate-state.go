@@ -22,7 +22,12 @@ import (
 
 	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
 	utils "knative.dev/security-guard/pkg/guard-utils"
+	pi "knative.dev/security-guard/pkg/pluginterfaces"
 )
+
+func logAlert(alert string) {
+	pi.Log.Warnf("SECURITY ALERT! %s", alert)
+}
 
 type gateState struct {
 	cancelFunc context.CancelFunc      // cancel the entire reverse proxy
