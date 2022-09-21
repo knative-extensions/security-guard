@@ -70,6 +70,9 @@ func Test_gateState_loadConfig(t *testing.T) {
 		if !reflect.DeepEqual(&gs.pod, &pp) {
 			t.Errorf("expected %v to be equal to %v", pp, gs.pod)
 		}
+
+		gs.stat.Init()
+		gs.alert = ""
 		gs.addStat("XX")
 		gs.addStat("XX")
 		if ret := gs.stat.Log(); ret != "map[XX:2]" {
