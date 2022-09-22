@@ -17,12 +17,16 @@ limitations under the License.
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
+	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
 	utils "knative.dev/security-guard/pkg/guard-utils"
 
 	"github.com/kelseyhightower/envconfig"
@@ -45,12 +49,76 @@ type learner struct {
 	pileLearnTicker *utils.Ticker
 }
 
+// Common method used for parsing ns, sid, cmFlag from all requests
+func (l *learner) baseHandler(query url.Values) (ns string, sid string, cmFlag bool, record *serviceRecord) {
+	cmFlagSlice := query["cm"]
+	sidSlice := query["sid"]
+	nsSlice := query["ns"]
+	if len(sidSlice) != 1 || len(nsSlice) != 1 || len(cmFlagSlice) > 1 {
+		log.Infof("baseHandler wrong data sid %d ns %d cmFlag %d", len(sidSlice), len(nsSlice), len(cmFlagSlice))
+		return
+	}
+	sid = sidSlice[0]
+	ns = nsSlice[0]
+	if len(cmFlagSlice) > 0 {
+		cmFlag = (cmFlagSlice[0] == "true")
+	}
+	if strings.HasPrefix(sid, "ns-") {
+		log.Infof("baseHandler illegal sid")
+		sid = ""
+		return
+	}
+
+	record = l.services.get(ns, sid, cmFlag)
+
+	log.Debugf("baseHandler load record for sid %s ns %s cmFlag %t", sid, ns, cmFlag)
+	return
+}
+
 func (l *learner) fetchConfig(w http.ResponseWriter, req *http.Request) {
-	// WILL BE ADDED IN NEXT PR
+	if req.Method != "GET" || req.URL.Path != "/config" {
+		http.Error(w, "404 not found.", http.StatusNotFound)
+		return
+	}
+
+	ns, sid, _, record := l.baseHandler(req.URL.Query())
+	if record == nil || sid == "" || ns == "" {
+		log.Infof("fetchConfig Missing data")
+		http.Error(w, "Missing data", http.StatusBadRequest)
+		return
+	}
+
+	buf, err := json.Marshal(record.guardianSpec)
+	if err != nil {
+		// should never happen
+		log.Infof("Servicing fetchConfig error while JSON Marshal %v", err)
+		http.Error(w, "Failed to marshal data", http.StatusInternalServerError)
+		return
+	}
+	w.Write(buf)
 }
 
 func (l *learner) processPile(w http.ResponseWriter, req *http.Request) {
-	// WILL BE ADDED IN NEXT PR
+	var pile spec.SessionDataPile
+	var err error
+	ns, sid, _, record := l.baseHandler(req.URL.Query())
+	if record == nil || sid == "" || ns == "" {
+		log.Infof("processPile Missing data")
+		http.Error(w, "processPile Missing data", http.StatusBadRequest)
+		return
+	}
+
+	err = json.NewDecoder(req.Body).Decode(&pile)
+	if err != nil {
+		log.Infof("processPile error: %s", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	l.services.merge(record, &pile)
+
+	log.Debugf("Successful setting record.wsgate")
+
+	w.Write([]byte{})
 }
 
 func (l *learner) mainEventLoop(quit chan string) {
@@ -68,7 +136,7 @@ func (l *learner) mainEventLoop(quit chan string) {
 }
 
 // Set network policies to ensure that only pods in your trust domain can use the service!
-func main() {
+func _main() (*learner, *http.ServeMux, string, chan string) {
 	var env config
 	if err := envconfig.Process("", &env); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to process environment: %s\n", err.Error())
@@ -76,26 +144,35 @@ func main() {
 	}
 
 	l := new(learner)
-	l.services = newServices()
 	l.pileLearnTicker = new(utils.Ticker)
 	log = utils.CreateLogger(env.GuardServiceLogLevel)
 	l.pileLearnTicker.Parse(env.GuardServiceInterval, serviceIntervalDefault)
 	l.pileLearnTicker.Start()
 
-	http.HandleFunc("/config", l.fetchConfig)
-	http.HandleFunc("/pile", l.processPile)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/config", l.fetchConfig)
+	mux.HandleFunc("/pile", l.processPile)
 
 	target := ":8888"
 	if env.GuardServicePort != "" {
 		target = fmt.Sprintf(":%s", env.GuardServicePort)
 	}
 
-	// start a mainLoop
 	quit := make(chan string)
-	go l.mainEventLoop(quit)
 
 	log.Infof("Starting guard-learner on %s", target)
-	err := http.ListenAndServe(target, nil)
+	return l, mux, target, quit
+}
+
+func main() {
+	l, mux, target, quit := _main()
+
+	l.services = newServices()
+
+	// start a mainLoop
+	go l.mainEventLoop(quit)
+
+	err := http.ListenAndServe(target, mux)
 	log.Infof("Failed to start %v", err)
 	quit <- "ListenAndServe failed"
 }

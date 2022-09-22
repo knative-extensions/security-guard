@@ -49,10 +49,16 @@ func serviceKey(ns string, sid string, cmFlag bool) string {
 	return service
 }
 
-func newServices() *services {
+func _newServices() *services {
 	s := new(services)
 	s.cache = make(map[string]*serviceRecord, 64)
 	s.namespaces = make(map[string]bool, 4)
+	return s
+}
+
+func newServices() *services {
+	s := _newServices()
+	// cant be tested due to KubeMgr
 	s.kmgr = guardKubeMgr.NewKubeMgr()
 	s.kmgr.InitConfigs()
 	return s
