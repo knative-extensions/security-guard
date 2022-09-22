@@ -70,8 +70,6 @@ func (l *learner) baseHandler(query url.Values) (ns string, sid string, cmFlag b
 	}
 
 	record = l.services.get(ns, sid, cmFlag)
-
-	log.Debugf("baseHandler load record for sid %s ns %s cmFlag %t", sid, ns, cmFlag)
 	return
 }
 
