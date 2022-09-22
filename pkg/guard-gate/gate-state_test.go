@@ -34,8 +34,7 @@ func fakeGateCancel() {
 
 func fakeGateState() *gateState {
 	gs := new(gateState)
-	gs.cancelFunc = fakeGateCancel
-	gs.stat.Init()
+	gs._init(fakeGateCancel, false)
 	srv, _ := fakeClient(http.StatusOK, "Problem in request")
 	gs.srv = srv
 	return gs

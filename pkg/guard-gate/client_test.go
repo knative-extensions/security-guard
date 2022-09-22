@@ -61,8 +61,7 @@ type fakeHttpClient struct {
 
 func fakeClient(statusCode int, response string) (*gateClient, *fakeHttpClient) {
 	srv := &gateClient{}
-	srv.sid = "x"
-	srv.ns = "x"
+	srv._init("url", "x", "x", false)
 	client := &fakeHttpClient{statusCode: statusCode, json: []byte(response)}
 	srv.httpClient = client
 	srv.clearPile()

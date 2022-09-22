@@ -49,14 +49,18 @@ type gateClient struct {
 	kubeMgr         guardKubeMgr.KubeMgrInterface
 }
 
-func (srv *gateClient) init(guardServiceUrl string, sid string, ns string, useCm bool) {
+func (srv *gateClient) _init(guardServiceUrl string, sid string, ns string, useCm bool) {
 	srv.guardServiceUrl = guardServiceUrl
 	srv.sid = sid
 	srv.ns = ns
 	srv.useCm = useCm
 	srv.httpClient = new(httpClient)
 	srv.clearPile()
+}
 
+func (srv *gateClient) init(guardServiceUrl string, sid string, ns string, useCm bool) {
+	srv._init(guardServiceUrl, sid, ns, useCm)
+	// initializtion that cant be tested due to use of KubeAMgr
 	srv.kubeMgr = guardKubeMgr.NewKubeMgr()
 	srv.kubeMgr.InitConfigs()
 }

@@ -40,11 +40,17 @@ type gateState struct {
 	srv        *gateClient             // maintainer of the pile, include client to the guard-service & kubeApi
 }
 
-func (gs *gateState) init(cancelFunc context.CancelFunc, monitorPod bool, guardServiceUrl string, sid string, ns string, useCm bool) {
+// testable code of init()
+func (gs *gateState) _init(cancelFunc context.CancelFunc, monitorPod bool) {
 	gs.stat.Init()
 	gs.monitorPod = monitorPod
 	gs.cancelFunc = cancelFunc
 	gs.srv = new(gateClient)
+}
+
+func (gs *gateState) init(cancelFunc context.CancelFunc, monitorPod bool, guardServiceUrl string, sid string, ns string, useCm bool) {
+	gs._init(cancelFunc, monitorPod)
+	// cant be tested since it uses KubeMgr underneath
 	gs.srv.init(guardServiceUrl, sid, ns, useCm)
 }
 
