@@ -58,8 +58,8 @@ func (l *learner) baseHandler(query url.Values) (ns string, sid string, cmFlag b
 		log.Infof("baseHandler wrong data sid %d ns %d cmFlag %d", len(sidSlice), len(nsSlice), len(cmFlagSlice))
 		return
 	}
-	sid = sidSlice[0]
-	ns = nsSlice[0]
+	sid = utils.Sanitize(sidSlice[0])
+	ns = utils.Sanitize(nsSlice[0])
 	if len(cmFlagSlice) > 0 {
 		cmFlag = (cmFlagSlice[0] == "true")
 	}
