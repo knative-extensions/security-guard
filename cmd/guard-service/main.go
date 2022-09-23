@@ -159,6 +159,8 @@ func preMain() (*learner, *http.ServeMux, string, chan string) {
 	l.pileLearnTicker.Parse(env.GuardServiceInterval, serviceIntervalDefault)
 	l.pileLearnTicker.Start()
 
+	l.services = newServices()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/config", l.fetchConfig)
 	mux.HandleFunc("/pile", l.processPile)
@@ -177,8 +179,8 @@ func preMain() (*learner, *http.ServeMux, string, chan string) {
 func main() {
 	l, mux, target, quit := preMain()
 
-	l.services = newServices()
-
+	// cant be tested due to KubeMgr
+	l.services.start()
 	// start a mainLoop
 	go l.mainEventLoop(quit)
 
