@@ -1,6 +1,3 @@
-//go:build tools
-// +build tools
-
 /*
 Copyright 2022 The Knative Authors
 
@@ -19,5 +16,5 @@ limitations under the License.
 
 package main
 
-// Uncomment when running in a development environment out side of the cluster 
+// Uncomment when running in a development environment out side of the cluster
 // import _ "k8s.io/client-go/plugin/pkg/client/auth"
