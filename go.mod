@@ -4,13 +4,14 @@ go 1.18
 
 require (
 	github.com/hashicorp/golang-lru v0.5.4
+	github.com/kelseyhightower/envconfig v1.4.0
 	go.uber.org/zap v1.22.0
 	k8s.io/api v0.24.4
 	k8s.io/apimachinery v0.24.4
 	k8s.io/client-go v0.24.4
 	knative.dev/hack v0.0.0-20220914183605-d1317b08c0c3
-	knative.dev/pkg v0.0.0-20220920224309-df29e2a20aba
-	knative.dev/serving v0.34.1-0.20220919222015-dadd0b6ced6e
+	knative.dev/pkg v0.0.0-20220921024409-d1d5c849073b
+	knative.dev/serving v0.34.1-0.20220922130412-2befffb2bee5
 )
 
 require (
@@ -45,7 +46,6 @@ require (
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/kelseyhightower/envconfig v1.4.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
@@ -87,7 +87,7 @@ require (
 	k8s.io/klog/v2 v2.70.2-0.20220707122935-0990e81f1a8f // indirect
 	k8s.io/kube-openapi v0.0.0-20220328201542-3ee0da9b0b42 // indirect
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9 // indirect
-	knative.dev/control-protocol v0.0.0-20220914172006-64e2528e224a // indirect
+	knative.dev/control-protocol v0.0.0-20220919144911-fce406f30830 // indirect
 	knative.dev/networking v0.0.0-20220914020748-cefed20d561c // indirect
 	sigs.k8s.io/json v0.0.0-20211208200746-9f7c6b3444d2 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
