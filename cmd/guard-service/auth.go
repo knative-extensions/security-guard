@@ -19,6 +19,5 @@ limitations under the License.
 
 package main
 
-import (
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-)
+// Uncomment when running in a development environment out side of the cluster 
+// import _ "k8s.io/client-go/plugin/pkg/client/auth"
