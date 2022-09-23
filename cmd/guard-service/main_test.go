@@ -98,69 +98,63 @@ func Test_learner_baseHandler(t *testing.T) {
 	tests := []struct {
 		name       string
 		query      url.Values
-		wantNs     string
-		wantSid    string
-		wantCmFlag bool
+		wantErr    bool
 		wantRecord *serviceRecord
 	}{
 		{
-			name:  "empty",
-			query: url.Values{},
+			name:    "empty",
+			query:   url.Values{},
+			wantErr: true,
 		},
 		{
-			name:  "noNs",
-			query: url.Values{"sid": []string{"x"}},
+			name:    "noNs",
+			query:   url.Values{"sid": []string{"x"}},
+			wantErr: true,
 		},
 		{
-			name:  "noSid",
-			query: url.Values{"ns": []string{"x"}},
+			name:    "noSid",
+			query:   url.Values{"ns": []string{"x"}},
+			wantErr: true,
 		},
 		{
-			name:  "doubleSid",
-			query: url.Values{"ns": []string{"x"}, "sid": []string{"x", "y"}},
+			name:    "doubleSid",
+			query:   url.Values{"ns": []string{"x"}, "sid": []string{"x", "y"}},
+			wantErr: true,
 		},
 		{
-			name:  "doubleNs",
-			query: url.Values{"ns": []string{"x", "y"}, "sid": []string{"x"}},
+			name:    "doubleNs",
+			query:   url.Values{"ns": []string{"x", "y"}, "sid": []string{"x"}},
+			wantErr: true,
 		},
 		{
-			name:  "doubleCm",
-			query: url.Values{"ns": []string{"x"}, "sid": []string{"x"}, "cm": []string{"x", "y"}},
+			name:    "doubleCm",
+			query:   url.Values{"ns": []string{"x"}, "sid": []string{"x"}, "cm": []string{"x", "y"}},
+			wantErr: true,
 		},
 		{
 			name:       "ok",
 			query:      url.Values{"ns": []string{"x"}, "sid": []string{"x"}},
-			wantNs:     "x",
-			wantSid:    "x",
 			wantRecord: &serviceRecord{ns: "x", sid: "x", guardianSpec: new(spec.GuardianSpec)},
 		},
 		{
 			name:       "okWithBadCm",
 			query:      url.Values{"ns": []string{"x"}, "sid": []string{"x"}, "cm": []string{"x"}},
-			wantNs:     "x",
-			wantSid:    "x",
 			wantRecord: &serviceRecord{ns: "x", sid: "x", guardianSpec: new(spec.GuardianSpec)},
 		},
 		{
 			name:       "okWithTrueCm",
 			query:      url.Values{"ns": []string{"x"}, "sid": []string{"x"}, "cm": []string{"true"}},
-			wantNs:     "x",
-			wantSid:    "x",
-			wantCmFlag: true,
 			wantRecord: &serviceRecord{ns: "x", sid: "x", cmFlag: true, guardianSpec: new(spec.GuardianSpec)},
 		},
 		{
 			name:       "okWithFalseCm",
 			query:      url.Values{"ns": []string{"x"}, "sid": []string{"x"}, "cm": []string{"false"}},
-			wantNs:     "x",
-			wantSid:    "x",
 			wantRecord: &serviceRecord{ns: "x", sid: "x", guardianSpec: new(spec.GuardianSpec)},
 		},
 		{
 			name:    "bad sid",
 			query:   url.Values{"ns": []string{"x"}, "sid": []string{"ns-zz"}},
-			wantNs:  "x",
-			wantSid: "",
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
@@ -180,15 +174,12 @@ func Test_learner_baseHandler(t *testing.T) {
 				services:        s,
 				pileLearnTicker: ticker,
 			}
-			gotNs, gotSid, gotCmFlag, gotRecord := l.baseHandler(tt.query)
-			if gotNs != tt.wantNs {
-				t.Errorf("learner.baseHandler() gotNs = %v, want %v", gotNs, tt.wantNs)
+			gotRecord, gotErr := l.baseHandler(tt.query)
+			if tt.wantErr == (gotErr == nil) {
+				t.Errorf("learner.baseHandler() gotErr = %v, want %v", gotErr, tt.wantErr)
 			}
-			if gotSid != tt.wantSid {
-				t.Errorf("learner.baseHandler() gotSid = %v, want %v", gotSid, tt.wantSid)
-			}
-			if gotCmFlag != tt.wantCmFlag {
-				t.Errorf("learner.baseHandler() gotCmFlag = %v, want %v", gotCmFlag, tt.wantCmFlag)
+			if (gotErr != nil) && (gotRecord != nil) {
+				t.Errorf("learner.baseHandler() gotErr = %v, and record %v", gotErr, gotRecord)
 			}
 			if !reflect.DeepEqual(gotRecord, tt.wantRecord) {
 				t.Errorf("learner.baseHandler() gotRecord = %v, want %v", gotRecord, tt.wantRecord)
@@ -205,7 +196,7 @@ func TestFetchConfigHandler_NoQuery(t *testing.T) {
 	s.kmgr = new(fakeKmgr)
 
 	utils.MinimumInterval = 1000
-	l, _, _, _ := _main()
+	l, _, _, _ := preMain()
 	l.services = s
 
 	// Create a request to pass to our handler. We don't have any query parameters for now, so we'll
@@ -240,14 +231,14 @@ func TestFetchConfigHandler_NoQuery(t *testing.T) {
 
 func TestFetchConfigHandler_main(t *testing.T) {
 	os.Unsetenv("GUARD_SERVICE_PORT")
-	_, _, target, _ := _main()
+	_, _, target, _ := preMain()
 
 	if target != ":8888" {
 		t.Errorf("handler returned wrong default target code: got %s want %s", target, ":8888")
 	}
 
 	os.Setenv("GUARD_SERVICE_PORT", "9999")
-	_, _, target, _ = _main()
+	_, _, target, _ = preMain()
 
 	if target != ":9999" {
 		t.Errorf("handler returned wrong default target code: got %s want %s", target, ":9999")

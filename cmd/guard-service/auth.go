@@ -1,3 +1,6 @@
+//go:build tools
+// +build tools
+
 /*
 Copyright 2022 The Knative Authors
 
@@ -14,33 +17,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package guardutils
+package main
 
-// contain at most 60 characters
-// contain only lowercase alphanumeric characters or '-'
-// start with an alphanumeric character
-// end with an alphanumeric character
-func Sanitize(in string) string {
-	if len(in) > 60 {
-		return ""
-	}
-	var letter bool
-	for i, r := range in {
-		if 97 <= r && r <= 122 {
-			letter = true
-			continue
-		}
-		if (48 <= r && r <= 57) || r == 45 {
-			letter = false
-			if i == 0 {
-				return ""
-			}
-			continue
-		}
-		return ""
-	}
-	if !letter {
-		return ""
-	}
-	return in
-}
+import (
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
+)

@@ -50,38 +50,50 @@ type learner struct {
 }
 
 // Common method used for parsing ns, sid, cmFlag from all requests
-func (l *learner) baseHandler(query url.Values) (ns string, sid string, cmFlag bool, record *serviceRecord) {
+func (l *learner) baseHandler(query url.Values) (record *serviceRecord, err error) {
 	cmFlagSlice := query["cm"]
 	sidSlice := query["sid"]
 	nsSlice := query["ns"]
+
 	if len(sidSlice) != 1 || len(nsSlice) != 1 || len(cmFlagSlice) > 1 {
-		log.Infof("baseHandler wrong data sid %d ns %d cmFlag %d", len(sidSlice), len(nsSlice), len(cmFlagSlice))
-		return
-	}
-	sid = utils.Sanitize(sidSlice[0])
-	ns = utils.Sanitize(nsSlice[0])
-	if len(cmFlagSlice) > 0 {
-		cmFlag = (cmFlagSlice[0] == "true")
-	}
-	if strings.HasPrefix(sid, "ns-") {
-		log.Infof("baseHandler illegal sid")
-		sid = ""
+		err = fmt.Errorf("wrong data sid %d ns %d cmflag %d", len(sidSlice), len(nsSlice), len(cmFlagSlice))
 		return
 	}
 
+	// extract and sanitize sid and ns
+	sid := utils.Sanitize(sidSlice[0])
+	ns := utils.Sanitize(nsSlice[0])
+
+	if strings.HasPrefix(sid, "ns-") {
+		log.Infof("baseHandler illegal sid")
+		sid = ""
+		err = fmt.Errorf("illegal sid %s", sid)
+		return
+	}
+
+	// extract and sanitize cmFlag
+	var cmFlag bool
+	if len(cmFlagSlice) > 0 {
+		cmFlag = (cmFlagSlice[0] == "true")
+	}
+
+	// get session record, create one if does not exist
 	record = l.services.get(ns, sid, cmFlag)
+	if record == nil {
+		// should never happen
+		err = fmt.Errorf("internal error  no record created")
+	}
 	return
 }
 
 func (l *learner) fetchConfig(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "GET" || req.URL.Path != "/config" {
 		http.Error(w, "404 not found.", http.StatusNotFound)
-		return
 	}
 
-	ns, sid, _, record := l.baseHandler(req.URL.Query())
-	if record == nil || sid == "" || ns == "" {
-		log.Infof("fetchConfig Missing data")
+	record, err := l.baseHandler(req.URL.Query())
+	if err != nil {
+		log.Infof("fetchConfig Missing data %v", err)
 		http.Error(w, "Missing data", http.StatusBadRequest)
 		return
 	}
@@ -99,9 +111,9 @@ func (l *learner) fetchConfig(w http.ResponseWriter, req *http.Request) {
 func (l *learner) processPile(w http.ResponseWriter, req *http.Request) {
 	var pile spec.SessionDataPile
 	var err error
-	ns, sid, _, record := l.baseHandler(req.URL.Query())
-	if record == nil || sid == "" || ns == "" {
-		log.Infof("processPile Missing data")
+	record, err := l.baseHandler(req.URL.Query())
+	if err != nil {
+		log.Infof("fetchConfig Missing data %v", err)
 		http.Error(w, "processPile Missing data", http.StatusBadRequest)
 		return
 	}
@@ -134,7 +146,7 @@ func (l *learner) mainEventLoop(quit chan string) {
 }
 
 // Set network policies to ensure that only pods in your trust domain can use the service!
-func _main() (*learner, *http.ServeMux, string, chan string) {
+func preMain() (*learner, *http.ServeMux, string, chan string) {
 	var env config
 	if err := envconfig.Process("", &env); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to process environment: %s\n", err.Error())
@@ -163,7 +175,7 @@ func _main() (*learner, *http.ServeMux, string, chan string) {
 }
 
 func main() {
-	l, mux, target, quit := _main()
+	l, mux, target, quit := preMain()
 
 	l.services = newServices()
 
