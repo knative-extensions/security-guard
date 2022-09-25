@@ -19,6 +19,7 @@ package guardgate
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -155,8 +156,8 @@ func (p *plug) preInit(ctx context.Context, c map[string]string, sid string, ns 
 
 	ctx, cancelFunction := context.WithCancel(ctx)
 
-	// Defaults used without config when used as a sidecar
-	guardServiceUrl := "http://guard-service.knative-guard"
+	// Defaults used without config when used as a qpoption
+	guardServiceUrl := fmt.Sprintf("http://%s.knative-guard", ns)
 	useCm := false
 	monitorPod := true
 
