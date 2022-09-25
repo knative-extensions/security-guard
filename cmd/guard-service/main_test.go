@@ -50,9 +50,9 @@ func Test_learner_mainEventLoop(t *testing.T) {
 	s.namespaces = make(map[string]bool, 4)
 	s.kmgr = new(fakeKmgr)
 
-	utils.MinimumInterval = 1000
+	utils.MinimumInterval = 100000
 	ticker := new(utils.Ticker)
-	ticker.Parse("", 1000)
+	ticker.Parse("", 100000)
 	ticker.Start()
 
 	addToPile(s)
@@ -164,7 +164,7 @@ func Test_learner_baseHandler(t *testing.T) {
 		s.namespaces = make(map[string]bool, 4)
 		s.kmgr = new(fakeKmgr)
 
-		utils.MinimumInterval = 1000
+		utils.MinimumInterval = 100000
 		ticker := new(utils.Ticker)
 		if tt.wantRecord != nil {
 			tt.wantRecord.pile.Clear()
@@ -195,7 +195,7 @@ func TestFetchConfigHandler_NoQuery(t *testing.T) {
 	s.namespaces = make(map[string]bool, 4)
 	s.kmgr = new(fakeKmgr)
 
-	utils.MinimumInterval = 1000
+	utils.MinimumInterval = 100000
 	l, _, _, _ := preMain()
 	l.services = s
 
@@ -254,7 +254,7 @@ func TestFetchConfigHandler_POST(t *testing.T) {
 	s.namespaces = make(map[string]bool, 4)
 	s.kmgr = new(fakeKmgr)
 
-	utils.MinimumInterval = 1000
+	utils.MinimumInterval = 100000
 	ticker := new(utils.Ticker)
 	l := &learner{
 		services:        s,
@@ -297,7 +297,7 @@ func TestFetchConfigHandler_WithQuery(t *testing.T) {
 	s.namespaces = make(map[string]bool, 4)
 	s.kmgr = new(fakeKmgr)
 
-	utils.MinimumInterval = 1000
+	utils.MinimumInterval = 100000
 	ticker := new(utils.Ticker)
 	l := &learner{
 		services:        s,
@@ -342,7 +342,7 @@ func TestProcessPileHandler_NoQuery(t *testing.T) {
 	s.namespaces = make(map[string]bool, 4)
 	s.kmgr = new(fakeKmgr)
 
-	utils.MinimumInterval = 1000
+	utils.MinimumInterval = 100000
 	ticker := new(utils.Ticker)
 	l := &learner{
 		services:        s,
@@ -385,7 +385,7 @@ func TestProcessPileHandler_WithQueryAndPile(t *testing.T) {
 	s.namespaces = make(map[string]bool, 4)
 	s.kmgr = new(fakeKmgr)
 
-	utils.MinimumInterval = 1000
+	utils.MinimumInterval = 100000
 	ticker := new(utils.Ticker)
 	l := &learner{
 		services:        s,
@@ -433,7 +433,7 @@ func TestProcessPileHandler_WithQueryAndNoPile(t *testing.T) {
 	s.namespaces = make(map[string]bool, 4)
 	s.kmgr = new(fakeKmgr)
 
-	utils.MinimumInterval = 1000
+	utils.MinimumInterval = 100000
 	ticker := new(utils.Ticker)
 	l := &learner{
 		services:        s,
