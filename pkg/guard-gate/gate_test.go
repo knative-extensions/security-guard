@@ -56,107 +56,7 @@ func testInit(c map[string]string) *plug {
 	return p
 }
 
-//func TestMain(m *testing.M) {
-//	code := m.Run()
-//	os.Exit(code)
-//}
-
-func Test_plug_guardMainEventLoop(t *testing.T) {
-	t.Run("guardianLoadTicker", func(t *testing.T) {
-		p := new(plug)
-		p.version = plugVersion
-		p.name = plugName
-		c := make(map[string]string)
-		c["guard-url"] = "url"
-		c["use-cm"] = "true"
-		c["monitor-pod"] = "x"
-
-		pi.RegisterPlug(p)
-		ctx, cancelFunction := p.preInit(context.Background(), c, "svcName", "myns", defaultLog)
-		p.gateState = fakeGateState()
-		p.gateState.loadConfig()
-		p.gateState.srv.pile.Count = 7
-		utils.MinimumInterval = 100000
-		td, _ := time.ParseDuration("10ms")
-
-		p.gateState.stat.Init()
-		p.guardianLoadTicker.Parse("", 300000)
-		// lets rely on timeout
-		go p.guardMainEventLoop(ctx)
-		time.Sleep(td)
-		cancelFunction()
-		if ret := p.gateState.stat.Log(); ret != "map[]" {
-			t.Errorf("expected stat %s received %s", "map[]", ret)
-		}
-		if p.gateState.srv.pile.Count != 7 {
-			t.Errorf("expected no pile flush")
-		}
-	})
-	t.Run("podMonitorTicker", func(t *testing.T) {
-		p := new(plug)
-		p.version = plugVersion
-		p.name = plugName
-
-		c := make(map[string]string)
-		c["guard-url"] = "url"
-		c["use-cm"] = "true"
-		c["monitor-pod"] = "x"
-
-		pi.RegisterPlug(p)
-		ctx, cancelFunction := p.preInit(context.Background(), c, "svcName", "myns", defaultLog)
-		p.gateState = fakeGateState()
-		p.gateState.loadConfig()
-		p.gateState.srv.pile.Count = 7
-		utils.MinimumInterval = 100000
-		td, _ := time.ParseDuration("10ms")
-
-		p.gateState.stat.Init()
-		p.podMonitorTicker.Parse("", 300000)
-		// lets rely on timeout
-		go p.guardMainEventLoop(ctx)
-		time.Sleep(td)
-		cancelFunction()
-		if ret := p.gateState.stat.Log(); ret != "map[]" {
-			t.Errorf("expected stat %s received %s", "map[]", ret)
-		}
-		if p.gateState.srv.pile.Count != 7 {
-			t.Errorf("expected no pile flush")
-		}
-	})
-	t.Run("reportPileTicker", func(t *testing.T) {
-		p := new(plug)
-		p.version = plugVersion
-		p.name = plugName
-
-		c := make(map[string]string)
-		c["guard-url"] = "url"
-		c["use-cm"] = "true"
-		c["monitor-pod"] = "x"
-
-		pi.RegisterPlug(p)
-		ctx, cancelFunction := p.preInit(context.Background(), c, "svcName", "myns", defaultLog)
-		p.gateState = fakeGateState()
-		p.gateState.loadConfig()
-
-		utils.MinimumInterval = 100000
-		td, _ := time.ParseDuration("10ms")
-
-		p.gateState.stat.Init()
-		p.reportPileTicker.Parse("", 300000)
-		// lets rely on timeout
-		go p.guardMainEventLoop(ctx)
-		time.Sleep(td)
-		cancelFunction()
-		if ret := p.gateState.stat.Log(); ret != "map[]" {
-			t.Errorf("expected stat %s received %s", "map[]", ret)
-		}
-		if p.gateState.srv.pile.Count != 0 {
-			t.Errorf("expected pile flush")
-		}
-	})
-}
-
-func Test_plug_guardMainEventLoop_1(t *testing.T) {
+func initTickerTest() (context.Context, context.CancelFunc, *plug) {
 	p := new(plug)
 	p.version = plugVersion
 	p.name = plugName
@@ -167,46 +67,60 @@ func Test_plug_guardMainEventLoop_1(t *testing.T) {
 	c["monitor-pod"] = "x"
 
 	pi.RegisterPlug(p)
+	utils.MinimumInterval = 100000
+
 	ctx, cancelFunction := p.preInit(context.Background(), c, "svcName", "myns", defaultLog)
 	p.gateState = fakeGateState()
 	p.gateState.loadConfig()
+	p.gateState.stat.Init()
+	return ctx, cancelFunction, p
+}
 
-	t.Run("simple", func(t *testing.T) {
-		utils.MinimumInterval = 100000
-		td, _ := time.ParseDuration("10ms")
-
-		p.gateState.stat.Init()
+func Test_plug_guardMainEventLoop_1(t *testing.T) {
+	td, _ := time.ParseDuration("10ms")
+	t.Run("guardianLoadTicker", func(t *testing.T) {
+		ctx, cancelFunction, p := initTickerTest()
 		p.guardianLoadTicker.Parse("", 300000)
 		// lets rely on timeout
 		go p.guardMainEventLoop(ctx)
-		time.Sleep(td)
-		cancelFunction()
+		<-time.After(td)
 		if ret := p.gateState.stat.Log(); ret != "map[]" {
 			t.Errorf("expected stat %s received %s", "map[]", ret)
 		}
-
-		p.gateState.stat.Init()
-		p.podMonitorTicker.Parse("", 200000)
+		cancelFunction()
+	})
+}
+func Test_plug_guardMainEventLoop_2(t *testing.T) {
+	td, _ := time.ParseDuration("10ms")
+	t.Run("podMonitorTicker", func(t *testing.T) {
+		ctx, cancelFunction, p := initTickerTest()
+		p.podMonitorTicker.Parse("", 300000)
 		// lets rely on timeout
 		go p.guardMainEventLoop(ctx)
-		td, _ = time.ParseDuration("10ms")
-		time.Sleep(td)
-		cancelFunction()
+		<-time.After(td)
 		if ret := p.gateState.stat.Log(); ret != "map[]" {
 			t.Errorf("expected stat %s received %s", "map[]", ret)
 		}
-
-		p.gateState.stat.Init()
-		p.reportPileTicker.Parse("", 100000)
+		cancelFunction()
+	})
+}
+func Test_plug_guardMainEventLoop_3(t *testing.T) {
+	td, _ := time.ParseDuration("10ms")
+	t.Run("reportPileTicker", func(t *testing.T) {
+		ctx, cancelFunction, p := initTickerTest()
+		p.reportPileTicker.Parse("", 300000)
 		// lets rely on timeout
 		go p.guardMainEventLoop(ctx)
-		td, _ = time.ParseDuration("10ms")
-		time.Sleep(td)
-		cancelFunction()
+		<-time.After(td)
 		if ret := p.gateState.stat.Log(); ret != "map[]" {
 			t.Errorf("expected stat %s received %s", "map[]", ret)
 		}
-
+		cancelFunction()
+	})
+}
+func Test_plug_guardMainEventLoop_4(t *testing.T) {
+	t.Run("reportPileTicker", func(t *testing.T) {
+		ctx, cancelFunction, p := initTickerTest()
 		cancelFunction()
 		p.guardMainEventLoop(ctx)
 		if ret := p.gateState.stat.Log(); ret != "map[]" {
@@ -214,7 +128,6 @@ func Test_plug_guardMainEventLoop_1(t *testing.T) {
 		}
 
 	})
-
 }
 
 func Test_plug_Initialize(t *testing.T) {
