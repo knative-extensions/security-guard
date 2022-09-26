@@ -129,7 +129,7 @@ func TestTicker(t *testing.T) {
 			if tt.args.stop {
 				ticker.Stop()
 			}
-			testticker := time.NewTicker(1000)
+			testticker := time.NewTicker(10000000)
 			select {
 			case <-ticker.Ch():
 				if !tt.args.ok {
