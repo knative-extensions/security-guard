@@ -74,13 +74,14 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Failed to process environment: %s\n", err.Error())
 		os.Exit(1)
 	}
+	log = utils.CreateLogger(env.GuardServiceLogLevel)
 
 	l := new(learner)
-	l.services = newServices()
-	l.pileLearnTicker = new(utils.Ticker)
-	log = utils.CreateLogger(env.GuardServiceLogLevel)
+	l.pileLearnTicker = utils.NewTicker(utils.MinimumInterval)
 	l.pileLearnTicker.Parse(env.GuardServiceInterval, serviceIntervalDefault)
 	l.pileLearnTicker.Start()
+
+	l.services = newServices()
 
 	http.HandleFunc("/config", l.fetchConfig)
 	http.HandleFunc("/pile", l.processPile)

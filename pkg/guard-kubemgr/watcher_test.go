@@ -17,7 +17,6 @@ limitations under the License.
 package guardkubemgr
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -75,7 +74,6 @@ func TestKubeMgr_CM_WatchOnce(t *testing.T) {
 			go func() {
 				defer tt.fields.cmWatcher.Stop()
 				for i := 0; i < 3; i++ {
-					fmt.Printf("i=%d\n", i)
 					time.Sleep(30 * time.Millisecond)
 					tt.fields.cmWatcher.Delete(&v1.ConfigMap{
 						ObjectMeta: metav1.ObjectMeta{
@@ -202,7 +200,6 @@ func TestKubeMgr_CRD_WatchOnce(t *testing.T) {
 			go func() {
 				defer tt.fields.crdWatcher.Stop()
 				for i := 0; i < 3; i++ {
-					fmt.Printf("i=%d\n", i)
 					time.Sleep(30 * time.Millisecond)
 
 					tt.fields.crdWatcher.Delete(&spec.Guardian{

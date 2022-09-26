@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"net"
 	"strconv"
+
+	pi "knative.dev/security-guard/pkg/pluginterfaces"
 )
 
 var procNet string = "/proc/net/"
@@ -94,7 +96,7 @@ func IpNetFromProc(protocol string) (ips []net.IP) {
 	procfile := procNet + protocol
 	data, err := ioutil.ReadFile(procfile)
 	if err != nil {
-		fmt.Printf("error while reading %s: %s\n", procfile, err.Error())
+		pi.Log.Infof("error while reading %s: %s\n", procfile, err.Error())
 		return
 	}
 
