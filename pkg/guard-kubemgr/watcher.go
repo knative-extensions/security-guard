@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
+	pi "knative.dev/security-guard/pkg/pluginterfaces"
 )
 
 // Watch never returns - use with a goroutine
@@ -75,7 +76,7 @@ func (k *KubeMgr) WatchOnce(ns string, cmFlag bool, set func(ns string, sid stri
 			case watch.Added:
 				g, ok := event.Object.(*spec.Guardian)
 				if !ok {
-					fmt.Printf("kubernetes cant convert to type Guardian\n")
+					pi.Log.Infof("kubernetes cant convert to type Guardian\n")
 					return
 				}
 				ns := g.ObjectMeta.Namespace
@@ -88,7 +89,7 @@ func (k *KubeMgr) WatchOnce(ns string, cmFlag bool, set func(ns string, sid stri
 				set(ns, sid, cmFlag, g.Spec)
 			case watch.Error:
 				s := event.Object.(*metav1.Status)
-				fmt.Printf("Error during watch CRD: \n\tListMeta %v\n\tTypeMeta %v\n", s.ListMeta, s.TypeMeta)
+				pi.Log.Infof("Error during watch CRD: \n\tListMeta %v\n\tTypeMeta %v\n", s.ListMeta, s.TypeMeta)
 			}
 		case event, ok := <-chCm:
 			if !ok {
@@ -125,14 +126,14 @@ func (k *KubeMgr) WatchOnce(ns string, cmFlag bool, set func(ns string, sid stri
 				gdata := []byte(cm.Data["Guardian"])
 				jsonErr := json.Unmarshal(gdata, g)
 				if jsonErr != nil {
-					fmt.Printf("wsgate getConfig: unmarshel error %v\n", jsonErr)
+					pi.Log.Infof("wsgate getConfig: unmarshel error %v\n", jsonErr)
 					set(ns, sid, cmFlag, nil)
 					continue
 				}
 				set(ns, sid, cmFlag, g)
 			case watch.Error:
 				s := event.Object.(*metav1.Status)
-				fmt.Printf("Error during watch CM: \n\tListMeta %v\n\tTypeMeta %v\n", s.ListMeta, s.TypeMeta)
+				pi.Log.Infof("Error during watch CM: \n\tListMeta %v\n\tTypeMeta %v\n", s.ListMeta, s.TypeMeta)
 			}
 		case <-time.After(10 * time.Minute):
 			// deal with the issue where we get no events
