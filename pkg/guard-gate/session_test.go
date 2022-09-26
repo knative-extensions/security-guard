@@ -182,7 +182,7 @@ func Test_session_sessionEventLoopTicker(t *testing.T) {
 		gs.stat.Init()
 		gs.ctrl.Block = true
 		go s.sessionEventLoop(ctx)
-		td, _ := time.ParseDuration("1ms")
+		td, _ := time.ParseDuration("10ms")
 		<-time.After(td)
 		if ret := gs.stat.Log(); ret != "map[SessionLevelAlert:1]" {
 			t.Errorf("expected stat %s received %s", "map[SessionLevelAlert:1]", ret)
