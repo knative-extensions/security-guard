@@ -47,10 +47,10 @@ type plug struct {
 	version string
 
 	// guard gate plug specifics
-	gateState          *gateState   // maintainer of the criteria and ctrl, include pod profile, gate stats and gate level alert
-	guardianLoadTicker utils.Ticker // tick to gateState.loadConfig() gateState
-	reportPileTicker   utils.Ticker // tick to gateState.flushPile()
-	podMonitorTicker   utils.Ticker // tick to gateState.profileAndDecidePod()
+	gateState          *gateState    // maintainer of the criteria and ctrl, include pod profile, gate stats and gate level alert
+	guardianLoadTicker *utils.Ticker // tick to gateState.loadConfig() gateState
+	reportPileTicker   *utils.Ticker // tick to gateState.flushPile()
+	podMonitorTicker   *utils.Ticker // tick to gateState.profileAndDecidePod()
 }
 
 func (p *plug) Shutdown() {
@@ -174,6 +174,9 @@ func (p *plug) preInit(ctx context.Context, c map[string]string, sid string, ns 
 		if v, ok = c["monitor-pod"]; ok && !strings.EqualFold(v, "true") {
 			monitorPod = false
 		}
+		p.guardianLoadTicker = utils.NewTicker(utils.MinimumInterval)
+		p.reportPileTicker = utils.NewTicker(utils.MinimumInterval)
+		p.podMonitorTicker = utils.NewTicker(utils.MinimumInterval)
 		p.guardianLoadTicker.Parse(c["guardian-load-interval"], guardianLoadIntervalDefault)
 		p.reportPileTicker.Parse(c["report-pile-interval"], reportPileIntervalDefault)
 		p.podMonitorTicker.Parse(c["pod-monitor-interval"], podMonitorIntervalDefault)

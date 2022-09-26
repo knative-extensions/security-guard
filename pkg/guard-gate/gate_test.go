@@ -67,7 +67,6 @@ func initTickerTest() (context.Context, context.CancelFunc, *plug) {
 	c["monitor-pod"] = "x"
 
 	pi.RegisterPlug(p)
-	utils.MinimumInterval = 100000
 
 	ctx, cancelFunction := p.preInit(context.Background(), c, "svcName", "myns", defaultLog)
 	p.gateState = fakeGateState()
@@ -85,6 +84,7 @@ func cancelLater(cancel context.CancelFunc) {
 func Test_plug_guardMainEventLoop_1(t *testing.T) {
 	t.Run("guardianLoadTicker", func(t *testing.T) {
 		ctx, cancelFunction, p := initTickerTest()
+		p.guardianLoadTicker = utils.NewTicker(100000)
 		p.guardianLoadTicker.Parse("", 300000)
 		// lets rely on timeout
 		go cancelLater(cancelFunction)
@@ -97,6 +97,7 @@ func Test_plug_guardMainEventLoop_1(t *testing.T) {
 func Test_plug_guardMainEventLoop_2(t *testing.T) {
 	t.Run("podMonitorTicker", func(t *testing.T) {
 		ctx, cancelFunction, p := initTickerTest()
+		p.podMonitorTicker = utils.NewTicker(100000)
 		p.podMonitorTicker.Parse("", 300000)
 		// lets rely on timeout
 		go cancelLater(cancelFunction)
@@ -109,6 +110,7 @@ func Test_plug_guardMainEventLoop_2(t *testing.T) {
 func Test_plug_guardMainEventLoop_3(t *testing.T) {
 	t.Run("reportPileTicker", func(t *testing.T) {
 		ctx, cancelFunction, p := initTickerTest()
+		p.reportPileTicker = utils.NewTicker(100000)
 		p.reportPileTicker.Parse("", 300000)
 		// lets rely on timeout
 		go cancelLater(cancelFunction)
@@ -172,6 +174,9 @@ func Test_plug_Initialize(t *testing.T) {
 			p := new(plug)
 			p.version = plugVersion
 			p.name = plugName
+			p.podMonitorTicker = utils.NewTicker(utils.MinimumInterval)
+			p.guardianLoadTicker = utils.NewTicker(utils.MinimumInterval)
+			p.reportPileTicker = utils.NewTicker(utils.MinimumInterval)
 
 			pi.RegisterPlug(p)
 			ctx, cancelFunction := p.preInit(context.Background(), tt.c, "svcName", "myns", defaultLog)

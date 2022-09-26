@@ -31,7 +31,7 @@ import (
 const sessionKey = "GuardSession"
 
 type session struct {
-	sessionTicker utils.Ticker
+	sessionTicker *utils.Ticker
 	gotResponse   bool
 	alert         string                  // session alert
 	reqTime       time.Time               // time when session was started
@@ -47,7 +47,7 @@ func newSession(state *gateState, cancel context.CancelFunc) *session {
 	s.respTime = s.reqTime // indicates that we do not know the response time
 	s.gateState = state
 	s.cancelFunc = cancel
-
+	s.sessionTicker = utils.NewTicker(utils.MinimumInterval)
 	if err := s.sessionTicker.Parse("", podMonitorIntervalDefault); err != nil {
 		pi.Log.Debugf("Error on Ticker Parse: %v", err)
 	}

@@ -17,7 +17,6 @@ limitations under the License.
 package guardutils
 
 import (
-	"fmt"
 	"testing"
 	"time"
 )
@@ -111,9 +110,7 @@ func TestTicker(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			MinimumInterval = 100000
-			fmt.Println("Test", tt.name)
-			var ticker Ticker
+			ticker := NewTicker(100000)
 			if tt.args.start {
 				ticker.Start()
 			}

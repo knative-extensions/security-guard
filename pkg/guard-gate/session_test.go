@@ -176,7 +176,7 @@ func Test_session_sessionEventLoopTicker(t *testing.T) {
 		s.alert = "x"
 
 		// lets rely on timeout
-		utils.MinimumInterval = 100000
+		s.sessionTicker = utils.NewTicker(100000)
 		s.sessionTicker.Parse("", 100000)
 		gs.stat.Init()
 		gs.ctrl.Block = true
