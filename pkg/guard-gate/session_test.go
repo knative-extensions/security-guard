@@ -165,14 +165,13 @@ func Test_session_sessionEventLoop(t *testing.T) {
 }
 
 func Test_session_sessionEventLoopTicker(t *testing.T) {
-	gs := fakeGateState()
-	gs.loadConfig()
-	gs.stat.Init()
 	t.Run("simple", func(t *testing.T) {
 		ctx, cancelFunction := context.WithCancel(context.Background())
+		gs := fakeGateState()
+		gs.loadConfig()
+		gs.stat.Init()
 		s := newSession(gs, nil)
 		s.cancelFunc = cancelFunction
-		gs.stat.Init()
 
 		s.alert = "x"
 
@@ -181,13 +180,10 @@ func Test_session_sessionEventLoopTicker(t *testing.T) {
 		s.sessionTicker.Parse("", 100000)
 		gs.stat.Init()
 		gs.ctrl.Block = true
-		go s.sessionEventLoop(ctx)
-		td, _ := time.ParseDuration("10ms")
-		<-time.After(td)
+		s.sessionEventLoop(ctx)
 		if ret := gs.stat.Log(); ret != "map[SessionLevelAlert:1]" {
 			t.Errorf("expected stat %s received %s", "map[SessionLevelAlert:1]", ret)
 		}
-		cancelFunction()
 	})
 
 }

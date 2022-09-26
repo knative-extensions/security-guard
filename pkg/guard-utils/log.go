@@ -42,7 +42,7 @@ func CreateLogger(logLevel string) *zap.SugaredLogger {
 		"level": "info",
 		"encoding": "console",
 		"outputPaths": ["stdout"],
-		"development": true,
+		"development": false,
 		"errorOutputPaths": ["stderr"],
 		"encoderConfig": {
 		  "messageKey": "message",

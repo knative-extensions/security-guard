@@ -87,6 +87,8 @@ func (s *session) sessionEventLoop(ctx context.Context) {
 	s.sessionTicker.Start()
 
 	defer func() {
+		logAlert("Session defer() ")
+
 		s.sessionTicker.Stop()
 
 		// Should we learn?
@@ -123,8 +125,10 @@ func (s *session) sessionEventLoop(ctx context.Context) {
 			s.screenPod()
 			if s.gateState.shouldBlock() && (s.hasAlert() || s.gateState.hasAlert()) {
 				s.cancel()
+				pi.Log.Debugf("Session Canceled")
 				return
 			}
+			pi.Log.Debugf("Session Tick")
 		}
 	}
 }

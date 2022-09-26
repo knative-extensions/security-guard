@@ -76,46 +76,46 @@ func initTickerTest() (context.Context, context.CancelFunc, *plug) {
 	return ctx, cancelFunction, p
 }
 
-func Test_plug_guardMainEventLoop_1(t *testing.T) {
+func cancelLater(cancel context.CancelFunc) {
 	td, _ := time.ParseDuration("10ms")
+	<-time.After(td)
+	cancel()
+}
+
+func Test_plug_guardMainEventLoop_1(t *testing.T) {
 	t.Run("guardianLoadTicker", func(t *testing.T) {
 		ctx, cancelFunction, p := initTickerTest()
 		p.guardianLoadTicker.Parse("", 300000)
 		// lets rely on timeout
-		go p.guardMainEventLoop(ctx)
-		<-time.After(td)
+		go cancelLater(cancelFunction)
+		p.guardMainEventLoop(ctx)
 		if ret := p.gateState.stat.Log(); ret != "map[]" {
 			t.Errorf("expected stat %s received %s", "map[]", ret)
 		}
-		cancelFunction()
 	})
 }
 func Test_plug_guardMainEventLoop_2(t *testing.T) {
-	td, _ := time.ParseDuration("10ms")
 	t.Run("podMonitorTicker", func(t *testing.T) {
 		ctx, cancelFunction, p := initTickerTest()
 		p.podMonitorTicker.Parse("", 300000)
 		// lets rely on timeout
-		go p.guardMainEventLoop(ctx)
-		<-time.After(td)
+		go cancelLater(cancelFunction)
+		p.guardMainEventLoop(ctx)
 		if ret := p.gateState.stat.Log(); ret != "map[]" {
 			t.Errorf("expected stat %s received %s", "map[]", ret)
 		}
-		cancelFunction()
 	})
 }
 func Test_plug_guardMainEventLoop_3(t *testing.T) {
-	td, _ := time.ParseDuration("10ms")
 	t.Run("reportPileTicker", func(t *testing.T) {
 		ctx, cancelFunction, p := initTickerTest()
 		p.reportPileTicker.Parse("", 300000)
 		// lets rely on timeout
-		go p.guardMainEventLoop(ctx)
-		<-time.After(td)
+		go cancelLater(cancelFunction)
+		p.guardMainEventLoop(ctx)
 		if ret := p.gateState.stat.Log(); ret != "map[]" {
 			t.Errorf("expected stat %s received %s", "map[]", ret)
 		}
-		cancelFunction()
 	})
 }
 func Test_plug_guardMainEventLoop_4(t *testing.T) {
@@ -126,7 +126,6 @@ func Test_plug_guardMainEventLoop_4(t *testing.T) {
 		if ret := p.gateState.stat.Log(); ret != "map[]" {
 			t.Errorf("expected stat %s received %s", "map[]", ret)
 		}
-
 	})
 }
 
