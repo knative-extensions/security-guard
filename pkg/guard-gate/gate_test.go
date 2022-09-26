@@ -276,7 +276,13 @@ func Test_plug_ApproveResponse(t *testing.T) {
 			t.Errorf("ApproveResponse expected error ! ")
 		}
 
-		req1, _ := p.ApproveRequest(req)
+		ctx, cancelFunction := context.WithCancel(req.Context())
+		s := newSession(p.gateState, cancelFunction) // maintainer of the profile
+		ctx = s.addSessionToContext(ctx)
+		ctx = context.WithValue(ctx, ctxKey("GuardSession"), s)
+
+		req1 := req.WithContext(ctx)
+
 		resp.Request = req1
 
 		_, err2 := p.ApproveResponse(req1, resp)
@@ -311,6 +317,8 @@ func Test_plug_ApproveRequest(t *testing.T) {
 		if req1 == nil {
 			t.Errorf("ApproveRequest did not return a req ")
 		}
+		_, cancelFunction1 := context.WithCancel(req1.Context())
+		cancelFunction1()
 
 		p.gateState.alert = "x"
 		p.gateState.ctrl.Block = true
@@ -323,7 +331,8 @@ func Test_plug_ApproveRequest(t *testing.T) {
 		if req2 != nil {
 			t.Errorf("ApproveRequest did not return a req ")
 		}
-
+		_, cancelFunction2 := context.WithCancel(req1.Context())
+		cancelFunction2()
 	})
 
 }

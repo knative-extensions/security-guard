@@ -125,7 +125,7 @@ func (k *KubeMgr) WatchOnce(ns string, cmFlag bool, set func(ns string, sid stri
 				gdata := []byte(cm.Data["Guardian"])
 				jsonErr := json.Unmarshal(gdata, g)
 				if jsonErr != nil {
-					fmt.Printf("wsgate getConfig: unmarshel error %v", jsonErr)
+					fmt.Printf("wsgate getConfig: unmarshel error %v\n", jsonErr)
 					set(ns, sid, cmFlag, nil)
 					continue
 				}
