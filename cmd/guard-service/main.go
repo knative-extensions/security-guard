@@ -152,10 +152,10 @@ func preMain(minimumInterval time.Duration) (*learner, *http.ServeMux, string, c
 		fmt.Fprintf(os.Stderr, "Failed to process environment: %s\n", err.Error())
 		os.Exit(1)
 	}
+	log = utils.CreateLogger(env.GuardServiceLogLevel)
 
 	l := new(learner)
 	l.pileLearnTicker = utils.NewTicker(minimumInterval)
-	log = utils.CreateLogger(env.GuardServiceLogLevel)
 	l.pileLearnTicker.Parse(env.GuardServiceInterval, serviceIntervalDefault)
 	l.pileLearnTicker.Start()
 
