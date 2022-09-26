@@ -46,9 +46,8 @@ func Test_learner_mainEventLoop(t *testing.T) {
 	s.namespaces = make(map[string]bool, 4)
 	s.kmgr = new(fakeKmgr)
 
-	utils.MinimumInterval = 1000
-	ticker := new(utils.Ticker)
-	ticker.Parse("", 1000)
+	ticker := utils.NewTicker(100000)
+	ticker.Parse("", 100000)
 	ticker.Start()
 
 	addToPile(s)
