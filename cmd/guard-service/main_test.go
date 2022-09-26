@@ -50,8 +50,7 @@ func Test_learner_mainEventLoop(t *testing.T) {
 	s.namespaces = make(map[string]bool, 4)
 	s.kmgr = new(fakeKmgr)
 
-	utils.MinimumInterval = 100000
-	ticker := new(utils.Ticker)
+	ticker := utils.NewTicker(100000)
 	ticker.Parse("", 100000)
 	ticker.Start()
 
@@ -164,8 +163,7 @@ func Test_learner_baseHandler(t *testing.T) {
 		s.namespaces = make(map[string]bool, 4)
 		s.kmgr = new(fakeKmgr)
 
-		utils.MinimumInterval = 100000
-		ticker := new(utils.Ticker)
+		ticker := utils.NewTicker(100000)
 		if tt.wantRecord != nil {
 			tt.wantRecord.pile.Clear()
 		}
@@ -195,8 +193,7 @@ func TestFetchConfigHandler_NoQuery(t *testing.T) {
 	s.namespaces = make(map[string]bool, 4)
 	s.kmgr = new(fakeKmgr)
 
-	utils.MinimumInterval = 100000
-	l, _, _, _ := preMain()
+	l, _, _, _ := preMain(100000)
 	l.services = s
 
 	// Create a request to pass to our handler. We don't have any query parameters for now, so we'll
@@ -231,14 +228,14 @@ func TestFetchConfigHandler_NoQuery(t *testing.T) {
 
 func TestFetchConfigHandler_main(t *testing.T) {
 	os.Unsetenv("GUARD_SERVICE_PORT")
-	_, _, target, _ := preMain()
+	_, _, target, _ := preMain(utils.MinimumInterval)
 
 	if target != ":8888" {
 		t.Errorf("handler returned wrong default target code: got %s want %s", target, ":8888")
 	}
 
 	os.Setenv("GUARD_SERVICE_PORT", "9999")
-	_, _, target, _ = preMain()
+	_, _, target, _ = preMain(utils.MinimumInterval)
 
 	if target != ":9999" {
 		t.Errorf("handler returned wrong default target code: got %s want %s", target, ":9999")
@@ -254,8 +251,7 @@ func TestFetchConfigHandler_POST(t *testing.T) {
 	s.namespaces = make(map[string]bool, 4)
 	s.kmgr = new(fakeKmgr)
 
-	utils.MinimumInterval = 100000
-	ticker := new(utils.Ticker)
+	ticker := utils.NewTicker(100000)
 	l := &learner{
 		services:        s,
 		pileLearnTicker: ticker,
@@ -297,8 +293,7 @@ func TestFetchConfigHandler_WithQuery(t *testing.T) {
 	s.namespaces = make(map[string]bool, 4)
 	s.kmgr = new(fakeKmgr)
 
-	utils.MinimumInterval = 100000
-	ticker := new(utils.Ticker)
+	ticker := utils.NewTicker(100000)
 	l := &learner{
 		services:        s,
 		pileLearnTicker: ticker,
@@ -342,8 +337,7 @@ func TestProcessPileHandler_NoQuery(t *testing.T) {
 	s.namespaces = make(map[string]bool, 4)
 	s.kmgr = new(fakeKmgr)
 
-	utils.MinimumInterval = 100000
-	ticker := new(utils.Ticker)
+	ticker := utils.NewTicker(100000)
 	l := &learner{
 		services:        s,
 		pileLearnTicker: ticker,
@@ -385,8 +379,7 @@ func TestProcessPileHandler_WithQueryAndPile(t *testing.T) {
 	s.namespaces = make(map[string]bool, 4)
 	s.kmgr = new(fakeKmgr)
 
-	utils.MinimumInterval = 100000
-	ticker := new(utils.Ticker)
+	ticker := utils.NewTicker(100000)
 	l := &learner{
 		services:        s,
 		pileLearnTicker: ticker,
@@ -433,8 +426,7 @@ func TestProcessPileHandler_WithQueryAndNoPile(t *testing.T) {
 	s.namespaces = make(map[string]bool, 4)
 	s.kmgr = new(fakeKmgr)
 
-	utils.MinimumInterval = 100000
-	ticker := new(utils.Ticker)
+	ticker := utils.NewTicker(100000)
 	l := &learner{
 		services:        s,
 		pileLearnTicker: ticker,

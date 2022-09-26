@@ -21,12 +21,20 @@ import (
 	"time"
 )
 
-// default values
-var MinimumInterval = 5 * time.Second
+const (
+	MinimumInterval = 5 * time.Second
+)
 
 type Ticker struct {
-	interval time.Duration
-	ticker   *time.Ticker
+	minimumInterval time.Duration
+	interval        time.Duration
+	ticker          *time.Ticker
+}
+
+func NewTicker(minimumInterval time.Duration) *Ticker {
+	t := new(Ticker)
+	t.minimumInterval = minimumInterval
+	return t
 }
 
 func (t *Ticker) Parse(intervalStr string, defaultInterval time.Duration) error {
@@ -47,8 +55,8 @@ func (t *Ticker) Parse(intervalStr string, defaultInterval time.Duration) error 
 }
 
 func (t *Ticker) Start() {
-	if t.interval < MinimumInterval {
-		t.interval = MinimumInterval
+	if t.interval < t.minimumInterval {
+		t.interval = t.minimumInterval
 	}
 	t.ticker = time.NewTicker(t.interval)
 }
@@ -61,7 +69,7 @@ func (t *Ticker) Stop() {
 
 func (t *Ticker) Ch() <-chan time.Time {
 	if t.ticker == nil {
-		t.ticker = time.NewTicker(MinimumInterval)
+		t.ticker = time.NewTicker(t.minimumInterval)
 		t.ticker.Stop()
 	}
 	return t.ticker.C

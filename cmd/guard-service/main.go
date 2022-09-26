@@ -146,7 +146,7 @@ func (l *learner) mainEventLoop(quit chan string) {
 }
 
 // Set network policies to ensure that only pods in your trust domain can use the service!
-func preMain() (*learner, *http.ServeMux, string, chan string) {
+func preMain(minimumInterval time.Duration) (*learner, *http.ServeMux, string, chan string) {
 	var env config
 	if err := envconfig.Process("", &env); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to process environment: %s\n", err.Error())
@@ -154,7 +154,7 @@ func preMain() (*learner, *http.ServeMux, string, chan string) {
 	}
 
 	l := new(learner)
-	l.pileLearnTicker = new(utils.Ticker)
+	l.pileLearnTicker = utils.NewTicker(minimumInterval)
 	log = utils.CreateLogger(env.GuardServiceLogLevel)
 	l.pileLearnTicker.Parse(env.GuardServiceInterval, serviceIntervalDefault)
 	l.pileLearnTicker.Start()
@@ -177,7 +177,7 @@ func preMain() (*learner, *http.ServeMux, string, chan string) {
 }
 
 func main() {
-	l, mux, target, quit := preMain()
+	l, mux, target, quit := preMain(utils.MinimumInterval)
 
 	// cant be tested due to KubeMgr
 	l.services.start()
