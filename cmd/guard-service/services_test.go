@@ -88,9 +88,7 @@ func Test_services_tick(t *testing.T) {
 	log = utils.CreateLogger("debug")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := new(services)
-			s.cache = make(map[string]*serviceRecord, 64)
-			s.namespaces = make(map[string]bool, 4)
+			s := newServices()
 			s.kmgr = new(fakeKmgr)
 
 			s.tick()
@@ -98,7 +96,9 @@ func Test_services_tick(t *testing.T) {
 			r9 := s.get("ns", "sid9", false)
 			if r9 == nil {
 				t.Errorf("Expected record received nil")
+				return
 			}
+			r9.guardianSpec.Learned = new(spec.SessionDataConfig)
 			s.set("ns", "sid1", false, new(spec.GuardianSpec))
 			if len(s.cache) != 2 {
 				t.Errorf("Expected 2 in cache, have %d", len(s.cache))
