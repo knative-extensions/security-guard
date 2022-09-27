@@ -54,8 +54,12 @@ func newServices() *services {
 	s.cache = make(map[string]*serviceRecord, 64)
 	s.namespaces = make(map[string]bool, 4)
 	s.kmgr = guardKubeMgr.NewKubeMgr()
-	s.kmgr.InitConfigs()
 	return s
+}
+
+func (s *services) start() {
+	// cant be tested due to KubeMgr
+	s.kmgr.InitConfigs()
 }
 
 // Periodical background work to ensure small piles eventually are stored using KubeApi

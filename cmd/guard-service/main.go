@@ -17,12 +17,16 @@ limitations under the License.
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
+	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
 	utils "knative.dev/security-guard/pkg/guard-utils"
 
 	"github.com/kelseyhightower/envconfig"
@@ -45,12 +49,86 @@ type learner struct {
 	pileLearnTicker *utils.Ticker
 }
 
+// Common method used for parsing ns, sid, cmFlag from all requests
+func (l *learner) baseHandler(query url.Values) (record *serviceRecord, err error) {
+	cmFlagSlice := query["cm"]
+	sidSlice := query["sid"]
+	nsSlice := query["ns"]
+
+	if len(sidSlice) != 1 || len(nsSlice) != 1 || len(cmFlagSlice) > 1 {
+		err = fmt.Errorf("wrong data sid %d ns %d cmflag %d", len(sidSlice), len(nsSlice), len(cmFlagSlice))
+		return
+	}
+
+	// extract and sanitize sid and ns
+	sid := utils.Sanitize(sidSlice[0])
+	ns := utils.Sanitize(nsSlice[0])
+
+	if strings.HasPrefix(sid, "ns-") {
+		log.Infof("baseHandler illegal sid")
+		sid = ""
+		err = fmt.Errorf("illegal sid %s", sid)
+		return
+	}
+
+	// extract and sanitize cmFlag
+	var cmFlag bool
+	if len(cmFlagSlice) > 0 {
+		cmFlag = (cmFlagSlice[0] == "true")
+	}
+
+	// get session record, create one if does not exist
+	record = l.services.get(ns, sid, cmFlag)
+	if record == nil {
+		// should never happen
+		err = fmt.Errorf("internal error  no record created")
+	}
+	return
+}
+
 func (l *learner) fetchConfig(w http.ResponseWriter, req *http.Request) {
-	// WILL BE ADDED IN NEXT PR
+	if req.Method != "GET" || req.URL.Path != "/config" {
+		http.Error(w, "404 not found.", http.StatusNotFound)
+	}
+
+	record, err := l.baseHandler(req.URL.Query())
+	if err != nil {
+		log.Infof("fetchConfig Missing data %v", err)
+		http.Error(w, "Missing data", http.StatusBadRequest)
+		return
+	}
+
+	buf, err := json.Marshal(record.guardianSpec)
+	if err != nil {
+		// should never happen
+		log.Infof("Servicing fetchConfig error while JSON Marshal %v", err)
+		http.Error(w, "Failed to marshal data", http.StatusInternalServerError)
+		return
+	}
+	w.Write(buf)
 }
 
 func (l *learner) processPile(w http.ResponseWriter, req *http.Request) {
-	// WILL BE ADDED IN NEXT PR
+	var pile spec.SessionDataPile
+	var err error
+	record, err := l.baseHandler(req.URL.Query())
+	if err != nil {
+		log.Infof("fetchConfig Missing data %v", err)
+		http.Error(w, "processPile Missing data", http.StatusBadRequest)
+		return
+	}
+
+	err = json.NewDecoder(req.Body).Decode(&pile)
+	if err != nil {
+		log.Infof("processPile error: %s", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	l.services.merge(record, &pile)
+
+	log.Debugf("Successful setting record.wsgate")
+
+	w.Write([]byte{})
 }
 
 func (l *learner) mainEventLoop(quit chan string) {
@@ -68,7 +146,7 @@ func (l *learner) mainEventLoop(quit chan string) {
 }
 
 // Set network policies to ensure that only pods in your trust domain can use the service!
-func main() {
+func preMain(minimumInterval time.Duration) (*learner, *http.ServeMux, string, chan string) {
 	var env config
 	if err := envconfig.Process("", &env); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to process environment: %s\n", err.Error())
@@ -77,26 +155,36 @@ func main() {
 	log = utils.CreateLogger(env.GuardServiceLogLevel)
 
 	l := new(learner)
-	l.pileLearnTicker = utils.NewTicker(utils.MinimumInterval)
+	l.pileLearnTicker = utils.NewTicker(minimumInterval)
 	l.pileLearnTicker.Parse(env.GuardServiceInterval, serviceIntervalDefault)
 	l.pileLearnTicker.Start()
 
 	l.services = newServices()
 
-	http.HandleFunc("/config", l.fetchConfig)
-	http.HandleFunc("/pile", l.processPile)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/config", l.fetchConfig)
+	mux.HandleFunc("/pile", l.processPile)
 
 	target := ":8888"
 	if env.GuardServicePort != "" {
 		target = fmt.Sprintf(":%s", env.GuardServicePort)
 	}
 
-	// start a mainLoop
 	quit := make(chan string)
-	go l.mainEventLoop(quit)
 
 	log.Infof("Starting guard-learner on %s", target)
-	err := http.ListenAndServe(target, nil)
+	return l, mux, target, quit
+}
+
+func main() {
+	l, mux, target, quit := preMain(utils.MinimumInterval)
+
+	// cant be tested due to KubeMgr
+	l.services.start()
+	// start a mainLoop
+	go l.mainEventLoop(quit)
+
+	err := http.ListenAndServe(target, mux)
 	log.Infof("Failed to start %v", err)
 	quit <- "ListenAndServe failed"
 }
