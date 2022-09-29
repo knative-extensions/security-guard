@@ -132,8 +132,6 @@ func (l *learner) processPile(w http.ResponseWriter, req *http.Request) {
 }
 
 func (l *learner) mainEventLoop(quit chan string) {
-	log.Infof("l.pileLearnTicker %v", l.pileLearnTicker)
-
 	for {
 		select {
 		case <-l.pileLearnTicker.Ch():
@@ -172,7 +170,7 @@ func preMain(minimumInterval time.Duration) (*learner, *http.ServeMux, string, c
 
 	quit := make(chan string)
 
-	log.Infof("Starting guard-learner on %s", target)
+	log.Infof("Starting guard-service on %s", target)
 	return l, mux, target, quit
 }
 
