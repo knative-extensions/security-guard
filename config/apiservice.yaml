@@ -1,0 +1,17 @@
+apiVersion: apiregistration.k8s.io/v1
+kind: APIService
+metadata:
+  name: v1alpha1.guard.security.knative.dev
+spec:
+  group: guard.security.knative.dev
+  groupPriorityMinimum: 1000
+  versionPriority: 15
+  service:
+    name: guard-service
+    namespace: knative-guard
+    port: 8888
+  version: v1alpha1
+  # development
+  insecureSkipTLSVerify: true
+  #caBundle
+  
