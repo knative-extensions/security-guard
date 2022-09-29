@@ -14,4 +14,3 @@ spec:
   # development
   insecureSkipTLSVerify: true
   #caBundle
-  
