@@ -32,7 +32,7 @@ type httpClientInterface interface {
 }
 
 type httpClient struct {
-	client *http.Client
+	client http.Client
 }
 
 func (hc *httpClient) Do(req *http.Request) (*http.Response, error) {

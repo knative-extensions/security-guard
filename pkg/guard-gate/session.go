@@ -87,8 +87,6 @@ func (s *session) sessionEventLoop(ctx context.Context) {
 	s.sessionTicker.Start()
 
 	defer func() {
-		logAlert("Session defer() ")
-
 		s.sessionTicker.Stop()
 
 		// Should we learn?
