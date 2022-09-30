@@ -93,7 +93,7 @@ func (srv *gateClient) reportPile() {
 		query.Add("cm", "true")
 	}
 	req.URL.RawQuery = query.Encode()
-	pi.Log.Infof("Reporting a pile with pileCount %d records to guard-service - Url %v", srv.pile.Count, req.URL)
+	pi.Log.Infof("Reporting a pile with pileCount %d records to guard-service", srv.pile.Count)
 
 	res, postErr := srv.httpClient.Do(req)
 	if postErr != nil {
