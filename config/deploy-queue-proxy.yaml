@@ -25,4 +25,3 @@ data:
   # This overrides the configmap produced by knative serving
   # It is useful for demonstration purposes or when using an unchanged configmap
   queue-sidecar-image: ko://knative.dev/security-guard/cmd/queue
-  
