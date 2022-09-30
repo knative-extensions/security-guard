@@ -26,7 +26,7 @@ import (
 )
 
 func logAlert(alert string) {
-	pi.Log.Warnf("SECURITY ALERT! %s", alert)
+	pi.Log.Infof("SECURITY ALERT! %s", alert)
 }
 
 type gateState struct {

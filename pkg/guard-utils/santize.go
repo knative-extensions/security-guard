@@ -24,14 +24,15 @@ func Sanitize(in string) string {
 	if len(in) > 60 {
 		return ""
 	}
-	var letter bool
+	var alphanumeric bool
 	for i, r := range in {
-		if 97 <= r && r <= 122 {
-			letter = true
+		if (97 <= r && r <= 122) || (48 <= r && r <= 57) {
+			alphanumeric = true
 			continue
 		}
-		if (48 <= r && r <= 57) || r == 45 {
-			letter = false
+		if r == 45 {
+			alphanumeric = false
+			// first letter
 			if i == 0 {
 				return ""
 			}
@@ -39,7 +40,8 @@ func Sanitize(in string) string {
 		}
 		return ""
 	}
-	if !letter {
+	// last letter
+	if !alphanumeric {
 		return ""
 	}
 	return in

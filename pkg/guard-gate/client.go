@@ -73,19 +73,17 @@ func (srv *gateClient) reportPile() {
 	}
 	defer srv.clearPile()
 
-	pi.Log.Infof("Reporting a pile with pileCount %d records to guard-service", srv.pile.Count)
-
 	postBody, marshalErr := json.Marshal(srv.pile)
 
 	if marshalErr != nil {
 		// should never happen
-		pi.Log.Warnf("Error during marshal: %v", marshalErr)
+		pi.Log.Infof("Error during marshal: %v", marshalErr)
 		return
 	}
 	reqBody := bytes.NewBuffer(postBody)
 	req, err := http.NewRequest(http.MethodPost, srv.guardServiceUrl+"/pile", reqBody)
 	if err != nil {
-		pi.Log.Warnf("Http.NewRequest error %v", err)
+		pi.Log.Infof("Http.NewRequest error %v", err)
 		return
 	}
 	query := req.URL.Query()
@@ -95,10 +93,11 @@ func (srv *gateClient) reportPile() {
 		query.Add("cm", "true")
 	}
 	req.URL.RawQuery = query.Encode()
+	pi.Log.Infof("Reporting a pile with pileCount %d records to guard-service - Url %v", srv.pile.Count, req.URL)
 
 	res, postErr := srv.httpClient.Do(req)
 	if postErr != nil {
-		pi.Log.Warnf("httpClient.Do error %v", postErr)
+		pi.Log.Infof("httpClient.Do error %v", postErr)
 		return
 	}
 	if res.Body != nil {
@@ -135,7 +134,7 @@ func (srv *gateClient) loadGuardian() *spec.GuardianSpec {
 func (srv *gateClient) loadGuardianFromService() *spec.GuardianSpec {
 	req, err := http.NewRequest(http.MethodGet, srv.guardServiceUrl+"/config", nil)
 	if err != nil {
-		pi.Log.Warnf("loadGuardianFromService Http.NewRequest error %v", err)
+		pi.Log.Infof("loadGuardianFromService Http.NewRequest error %v", err)
 		return nil
 	}
 	query := req.URL.Query()
@@ -148,7 +147,7 @@ func (srv *gateClient) loadGuardianFromService() *spec.GuardianSpec {
 
 	res, err := srv.httpClient.Do(req)
 	if err != nil {
-		pi.Log.Warnf("loadGuardianFromService httpClient.Do error %v", err)
+		pi.Log.Infof("loadGuardianFromService httpClient.Do error %v", err)
 		return nil
 	}
 

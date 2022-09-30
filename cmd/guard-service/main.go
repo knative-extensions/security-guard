@@ -40,7 +40,6 @@ const (
 
 type config struct {
 	GuardServiceLogLevel string `split_words:"true" required:"false"`
-	GuardServicePort     string `split_words:"true" required:"false"`
 	GuardServiceInterval string `split_words:"true" required:"false"`
 }
 
@@ -65,9 +64,18 @@ func (l *learner) baseHandler(query url.Values) (record *serviceRecord, err erro
 	ns := utils.Sanitize(nsSlice[0])
 
 	if strings.HasPrefix(sid, "ns-") {
-		log.Infof("baseHandler illegal sid")
 		sid = ""
 		err = fmt.Errorf("illegal sid %s", sid)
+		return
+	}
+
+	if len(sid) < 1 {
+		err = fmt.Errorf("wrong sid %s", sidSlice[0])
+		return
+	}
+
+	if len(ns) < 1 {
+		err = fmt.Errorf("wrong ns %s", nsSlice[0])
 		return
 	}
 
@@ -78,6 +86,7 @@ func (l *learner) baseHandler(query url.Values) (record *serviceRecord, err erro
 	}
 
 	// get session record, create one if does not exist
+	log.Debugf("** baseHandler ** ns %s, sid %s, cmFlag %t", ns, sid, cmFlag)
 	record = l.services.get(ns, sid, cmFlag)
 	if record == nil {
 		// should never happen
@@ -164,9 +173,6 @@ func preMain(minimumInterval time.Duration) (*learner, *http.ServeMux, string, c
 	mux.HandleFunc("/pile", l.processPile)
 
 	target := ":8888"
-	if env.GuardServicePort != "" {
-		target = fmt.Sprintf(":%s", env.GuardServicePort)
-	}
 
 	quit := make(chan string)
 
@@ -183,6 +189,6 @@ func main() {
 	go l.mainEventLoop(quit)
 
 	err := http.ListenAndServe(target, mux)
-	log.Infof("Failed to start %v", err)
+	log.Infof("Using target: %s - Failed to start %v", target, err)
 	quit <- "ListenAndServe failed"
 }

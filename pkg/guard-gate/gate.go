@@ -97,7 +97,7 @@ func (p *plug) ApproveRequest(req *http.Request) (*http.Request, error) {
 func (p *plug) ApproveResponse(req *http.Request, resp *http.Response) (*http.Response, error) {
 	s := getSessionFromContext(req.Context())
 	if s == nil { // This should never happen!
-		pi.Log.Warnf("%s ........... Blocked During Response! Missing context!", p.name)
+		pi.Log.Infof("%s ........... Blocked During Response! Missing context!", p.name)
 		return nil, errors.New("missing context")
 	}
 
@@ -197,6 +197,7 @@ func (p *plug) preInit(ctx context.Context, c map[string]string, sid string, ns 
 
 	p.gateState = new(gateState)
 	p.gateState.init(cancelFunction, monitorPod, guardServiceUrl, sid, ns, useCm)
+	pi.Log.Infof("guardServiceUrl %s", guardServiceUrl)
 	pi.Log.Infof("Loading Guardian")
 	return ctx, cancelFunction
 }
