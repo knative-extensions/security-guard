@@ -86,6 +86,7 @@ func (l *learner) baseHandler(query url.Values) (record *serviceRecord, err erro
 	}
 
 	// get session record, create one if does not exist
+	log.Debugf("** baseHandler ** ns %s, sid %s, cmFlag %t", ns, sid, cmFlag)
 	record = l.services.get(ns, sid, cmFlag)
 	if record == nil {
 		// should never happen
