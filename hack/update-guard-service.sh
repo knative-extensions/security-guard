@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Add export KO_DOCKER_REPO to your image repository 
+# Add export KO_DOCKER_REPO to your image repository
 # E.g. export KO_DOCKER_REPO=us.icr.io/knat
 
 ko apply -Rf ./config/deploy

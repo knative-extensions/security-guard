@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"path"
 	"strings"
 	"time"
 
@@ -157,26 +156,15 @@ func (p *plug) preInit(ctx context.Context, c map[string]string, sid string, ns 
 
 	ctx, cancelFunction := context.WithCancel(ctx)
 
-	sid = utils.Sanitize(sid)
-	ns = utils.Sanitize(ns)
-	if sid == "" {
-		// mandatory
-		panic("Ileal sid")
-	}
-	if ns == "" {
-		// mandatory
-		panic("Ileal ns")
-	}
-
 	// Defaults used without config when used as a qpoption
-	guardServiceUrl := path.Clean(fmt.Sprintf("http://guard-service.%s", ns))
+	guardServiceUrl := fmt.Sprintf("http://guard-service.%s", ns)
 	useCm := false
 	monitorPod := true
 
 	if c != nil {
 		if v, ok = c["guard-url"]; ok && v != "" {
 			// use default
-			guardServiceUrl = path.Clean(v)
+			guardServiceUrl = v
 		}
 
 		if v, ok = c["use-cm"]; ok && strings.EqualFold(v, "true") {
