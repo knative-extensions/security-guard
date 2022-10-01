@@ -24,6 +24,7 @@ import (
 	"knative.dev/serving/pkg/queue/sharedmain"
 )
 
+// Knative Serving Queue Proxy with support for a guard-gate QPOption
 func main() {
 	qOpt := qpoption.NewGateQPOption()
 	defer qOpt.Shutdown()

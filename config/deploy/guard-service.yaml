@@ -23,6 +23,9 @@ spec:
         imagePullPolicy: Always
         ports:
         - containerPort: 8888
+        env:
+        - name: GUARD_SERVICE_LOG_LEVEL
+          value: "debug"
 ---
 apiVersion: v1
 kind: Service

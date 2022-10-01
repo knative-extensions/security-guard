@@ -132,12 +132,12 @@ func (s *session) sessionEventLoop(ctx context.Context) {
 }
 
 func (s *session) screenResponseBody(req *http.Response) {
-	// TBD add screenResponseBody in a future PR
+	// TODO profile screenResponseBody in a future PR
 	s.alert += s.gateState.decideRespBody(&s.profile.RespBody)
 }
 
 func (s *session) screenRequestBody(req *http.Request) {
-	// TBD add screenRequestBody in a future PR
+	// TODO profile screenRequestBody in a future PR
 	s.alert += s.gateState.decideReqBody(&s.profile.ReqBody)
 }
 
