@@ -233,15 +233,6 @@ func TestFetchConfigHandler_main(t *testing.T) {
 	if target != ":8888" {
 		t.Errorf("handler returned wrong default target code: got %s want %s", target, ":8888")
 	}
-
-	os.Setenv("GUARD_SERVICE_PORT", "9999")
-	_, _, target, _ = preMain(utils.MinimumInterval)
-
-	if target != ":9999" {
-		t.Errorf("handler returned wrong default target code: got %s want %s", target, ":9999")
-	}
-
-	os.Unsetenv("GUARD_SERVICE_PORT")
 }
 
 func TestFetchConfigHandler_POST(t *testing.T) {

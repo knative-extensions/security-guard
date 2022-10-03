@@ -42,17 +42,17 @@ func Test_sanitize(t *testing.T) {
 		{
 			name: "1a",
 			in:   "1a",
-			want: "",
+			want: "1a",
 		},
 		{
 			name: "a1",
 			in:   "a1",
-			want: "",
+			want: "a1",
 		},
 		{
 			name: "1",
 			in:   "1",
-			want: "",
+			want: "1",
 		},
 		{
 			name: "-a",
@@ -62,6 +62,16 @@ func Test_sanitize(t *testing.T) {
 		{
 			name: "a-",
 			in:   "a-",
+			want: "",
+		},
+		{
+			name: "1-",
+			in:   "1-",
+			want: "",
+		},
+		{
+			name: "-1",
+			in:   "-1",
 			want: "",
 		},
 		{

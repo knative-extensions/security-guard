@@ -1,5 +1,5 @@
 /*
-Copyright 2022 The Knative Authors
+Copyright 2018 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,6 +16,21 @@ limitations under the License.
 
 package main
 
-// Uncomment when running in a development environment out side of the cluster
-// import _ "k8s.io/client-go/plugin/pkg/client/auth"
-// import _ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
+import (
+	"os"
+
+	_ "knative.dev/security-guard/pkg/guard-gate"
+	"knative.dev/security-guard/pkg/qpoption"
+	"knative.dev/serving/pkg/queue/sharedmain"
+)
+
+// Knative Serving Queue Proxy with support for a guard-gate QPOption
+func main() {
+	qOpt := qpoption.NewGateQPOption()
+	defer qOpt.Shutdown()
+
+	if sharedmain.Main(qOpt.Setup) != nil {
+		qOpt.Shutdown()
+		os.Exit(1)
+	}
+}
