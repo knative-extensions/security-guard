@@ -749,13 +749,13 @@ k8s.io/utils/lru
 k8s.io/utils/net
 k8s.io/utils/strings/slices
 k8s.io/utils/trace
-# knative.dev/control-protocol v0.0.0-20220919144911-fce406f30830
+# knative.dev/control-protocol v0.0.0-20220928174218-e5936c1fb647
 ## explicit; go 1.18
 knative.dev/control-protocol/pkg/certificates
-# knative.dev/hack v0.0.0-20220923094413-9b7638704a22
+# knative.dev/hack v0.0.0-20221003111221-b3c97904d3b5
 ## explicit; go 1.18
 knative.dev/hack
-# knative.dev/networking v0.0.0-20220914020748-cefed20d561c
+# knative.dev/networking v0.0.0-20220929142717-ce2a848e6ea9
 ## explicit; go 1.18
 knative.dev/networking/pkg/apis/networking
 knative.dev/networking/pkg/apis/networking/v1alpha1
@@ -764,7 +764,7 @@ knative.dev/networking/pkg/http
 knative.dev/networking/pkg/http/header
 knative.dev/networking/pkg/http/proxy
 knative.dev/networking/pkg/http/stats
-# knative.dev/pkg v0.0.0-20220921024409-d1d5c849073b
+# knative.dev/pkg v0.0.0-20220930124718-7c4fef1af593
 ## explicit; go 1.18
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -794,7 +794,7 @@ knative.dev/pkg/tracing/propagation
 knative.dev/pkg/tracing/propagation/tracecontextb3
 knative.dev/pkg/tracker
 knative.dev/pkg/websocket
-# knative.dev/serving v0.34.1-0.20220922130412-2befffb2bee5
+# knative.dev/serving v0.34.1-0.20221003140921-183bea1d94d8
 ## explicit; go 1.18
 knative.dev/serving/pkg/activator
 knative.dev/serving/pkg/apis/autoscaling
