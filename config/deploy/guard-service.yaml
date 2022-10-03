@@ -15,8 +15,6 @@ spec:
         app: guard-service
     spec:
       serviceAccountName: guard-service-account
-      imagePullSecrets:
-      - name: all-icr-io
       containers:
       - name: guard-service
         image: ko://knative.dev/security-guard/cmd/guard-service
