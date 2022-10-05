@@ -3,15 +3,16 @@ module knative.dev/security-guard
 go 1.18
 
 require (
+	github.com/emicklei/go-restful v2.9.5+incompatible
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/kelseyhightower/envconfig v1.4.0
 	go.uber.org/zap v1.22.0
 	k8s.io/api v0.24.4
 	k8s.io/apimachinery v0.24.4
 	k8s.io/client-go v0.24.4
-	knative.dev/hack v0.0.0-20221003111221-b3c97904d3b5
-	knative.dev/pkg v0.0.0-20220930124718-7c4fef1af593
-	knative.dev/serving v0.34.1-0.20221003140921-183bea1d94d8
+	knative.dev/hack v0.0.0-20221004153928-92a65f105c37
+	knative.dev/pkg v0.0.0-20221003153827-158538cc46ec
+	knative.dev/serving v0.34.1-0.20221003153627-4229a180f04d
 )
 
 require (
@@ -25,7 +26,6 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/emicklei/go-restful v2.9.5+incompatible // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/go-kit/log v0.1.0 // indirect
