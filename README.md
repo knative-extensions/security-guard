@@ -5,17 +5,17 @@
 [![Slack Status](https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&style=social)](https://knative.slack.com)
 [![codecov](https://codecov.io/gh/knative-sandbox/security-guard/branch/main/graph/badge.svg)](https://codecov.io/gh/knative-sandbox/security-guard)
 
-<h1><img src="img/guard.png" width="80"/> Guard</h1>
+<h1><img src="img/guard.png" width="80"/> Security-Guard</h1>
 
-## Why Do We Need Guard?
+## Why Do We Need Security-Guard?
 
 User containers deployed by Knative may include vulnerabilities, may be misconfigured and may include malicious code. The source of such vulnerabilities, misconfigurations or malicious code may be the DevOps team, a dependency or a hacker that has successfully penetrated any of the support systems (image repository, ci/cd, Knative, Kube, the DevOps team development systems etc. etc. etc.) or one of the services used by the user container. Any such security issue may enable an attacker to use the user container for other purposes than its original intention (e.g. steal data, attack others, spread, contact a C&C, Crypto mining, etc.)
 
 Users of Knative require the means to block (and/or get an alert about) an attempt to exploit a vulnerability or misconfiguration, embedded in a user container. Also, users of Knative require the means to establish situational awareness about container running potentially malicious code and be offered ways to respond once they discover that the user containers are being exploited by attackers.
 
-## How Does Guard Help Secure Knative Services
+## How Does Security-Guard Help Secure Knative Services
 
-The core component of Guard is the [guard-gate](pkg/guard-gate) which can be used to extend Knative Queue Proxy. [guard-gate](pkg/guard-gate) monitors and potentially blocks requests and/or responses to Knative services based on a per-service security configuration.
+The core component of Security-Guard, or Guard for short, is the [guard-gate](pkg/guard-gate) which can be used to extend Knative Queue Proxy. [guard-gate](pkg/guard-gate) monitors and potentially blocks requests and/or responses to Knative services based on a per-service security configuration.
 
 The per service security configuration is stored in a **"Guardian"** object. **Guardian** maintains a set of micro-rules that enable a fine grain filtering, performed against each value delivered to/from the service.
 By using the micro-rules, [guard-gate](pkg/guard-gate) can identify the delivery of exploits targeting vulnerabilities embedded as part of the service or its dependencies.
