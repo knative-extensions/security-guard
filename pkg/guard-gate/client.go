@@ -19,24 +19,63 @@ package guardgate
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"path"
+	"time"
 
 	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
 	guardKubeMgr "knative.dev/security-guard/pkg/guard-kubemgr"
 	pi "knative.dev/security-guard/pkg/pluginterfaces"
 )
 
+const guardServiceAudience = "guard-service"
+
 type httpClientInterface interface {
+	ReadToken(audience string)
 	Do(req *http.Request) (*http.Response, error)
 }
 
 type httpClient struct {
-	client http.Client
+	client           http.Client
+	token            string
+	tokenRefreshTime time.Time
+	missingToken     bool
 }
 
 func (hc *httpClient) Do(req *http.Request) (*http.Response, error) {
+	if hc.missingToken {
+		return nil, fmt.Errorf("missing Token cant access guard-service")
+	}
+	// add authorization header
+	req.Header.Add("Authorization", "Bearer "+hc.token)
 	return hc.client.Do(req)
+}
+
+func (hc *httpClient) ReadToken(audience string) {
+	// If not yet tokenRefreshTime, skip reading
+	now := time.Now()
+	if hc.tokenRefreshTime.After(now) {
+		return
+	}
+
+	// TODO: replace  "/var/run/secrets/tokens" with sharedMain.QPOptionTokenDirPath once merged.
+	b, err := ioutil.ReadFile(path.Join("/var/run/secrets/tokens", audience))
+	if err != nil {
+		pi.Log.Infof("Token %s is missing - reverting to use no guard-service", audience)
+		hc.missingToken = true
+
+		// though it seems senseless to try again if k8s is not broken
+		hc.tokenRefreshTime = now.Add(1 * time.Minute)
+		return
+	}
+	hc.token = string(b)
+	hc.missingToken = false
+
+	// refresh in 100 minuets
+	hc.tokenRefreshTime = now.Add(100 * time.Minute)
+	pi.Log.Debugf("Refreshing client token - next refresh at %s", hc.tokenRefreshTime.String())
 }
 
 type gateClient struct {
@@ -56,8 +95,10 @@ func NewGateClient(guardServiceUrl string, sid string, ns string, useCm bool) *g
 	srv.ns = ns
 	srv.useCm = useCm
 	srv.httpClient = new(httpClient)
+	srv.httpClient.ReadToken(guardServiceAudience)
 	srv.clearPile()
 	srv.kubeMgr = guardKubeMgr.NewKubeMgr()
+
 	return srv
 }
 
@@ -73,8 +114,9 @@ func (srv *gateClient) reportPile() {
 	}
 	defer srv.clearPile()
 
-	postBody, marshalErr := json.Marshal(srv.pile)
+	srv.httpClient.ReadToken(guardServiceAudience)
 
+	postBody, marshalErr := json.Marshal(srv.pile)
 	if marshalErr != nil {
 		// should never happen
 		pi.Log.Infof("Error during marshal: %v", marshalErr)
@@ -132,6 +174,8 @@ func (srv *gateClient) loadGuardian() *spec.GuardianSpec {
 }
 
 func (srv *gateClient) loadGuardianFromService() *spec.GuardianSpec {
+	srv.httpClient.ReadToken(guardServiceAudience)
+
 	req, err := http.NewRequest(http.MethodGet, srv.guardServiceUrl+"/config", nil)
 	if err != nil {
 		pi.Log.Infof("loadGuardianFromService Http.NewRequest error %v", err)

@@ -48,63 +48,78 @@ type learner struct {
 	pileLearnTicker *utils.Ticker
 }
 
+func (l *learner) authenticate(req *http.Request) (sid string, ns string, err error) {
+	token := req.Header.Get("Authorization")
+	if !strings.HasPrefix(token, "Bearer ") {
+		err = fmt.Errorf("missing token")
+		return
+	}
+	token = token[7:]
+	sid, ns, err = l.services.kmgr.TokenData(token)
+	if err != nil {
+		err = fmt.Errorf("cant verify token %w", err)
+		return
+	}
+	if sid == "ns-"+ns {
+		err = fmt.Errorf("token of a service with illegal name %s", sid)
+		return
+	}
+	return
+}
+
 // Common method used for parsing ns, sid, cmFlag from all requests
-func (l *learner) baseHandler(query url.Values) (record *serviceRecord, err error) {
+func (l *learner) queryData(query url.Values) (cmFlag bool, err error) {
 	cmFlagSlice := query["cm"]
-	sidSlice := query["sid"]
-	nsSlice := query["ns"]
 
-	if len(sidSlice) != 1 || len(nsSlice) != 1 || len(cmFlagSlice) > 1 {
-		err = fmt.Errorf("wrong data sid %d ns %d cmflag %d", len(sidSlice), len(nsSlice), len(cmFlagSlice))
-		return
-	}
-
-	// extract and sanitize sid and ns
-	sid := utils.Sanitize(sidSlice[0])
-	ns := utils.Sanitize(nsSlice[0])
-
-	if strings.HasPrefix(sid, "ns-") {
-		sid = ""
-		err = fmt.Errorf("illegal sid %s", sid)
-		return
-	}
-
-	if len(sid) < 1 {
-		err = fmt.Errorf("wrong sid %s", sidSlice[0])
-		return
-	}
-
-	if len(ns) < 1 {
-		err = fmt.Errorf("wrong ns %s", nsSlice[0])
+	if len(cmFlagSlice) > 1 {
+		err = fmt.Errorf("query has wrong cmflag length %d", len(cmFlagSlice))
 		return
 	}
 
 	// extract and sanitize cmFlag
-	var cmFlag bool
 	if len(cmFlagSlice) > 0 {
 		cmFlag = (cmFlagSlice[0] == "true")
 	}
 
+	return
+}
+
+func (l *learner) baseHandler(w http.ResponseWriter, req *http.Request) (record *serviceRecord, err error) {
+	sid, ns, err := l.authenticate(req)
+	if err != nil {
+		log.Infof("baseHandler authenticate failed with %v", err)
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+	log.Debugf("Authorized ns %s, sid %s", ns, sid)
+
+	cmFlag, err := l.queryData(req.URL.Query())
+	if err != nil {
+		log.Infof("baseHandler queryData failed with %v", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	log.Debugf("queryData cmFlag %t", cmFlag)
+
 	// get session record, create one if does not exist
-	log.Debugf("** baseHandler ** ns %s, sid %s, cmFlag %t", ns, sid, cmFlag)
 	record = l.services.get(ns, sid, cmFlag)
 	if record == nil {
 		// should never happen
-		err = fmt.Errorf("internal error  no record created")
+		err = fmt.Errorf("no record created")
+		log.Infof("internal error %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 	return
 }
 
 func (l *learner) fetchConfig(w http.ResponseWriter, req *http.Request) {
-	if req.Method != "GET" || req.URL.Path != "/config" {
-		http.Error(w, "404 not found.", http.StatusNotFound)
+	record, err := l.baseHandler(w, req)
+	if err != nil {
+		return
 	}
 
-	record, err := l.baseHandler(req.URL.Query())
-	if err != nil {
-		log.Infof("fetchConfig Missing data %v", err)
-		http.Error(w, "Missing data", http.StatusBadRequest)
-		return
+	if req.Method != "GET" || req.URL.Path != "/config" {
+		http.Error(w, "404 not found.", http.StatusNotFound)
 	}
 
 	buf, err := json.Marshal(record.guardianSpec)
@@ -118,24 +133,30 @@ func (l *learner) fetchConfig(w http.ResponseWriter, req *http.Request) {
 }
 
 func (l *learner) processPile(w http.ResponseWriter, req *http.Request) {
-	var pile spec.SessionDataPile
-	var err error
-	record, err := l.baseHandler(req.URL.Query())
+	record, err := l.baseHandler(w, req)
 	if err != nil {
-		log.Infof("fetchConfig Missing data %v", err)
-		http.Error(w, "processPile Missing data", http.StatusBadRequest)
+		return
+	}
+	if req.Method != "POST" || req.URL.Path != "/pile" {
+		http.Error(w, "404 not found.", http.StatusNotFound)
 		return
 	}
 
+	if req.ContentLength == 0 || req.Body == nil {
+		http.Error(w, "400 not found.", http.StatusBadRequest)
+		return
+	}
+
+	var pile spec.SessionDataPile
 	err = json.NewDecoder(req.Body).Decode(&pile)
 	if err != nil {
-		log.Infof("processPile error: %s", err.Error())
+		log.Infof("processPile error: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	l.services.merge(record, &pile)
 
-	log.Debugf("Successful setting record.wsgate")
+	log.Debugf("Successful merging pile")
 
 	w.Write([]byte{})
 }

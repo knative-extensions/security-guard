@@ -98,62 +98,29 @@ func Test_learner_baseHandler(t *testing.T) {
 		name       string
 		query      url.Values
 		wantErr    bool
-		wantRecord *serviceRecord
+		wantCmFlag bool
 	}{
-		{
-			name:    "empty",
-			query:   url.Values{},
-			wantErr: true,
-		},
-		{
-			name:    "noNs",
-			query:   url.Values{"sid": []string{"x"}},
-			wantErr: true,
-		},
-		{
-			name:    "noSid",
-			query:   url.Values{"ns": []string{"x"}},
-			wantErr: true,
-		},
-		{
-			name:    "doubleSid",
-			query:   url.Values{"ns": []string{"x"}, "sid": []string{"x", "y"}},
-			wantErr: true,
-		},
-		{
-			name:    "doubleNs",
-			query:   url.Values{"ns": []string{"x", "y"}, "sid": []string{"x"}},
-			wantErr: true,
-		},
 		{
 			name:    "doubleCm",
 			query:   url.Values{"ns": []string{"x"}, "sid": []string{"x"}, "cm": []string{"x", "y"}},
 			wantErr: true,
 		},
 		{
-			name:       "ok",
-			query:      url.Values{"ns": []string{"x"}, "sid": []string{"x"}},
-			wantRecord: &serviceRecord{ns: "x", sid: "x", guardianSpec: new(spec.GuardianSpec)},
+			name:  "ok",
+			query: url.Values{"ns": []string{"x"}, "sid": []string{"x"}},
 		},
 		{
-			name:       "okWithBadCm",
-			query:      url.Values{"ns": []string{"x"}, "sid": []string{"x"}, "cm": []string{"x"}},
-			wantRecord: &serviceRecord{ns: "x", sid: "x", guardianSpec: new(spec.GuardianSpec)},
+			name:  "okWithBadCm",
+			query: url.Values{"ns": []string{"x"}, "sid": []string{"x"}, "cm": []string{"x"}},
 		},
 		{
 			name:       "okWithTrueCm",
 			query:      url.Values{"ns": []string{"x"}, "sid": []string{"x"}, "cm": []string{"true"}},
-			wantRecord: &serviceRecord{ns: "x", sid: "x", cmFlag: true, guardianSpec: new(spec.GuardianSpec)},
+			wantCmFlag: true,
 		},
 		{
-			name:       "okWithFalseCm",
-			query:      url.Values{"ns": []string{"x"}, "sid": []string{"x"}, "cm": []string{"false"}},
-			wantRecord: &serviceRecord{ns: "x", sid: "x", guardianSpec: new(spec.GuardianSpec)},
-		},
-		{
-			name:    "bad sid",
-			query:   url.Values{"ns": []string{"x"}, "sid": []string{"ns-zz"}},
-			wantErr: true,
+			name:  "okWithFalseCm",
+			query: url.Values{"ns": []string{"x"}, "sid": []string{"x"}, "cm": []string{"false"}},
 		},
 	}
 	for _, tt := range tests {
@@ -164,29 +131,23 @@ func Test_learner_baseHandler(t *testing.T) {
 		s.kmgr = new(fakeKmgr)
 
 		ticker := utils.NewTicker(100000)
-		if tt.wantRecord != nil {
-			tt.wantRecord.pile.Clear()
-		}
 		t.Run(tt.name, func(t *testing.T) {
 			l := &learner{
 				services:        s,
 				pileLearnTicker: ticker,
 			}
-			gotRecord, gotErr := l.baseHandler(tt.query)
+			gotCmFlag, gotErr := l.queryData(tt.query)
 			if tt.wantErr == (gotErr == nil) {
-				t.Errorf("learner.baseHandler() gotErr = %v, want %v", gotErr, tt.wantErr)
+				t.Errorf("learner.queryData() gotErr = %v, want %v", gotErr, tt.wantErr)
 			}
-			if (gotErr != nil) && (gotRecord != nil) {
-				t.Errorf("learner.baseHandler() gotErr = %v, and record %v", gotErr, gotRecord)
-			}
-			if !reflect.DeepEqual(gotRecord, tt.wantRecord) {
-				t.Errorf("learner.baseHandler() gotRecord = %v, want %v", gotRecord, tt.wantRecord)
+			if tt.wantCmFlag != gotCmFlag {
+				t.Errorf("learner.queryData() wantCmFlag = %v, and gotCmFlag %v", tt.wantCmFlag, gotCmFlag)
 			}
 		})
 	}
 }
 
-func TestFetchConfigHandler_NoQuery(t *testing.T) {
+func TestFetchConfigHandler_NoToken(t *testing.T) {
 	log = utils.CreateLogger("x")
 	s := new(services)
 	s.cache = make(map[string]*serviceRecord, 64)
@@ -212,9 +173,9 @@ func TestFetchConfigHandler_NoQuery(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 
 	// Check the status code is what we expect.
-	if status := rr.Code; status != http.StatusBadRequest {
+	if status := rr.Code; status != http.StatusUnauthorized {
 		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusBadRequest)
+			status, http.StatusUnauthorized)
 	}
 
 	// Check the response body is what we expect.
@@ -254,7 +215,7 @@ func TestFetchConfigHandler_POST(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	req.Header.Add("Authorization", "Bearer abc")
 	// We create a ResponseRecorder (which satisfies http.ResponseWriter) to record the response.
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(l.fetchConfig)
@@ -296,7 +257,7 @@ func TestFetchConfigHandler_WithQuery(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	req.Header.Add("Authorization", "Bearer abc")
 	// We create a ResponseRecorder (which satisfies http.ResponseWriter) to record the response.
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(l.fetchConfig)
@@ -336,10 +297,11 @@ func TestProcessPileHandler_NoQuery(t *testing.T) {
 
 	// Create a request to pass to our handler. We don't have any query parameters for now, so we'll
 	// pass 'nil' as the third parameter.
-	req, err := http.NewRequest("GET", "/pile", nil)
+	req, err := http.NewRequest("POST", "/pile", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
+	req.Header.Add("Authorization", "Bearer abc")
 
 	// We create a ResponseRecorder (which satisfies http.ResponseWriter) to record the response.
 	rr := httptest.NewRecorder()
@@ -381,10 +343,11 @@ func TestProcessPileHandler_WithQueryAndPile(t *testing.T) {
 
 	// Create a request to pass to our handler. We don't have any query parameters for now, so we'll
 	// pass 'nil' as the third parameter.
-	req, err := http.NewRequest("GET", "/pile?sid=x&ns=x", reqBody)
+	req, err := http.NewRequest("POST", "/pile?sid=x&ns=x", reqBody)
 	if err != nil {
 		t.Fatal(err)
 	}
+	req.Header.Add("Authorization", "Bearer abc")
 
 	// We create a ResponseRecorder (which satisfies http.ResponseWriter) to record the response.
 	rr := httptest.NewRecorder()
@@ -427,10 +390,11 @@ func TestProcessPileHandler_WithQueryAndNoPile(t *testing.T) {
 
 	// Create a request to pass to our handler. We don't have any query parameters for now, so we'll
 	// pass 'nil' as the third parameter.
-	req, err := http.NewRequest("GET", "/pile?sid=x&ns=x", reqBody)
+	req, err := http.NewRequest("POST", "/pile?sid=x&ns=x", reqBody)
 	if err != nil {
 		t.Fatal(err)
 	}
+	req.Header.Add("Authorization", "Bearer abc")
 
 	// We create a ResponseRecorder (which satisfies http.ResponseWriter) to record the response.
 	rr := httptest.NewRecorder()

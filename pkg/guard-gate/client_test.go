@@ -51,6 +51,10 @@ func (f *fakeKmgr) GetGuardian(ns string, sid string, cm bool, autoActivate bool
 func (f *fakeKmgr) Watch(ns string, cmFlag bool, set func(ns string, sid string, cmFlag bool, g *spec.GuardianSpec)) {
 }
 
+func (f *fakeKmgr) TokenData(token string) (sid string, ns string, err error) {
+	return "mysid", "myns", nil
+}
+
 type fakeHttpClient struct {
 	statusCode int
 	json       []byte
@@ -66,6 +70,9 @@ func fakeClient(statusCode int, response string) (*gateClient, *fakeHttpClient) 
 	srv.clearPile()
 	srv.kubeMgr = &fakeKmgr{}
 	return srv, client
+}
+func (hc *fakeHttpClient) ReadToken(audience string) {
+
 }
 
 func (hc *fakeHttpClient) Do(req *http.Request) (*http.Response, error) {
