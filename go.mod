@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/emicklei/go-restful v2.9.5+incompatible
+	github.com/golang-jwt/jwt/v4 v4.3.0
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/kelseyhightower/envconfig v1.4.0
 	go.uber.org/zap v1.22.0
@@ -36,7 +37,6 @@ require (
 	github.com/go-openapi/jsonreference v0.19.5 // indirect
 	github.com/go-openapi/swag v0.19.15 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
