@@ -41,7 +41,6 @@ func addToPile(s *services) {
 }
 
 func Test_learner_mainEventLoop(t *testing.T) {
-	log = utils.CreateLogger("x")
 	quit := make(chan string)
 
 	// services
@@ -92,8 +91,6 @@ func Test_learner_mainEventLoop(t *testing.T) {
 }
 
 func Test_learner_baseHandler(t *testing.T) {
-	log = utils.CreateLogger("x")
-
 	tests := []struct {
 		name       string
 		query      url.Values
@@ -148,7 +145,6 @@ func Test_learner_baseHandler(t *testing.T) {
 }
 
 func TestFetchConfigHandler_NoToken(t *testing.T) {
-	log = utils.CreateLogger("x")
 	s := new(services)
 	s.cache = make(map[string]*serviceRecord, 64)
 	s.namespaces = make(map[string]bool, 4)
@@ -197,7 +193,6 @@ func TestFetchConfigHandler_main(t *testing.T) {
 }
 
 func TestFetchConfigHandler_POST(t *testing.T) {
-	log = utils.CreateLogger("x")
 	s := new(services)
 	s.cache = make(map[string]*serviceRecord, 64)
 	s.namespaces = make(map[string]bool, 4)
@@ -239,7 +234,6 @@ func TestFetchConfigHandler_POST(t *testing.T) {
 }
 
 func TestFetchConfigHandler_WithQuery(t *testing.T) {
-	log = utils.CreateLogger("x")
 	s := new(services)
 	s.cache = make(map[string]*serviceRecord, 64)
 	s.namespaces = make(map[string]bool, 4)
@@ -283,7 +277,6 @@ func TestFetchConfigHandler_WithQuery(t *testing.T) {
 }
 
 func TestProcessPileHandler_NoQuery(t *testing.T) {
-	log = utils.CreateLogger("x")
 	s := new(services)
 	s.cache = make(map[string]*serviceRecord, 64)
 	s.namespaces = make(map[string]bool, 4)
@@ -326,7 +319,6 @@ func TestProcessPileHandler_NoQuery(t *testing.T) {
 }
 
 func TestProcessPileHandler_WithQueryAndPile(t *testing.T) {
-	log = utils.CreateLogger("x")
 	s := new(services)
 	s.cache = make(map[string]*serviceRecord, 64)
 	s.namespaces = make(map[string]bool, 4)
@@ -374,7 +366,6 @@ func TestProcessPileHandler_WithQueryAndPile(t *testing.T) {
 }
 
 func TestProcessPileHandler_WithQueryAndNoPile(t *testing.T) {
-	log = utils.CreateLogger("x")
 	s := new(services)
 	s.cache = make(map[string]*serviceRecord, 64)
 	s.namespaces = make(map[string]bool, 4)
@@ -416,4 +407,8 @@ func TestProcessPileHandler_WithQueryAndNoPile(t *testing.T) {
 		t.Errorf("handler returned unexpected body: got %v want %v",
 			rr.Body.String(), buf)
 	}
+}
+
+func init() {
+	log = utils.CreateLogger("x")
 }
