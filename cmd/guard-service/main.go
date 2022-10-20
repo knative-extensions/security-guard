@@ -77,7 +77,7 @@ func (l *learner) queryData(query url.Values) (cmFlag bool, sid string, ns strin
 	nsSlice := query["ns"]
 
 	if len(sidSlice) != 1 || len(nsSlice) != 1 || len(cmFlagSlice) > 1 {
-		err = fmt.Errorf("query has wrong cmflag length %d", len(cmFlagSlice))
+		err = fmt.Errorf("query has wrong cmflag/sid/ns length")
 		return
 	}
 
@@ -86,17 +86,17 @@ func (l *learner) queryData(query url.Values) (cmFlag bool, sid string, ns strin
 	ns = utils.Sanitize(nsSlice[0])
 
 	if sid == "ns-"+ns {
-		err = fmt.Errorf("query sid of a service with illegal name %s", sid)
+		err = fmt.Errorf("query sid of a service with illegal name that starts with ns-")
 		return
 	}
 
 	if len(sid) < 1 {
-		err = fmt.Errorf("query wrong sid %s", sidSlice[0])
+		err = fmt.Errorf("query missing sid")
 		return
 	}
 
 	if len(ns) < 1 {
-		err = fmt.Errorf("query wrong ns %s", nsSlice[0])
+		err = fmt.Errorf("query missing ns")
 		return
 	}
 
