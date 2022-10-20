@@ -161,14 +161,6 @@ func Test_learner_baseHandler(t *testing.T) {
 }
 
 func TestFetchConfigHandler_NoToken(t *testing.T) {
-	s := new(services)
-	s.cache = make(map[string]*serviceRecord, 64)
-	s.namespaces = make(map[string]bool, 4)
-	s.kmgr = new(fakeKmgr)
-
-	l, _, _, _ := preMain(100000)
-	l.services = s
-
 	// Create a request to pass to our handler. We don't have any query parameters for now, so we'll
 	// pass 'nil' as the third parameter.
 	req, err := http.NewRequest("GET", "/config?sid=mysid&ns=myns", nil)
@@ -178,7 +170,7 @@ func TestFetchConfigHandler_NoToken(t *testing.T) {
 
 	// We create a ResponseRecorder (which satisfies http.ResponseWriter) to record the response.
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(l.fetchConfig)
+	handler := http.HandlerFunc(mylearner.fetchConfig)
 
 	// Our handlers satisfy http.Handler, so we can call their ServeHTTP method
 	// directly and pass in our Request and ResponseRecorder.
@@ -201,7 +193,6 @@ func TestFetchConfigHandler_NoToken(t *testing.T) {
 
 func TestFetchConfigHandler_main(t *testing.T) {
 	os.Unsetenv("GUARD_SERVICE_PORT")
-	_, _, target, _ := preMain(utils.MinimumInterval)
 
 	if target != ":8888" {
 		t.Errorf("handler returned wrong default target code: got %s want %s", target, ":8888")
@@ -425,7 +416,16 @@ func TestProcessPileHandler_WithQueryAndNoPile(t *testing.T) {
 	}
 }
 
+var target string
+var mylearner *learner
+
 func init() {
-	log = utils.CreateLogger("x")
+	s := new(services)
+	s.cache = make(map[string]*serviceRecord, 64)
+	s.namespaces = make(map[string]bool, 4)
+	s.kmgr = new(fakeKmgr)
+	mylearner, _, target, _ = preMain(100000)
+	mylearner.services = s
+
 	env.GuardServiceAuth = true
 }
