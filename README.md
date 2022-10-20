@@ -7,11 +7,13 @@
 
 <h1><img src="img/guard.png" width="80"/> Security-Guard</h1>
 
+This readme file focus on assisting Knative users to secure their deployed services. When working with vanilla Kubernetes, [you may deploy Guard by adding a sidecar](KUBERNETES.md).  
+
 ## Why Do We Need Security-Guard?
 
-User containers deployed by Knative may include vulnerabilities, may be misconfigured and may include malicious code. The source of such vulnerabilities, misconfigurations or malicious code may be the DevOps team, a dependency or a hacker that has successfully penetrated any of the support systems (image repository, ci/cd, Knative, Kube, the DevOps team development systems etc. etc. etc.) or one of the services used by the user container. Any such security issue may enable an attacker to use the user container for other purposes than its original intention (e.g. steal data, attack others, spread, contact a C&C, Crypto mining, etc.)
+User containers deployed on Kubernetes may include vulnerabilities, may be misconfigured and may include malicious code. The source of such vulnerabilities, misconfigurations or malicious code may be the DevOps team, a dependency or a hacker that has successfully penetrated any of the support systems (image repository, ci/cd, Knative, Kube, the DevOps team development systems etc. etc. etc.) or one of the backend services used by the user container. Any such security issue may enable an attacker to use the user container for other purposes than its original intention (e.g. steal data, attack others, spread, contact a C&C, Crypto mining, etc.)
 
-Users of Knative require the means to block (and/or get an alert about) an attempt to exploit a vulnerability or misconfiguration, embedded in a user container. Also, users of Knative require the means to establish situational awareness about container running potentially malicious code and be offered ways to respond once they discover that the user containers are being exploited by attackers.
+Users of Knative, same as any Kubernetes user, require the means to block (and/or get an alert about) an attempt to exploit a vulnerability or misconfiguration, embedded in a user container. Also, users require the means to establish situational awareness about container running potentially malicious code and be offered ways to respond once they discover that the user containers are being exploited by attackers.
 
 ## How Does Security-Guard Help Secure Knative Services
 
@@ -54,11 +56,6 @@ See [Guard Architecture](ARCHITECTURE.md) to learn about how Guard process and l
 [guard-gate](pkg/guard-gate) can be loaded as a knative queue proxy option using [qpoption](pkg/qpoption)
 
 Once loaded, it monitors the proxied requests and responses and the pod network.
-
-Note that [guard-gate](pkg/guard-gate) can also be used for more generic Kubernetes use cases by loading:
-
-- As a standalone reverse proxy, see for example: [guard-rproxy](https://github.com/IBM/workload-security-guard/tree/main/cmd/guard-rproxy)
-- As an extension to any go proxy, for example by using: [rtplugs](https://github.com/IBM/go-security-plugs/tree/main/rtplugs).
 
 ## Guardian
 
