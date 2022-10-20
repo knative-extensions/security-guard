@@ -2,9 +2,9 @@
 
 guard-rproxy is a reverse proxy embedded with a guard-gate and packed as a container image. The container image can than be used:
 
-1. As a sidecar while deploying a Kubernetes microservice. This is the recommended mode of operation and offers both client request monitoring and control and microservice pod monitoring and control.  
+1. As a sidecar while deploying a Kubernetes microservice. This is the recommended mode of operation and offers both client request monitoring and control and microservice pod monitoring and control.
 
-1. As a standalone exposed Pod in from of a protected unexposed microservice. This mode is simple to try out. It offers client request monitoring and control but does not offer microservice pod monitoring and control.  
+1. As a standalone exposed Pod in from of a protected unexposed microservice. This mode is simple to try out. It offers client request monitoring and control but does not offer microservice pod monitoring and control.
 
 ## Installing Security-Guard
 
@@ -45,7 +45,7 @@ Security alerts can be seen in the  `guard-rproxy` container of the `secured-hel
 
     kubectl logs deployment/secured-helloworld guard-rproxy -f
 
-## Deploying a seperate Security-Guard Pod
+## Deploying a separate Security-Guard Pod
 
 Use the following example yaml to deploy one example `myapp` pod that include a container running helloworld, (this pod is not exposed outside of the cluster) and one `myapp-guard` pod that include a guard container to expose the myapp service outside the cluster while performing security-behavior monitoring and control on client requests:
 

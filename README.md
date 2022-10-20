@@ -7,7 +7,7 @@
 
 <h1><img src="img/guard.png" width="80"/> Security-Guard</h1>
 
-This readme file focus on assisting Knative users to secure their deployed services. When working with vanilla Kubernetes, [you may deploy Guard by adding a sidecar](KUBERNETES.md).  
+This readme file focus on assisting Knative users to secure their deployed services. When working with vanilla Kubernetes, [you may deploy Guard by adding a sidecar](KUBERNETES.md).
 
 ## Why Do We Need Security-Guard?
 
