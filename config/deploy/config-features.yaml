@@ -9,5 +9,4 @@ metadata:
     app.kubernetes.io/version: devel
 data:
   # This overrides the configmap produced by knative serving
-  # It is useful for demonstration purposes or when using an unchanged configmap
   queueproxy.mount-podinfo: allowed

@@ -49,6 +49,8 @@ fi
 rm -fr ${YAML_OUTPUT_DIR}/*.yaml
 
 # Generated Knative component YAML files
+readonly SECURED_HELLO_YAML=${YAML_OUTPUT_DIR}/secured-helloworld.yaml
+readonly SECURED_LAYERED_MYAPP_YAML=${YAML_OUTPUT_DIR}/secured-layered-myapp.yaml
 readonly GUARD_SERVICE_YAML=${YAML_OUTPUT_DIR}/guard-service.yaml
 readonly QUEUE_PROXY_YAML=${YAML_OUTPUT_DIR}/queue-proxy.yaml
 
@@ -75,6 +77,9 @@ export KO_DOCKER_REPO
 cd "${YAML_REPO_ROOT}"
 
 echo "Building Knative Secuity-Guard"
+echo KO_YAML_FLAGS: ${KO_YAML_FLAGS}
+ko resolve ${KO_YAML_FLAGS} -f config/deploy/secured-helloworld.yaml | "${LABEL_YAML_CMD[@]}" > "${SECURED_HELLO_YAML}"
+ko resolve ${KO_YAML_FLAGS} -f config/deploy/secured-layered-myapp.yaml | "${LABEL_YAML_CMD[@]}" > "${SECURED_LAYERED_MYAPP_YAML}"
 ko resolve ${KO_YAML_FLAGS} -f config/deploy/guard-service.yaml | "${LABEL_YAML_CMD[@]}" > "${GUARD_SERVICE_YAML}"
 ko resolve ${KO_YAML_FLAGS} -f config/deploy/queue-proxy.yaml | "${LABEL_YAML_CMD[@]}" > "${QUEUE_PROXY_YAML}"
 echo "All manifests generated"
@@ -82,11 +87,15 @@ echo "All manifests generated"
 # List generated YAML files
 
 cat << EOF > ${YAML_LIST_FILE}
+${SECURED_HELLO_YAML}
+${SECURED_LAYERED_MYAPP_YAML}
 ${GUARD_SERVICE_YAML}
 ${QUEUE_PROXY_YAML}
 EOF
 
 cat << EOF > "${YAML_ENV_FILE}"
+export SECURED_HELLO_YAML=${SECURED_HELLO_YAML}
+export SECURED_LAYERED_MYAPP_YAML=${SECURED_LAYERED_MYAPP_YAML}
 export GUARD_SERVICE_YAML=${GUARD_SERVICE_YAML}
 export QUEUE_PROXY_YAML=${QUEUE_PROXY_YAML}
 EOF

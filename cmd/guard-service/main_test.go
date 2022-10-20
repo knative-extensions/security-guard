@@ -160,7 +160,11 @@ func Test_learner_baseHandler(t *testing.T) {
 	}
 }
 
+<<<<<<< HEAD
 func TestFetchConfigHandler_NoToken(t *testing.T) {
+=======
+func TestFetchConfigHandler_NoQuery(t *testing.T) {
+>>>>>>> upstream/main
 	s := new(services)
 	s.cache = make(map[string]*serviceRecord, 64)
 	s.namespaces = make(map[string]bool, 4)
@@ -427,8 +431,5 @@ func TestProcessPileHandler_WithQueryAndNoPile(t *testing.T) {
 
 func init() {
 	log = utils.CreateLogger("x")
-}
-
-func init() {
 	env.GuardServiceAuth = true
 }
