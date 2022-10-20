@@ -95,29 +95,39 @@ func Test_learner_baseHandler(t *testing.T) {
 		name       string
 		query      url.Values
 		wantErr    bool
+		wantSid    string
+		wantNs     string
 		wantCmFlag bool
 	}{
 		{
 			name:    "doubleCm",
-			query:   url.Values{"ns": []string{"x"}, "sid": []string{"x"}, "cm": []string{"x", "y"}},
+			query:   url.Values{"ns": []string{"myns"}, "sid": []string{"x"}, "cm": []string{"x", "y"}},
 			wantErr: true,
 		},
 		{
-			name:  "ok",
-			query: url.Values{"ns": []string{"x"}, "sid": []string{"x"}},
+			name:    "ok",
+			query:   url.Values{"ns": []string{"myns"}, "sid": []string{"x"}},
+			wantSid: "x",
+			wantNs:  "myns",
 		},
 		{
-			name:  "okWithBadCm",
-			query: url.Values{"ns": []string{"x"}, "sid": []string{"x"}, "cm": []string{"x"}},
+			name:    "okWithBadCm",
+			query:   url.Values{"ns": []string{"myns"}, "sid": []string{"x"}, "cm": []string{"x"}},
+			wantSid: "x",
+			wantNs:  "myns",
 		},
 		{
 			name:       "okWithTrueCm",
-			query:      url.Values{"ns": []string{"x"}, "sid": []string{"x"}, "cm": []string{"true"}},
+			query:      url.Values{"ns": []string{"myns"}, "sid": []string{"x"}, "cm": []string{"true"}},
+			wantSid:    "x",
+			wantNs:     "myns",
 			wantCmFlag: true,
 		},
 		{
-			name:  "okWithFalseCm",
-			query: url.Values{"ns": []string{"x"}, "sid": []string{"x"}, "cm": []string{"false"}},
+			name:    "okWithFalseCm",
+			query:   url.Values{"ns": []string{"myns"}, "sid": []string{"x"}, "cm": []string{"false"}},
+			wantSid: "x",
+			wantNs:  "myns",
 		},
 	}
 	for _, tt := range tests {
@@ -133,12 +143,18 @@ func Test_learner_baseHandler(t *testing.T) {
 				services:        s,
 				pileLearnTicker: ticker,
 			}
-			gotCmFlag, gotErr := l.queryData(tt.query)
+			gotCmFlag, gotSid, gotNs, gotErr := l.queryData(tt.query)
 			if tt.wantErr == (gotErr == nil) {
 				t.Errorf("learner.queryData() gotErr = %v, want %v", gotErr, tt.wantErr)
 			}
 			if tt.wantCmFlag != gotCmFlag {
 				t.Errorf("learner.queryData() wantCmFlag = %v, and gotCmFlag %v", tt.wantCmFlag, gotCmFlag)
+			}
+			if tt.wantSid != gotSid {
+				t.Errorf("learner.queryData() wantSid = %v, and gotSid %v", tt.wantSid, gotSid)
+			}
+			if tt.wantNs != gotNs {
+				t.Errorf("learner.queryData() wantNs = %v, and gotNs %v", tt.wantNs, gotNs)
 			}
 		})
 	}
@@ -155,7 +171,7 @@ func TestFetchConfigHandler_NoToken(t *testing.T) {
 
 	// Create a request to pass to our handler. We don't have any query parameters for now, so we'll
 	// pass 'nil' as the third parameter.
-	req, err := http.NewRequest("GET", "/config", nil)
+	req, err := http.NewRequest("GET", "/config?sid=mysid&ns=myns", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -206,7 +222,7 @@ func TestFetchConfigHandler_POST(t *testing.T) {
 
 	// Create a request to pass to our handler. We don't have any query parameters for now, so we'll
 	// pass 'nil' as the third parameter.
-	req, err := http.NewRequest("POST", "/config", nil)
+	req, err := http.NewRequest("POST", "/config?sid=mysid&ns=myns", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -222,7 +238,7 @@ func TestFetchConfigHandler_POST(t *testing.T) {
 	// Check the status code is what we expect.
 	if status := rr.Code; status != http.StatusNotFound {
 		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusBadRequest)
+			status, http.StatusNotFound)
 	}
 
 	// Check the response body is what we expect.
@@ -290,7 +306,7 @@ func TestProcessPileHandler_NoQuery(t *testing.T) {
 
 	// Create a request to pass to our handler. We don't have any query parameters for now, so we'll
 	// pass 'nil' as the third parameter.
-	req, err := http.NewRequest("POST", "/pile", nil)
+	req, err := http.NewRequest("POST", "/pile?sid=mysid&ns=myns", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -411,4 +427,8 @@ func TestProcessPileHandler_WithQueryAndNoPile(t *testing.T) {
 
 func init() {
 	log = utils.CreateLogger("x")
+}
+
+func init() {
+	env.GuardServiceAuth = true
 }

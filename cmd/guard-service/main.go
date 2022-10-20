@@ -41,12 +41,15 @@ const (
 type config struct {
 	GuardServiceLogLevel string `split_words:"true" required:"false"`
 	GuardServiceInterval string `split_words:"true" required:"false"`
+	GuardServiceAuth     bool   `split_words:"true" required:"false"`
 }
 
 type learner struct {
 	services        *services
 	pileLearnTicker *utils.Ticker
 }
+
+var env config
 
 func (l *learner) authenticate(req *http.Request) (sid string, ns string, err error) {
 	token := req.Header.Get("Authorization")
@@ -68,11 +71,32 @@ func (l *learner) authenticate(req *http.Request) (sid string, ns string, err er
 }
 
 // Common method used for parsing ns, sid, cmFlag from all requests
-func (l *learner) queryData(query url.Values) (cmFlag bool, err error) {
+func (l *learner) queryData(query url.Values) (cmFlag bool, sid string, ns string, err error) {
 	cmFlagSlice := query["cm"]
+	sidSlice := query["sid"]
+	nsSlice := query["ns"]
 
-	if len(cmFlagSlice) > 1 {
+	if len(sidSlice) != 1 || len(nsSlice) != 1 || len(cmFlagSlice) > 1 {
 		err = fmt.Errorf("query has wrong cmflag length %d", len(cmFlagSlice))
+		return
+	}
+
+	// extract and sanitize sid and ns
+	sid = utils.Sanitize(sidSlice[0])
+	ns = utils.Sanitize(nsSlice[0])
+
+	if sid == "ns-"+ns {
+		err = fmt.Errorf("query sid of a service with illegal name %s", sid)
+		return
+	}
+
+	if len(sid) < 1 {
+		err = fmt.Errorf("query wrong sid %s", sidSlice[0])
+		return
+	}
+
+	if len(ns) < 1 {
+		err = fmt.Errorf("query wrong ns %s", nsSlice[0])
 		return
 	}
 
@@ -85,21 +109,30 @@ func (l *learner) queryData(query url.Values) (cmFlag bool, err error) {
 }
 
 func (l *learner) baseHandler(w http.ResponseWriter, req *http.Request) (record *serviceRecord, err error) {
-	sid, ns, err := l.authenticate(req)
-	if err != nil {
-		log.Infof("baseHandler authenticate failed with %v", err)
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
-	log.Debugf("Authorized ns %s, sid %s", ns, sid)
+	var sid, ns, querySid, queryNs string
+	var cmFlag bool
 
-	cmFlag, err := l.queryData(req.URL.Query())
+	cmFlag, querySid, queryNs, err = l.queryData(req.URL.Query())
 	if err != nil {
 		log.Infof("baseHandler queryData failed with %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	log.Debugf("queryData cmFlag %t", cmFlag)
+	log.Debugf("queryData ns %s, sid %s cmFlag %t", queryNs, querySid, cmFlag)
+
+	if env.GuardServiceAuth {
+		sid, ns, err = l.authenticate(req)
+		if err != nil {
+			log.Infof("baseHandler authenticate failed with %v", err)
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+		log.Debugf("Authorized ns %s, sid %s", ns, sid)
+	} else {
+		sid = querySid
+		ns = queryNs
+		log.Debugf("Authorization skipped ns %s, sid %s", ns, sid)
+	}
 
 	// get session record, create one if does not exist
 	record = l.services.get(ns, sid, cmFlag)
@@ -109,6 +142,7 @@ func (l *learner) baseHandler(w http.ResponseWriter, req *http.Request) (record 
 		log.Infof("internal error %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+	log.Debugf("record found for ns %s, sid %s", ns, sid)
 	return
 }
 
@@ -129,6 +163,7 @@ func (l *learner) fetchConfig(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "Failed to marshal data", http.StatusInternalServerError)
 		return
 	}
+	log.Debugf("Servicing fetchConfig success")
 	w.Write(buf)
 }
 
@@ -175,7 +210,6 @@ func (l *learner) mainEventLoop(quit chan string) {
 
 // Set network policies to ensure that only pods in your trust domain can use the service!
 func preMain(minimumInterval time.Duration) (*learner, *http.ServeMux, string, chan string) {
-	var env config
 	if err := envconfig.Process("", &env); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to process environment: %s\n", err.Error())
 		os.Exit(1)

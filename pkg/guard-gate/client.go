@@ -19,7 +19,6 @@ package guardgate
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"path"
@@ -45,11 +44,10 @@ type httpClient struct {
 }
 
 func (hc *httpClient) Do(req *http.Request) (*http.Response, error) {
-	if hc.missingToken {
-		return nil, fmt.Errorf("missing Token cant access guard-service")
+	if !hc.missingToken {
+		// add authorization header - optional for this revision of guard
+		req.Header.Add("Authorization", "Bearer "+hc.token)
 	}
-	// add authorization header
-	req.Header.Add("Authorization", "Bearer "+hc.token)
 	return hc.client.Do(req)
 }
 
@@ -59,22 +57,20 @@ func (hc *httpClient) ReadToken(audience string) {
 	if hc.tokenRefreshTime.After(now) {
 		return
 	}
+	// refresh in 100 minuets
+	hc.tokenRefreshTime = now.Add(100 * time.Minute)
 
 	// TODO: replace  "/var/run/secrets/tokens" with sharedMain.QPOptionTokenDirPath once merged.
 	b, err := ioutil.ReadFile(path.Join("/var/run/secrets/tokens", audience))
-	if err != nil {
-		pi.Log.Infof("Token %s is missing - reverting to use no guard-service", audience)
-		hc.missingToken = true
 
-		// though it seems senseless to try again if k8s is not broken
-		hc.tokenRefreshTime = now.Add(1 * time.Minute)
+	if err != nil {
+		pi.Log.Infof("Token %s is missing - working without token", audience)
+		hc.missingToken = true
 		return
 	}
 	hc.token = string(b)
 	hc.missingToken = false
 
-	// refresh in 100 minuets
-	hc.tokenRefreshTime = now.Add(100 * time.Minute)
 	pi.Log.Debugf("Refreshing client token - next refresh at %s", hc.tokenRefreshTime.String())
 }
 
@@ -109,7 +105,6 @@ func (srv *gateClient) start() {
 
 func (srv *gateClient) reportPile() {
 	if srv.pile.Count == 0 {
-		pi.Log.Debugf("No pile to report to guard-service!")
 		return
 	}
 	defer srv.clearPile()
