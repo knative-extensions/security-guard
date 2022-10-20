@@ -20,10 +20,12 @@ spec:
         image: ko://knative.dev/security-guard/cmd/guard-service
         imagePullPolicy: Always
         ports:
-        - containerPort: 8888
+          - containerPort: 8888
         env:
-        - name: GUARD_SERVICE_LOG_LEVEL
-          value: "debug"
+          - name: GUARD_SERVICE_AUTH
+            value: "false"
+          - name: GUARD_SERVICE_LOG_LEVEL
+            value: "debug"
 ---
 apiVersion: v1
 kind: Service
