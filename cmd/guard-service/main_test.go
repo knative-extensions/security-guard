@@ -160,11 +160,7 @@ func Test_learner_baseHandler(t *testing.T) {
 	}
 }
 
-<<<<<<< HEAD
 func TestFetchConfigHandler_NoToken(t *testing.T) {
-=======
-func TestFetchConfigHandler_NoQuery(t *testing.T) {
->>>>>>> upstream/main
 	s := new(services)
 	s.cache = make(map[string]*serviceRecord, 64)
 	s.namespaces = make(map[string]bool, 4)
