@@ -34,7 +34,7 @@ const plugName string = "guard"
 
 const (
 	guardianLoadIntervalDefault = 5 * time.Minute
-	reportPileIntervalDefault   = 4 * time.Second
+	reportPileIntervalDefault   = 10 * time.Second
 	podMonitorIntervalDefault   = 5 * time.Second
 )
 
@@ -136,12 +136,10 @@ func (p *plug) guardMainEventLoop(ctx context.Context) {
 
 		// Periodically get an updated Guardian
 		case <-p.guardianLoadTicker.Ch():
-			pi.Log.Debugf("Load Guardian Ticker")
 			p.gateState.loadConfig()
 
 		// Periodically send pile to the guard-service
 		case <-p.reportPileTicker.Ch():
-			pi.Log.Debugf("Report Pile Ticker")
 			p.gateState.flushPile()
 
 		// Periodically profile of the pod
@@ -198,7 +196,6 @@ func (p *plug) preInit(ctx context.Context, c map[string]string, sid string, ns 
 	p.gateState = new(gateState)
 	p.gateState.init(cancelFunction, monitorPod, guardServiceUrl, sid, ns, useCm)
 	pi.Log.Infof("guardServiceUrl %s", guardServiceUrl)
-	pi.Log.Infof("Loading Guardian")
 	return ctx, cancelFunction
 }
 

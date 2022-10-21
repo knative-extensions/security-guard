@@ -46,6 +46,10 @@ func (f *fakeKmgr) GetGuardian(ns string, sid string, cm bool, autoActivate bool
 func (f *fakeKmgr) Watch(ns string, cmFlag bool, set func(ns string, sid string, cmFlag bool, g *spec.GuardianSpec)) {
 }
 
+func (f *fakeKmgr) TokenData(token string) (sid string, ns string, err error) {
+	return "mysid", "myns", nil
+}
+
 func Test_serviceKey(t *testing.T) {
 	type args struct {
 		ns     string
@@ -85,7 +89,7 @@ func Test_services_tick(t *testing.T) {
 			name: "simple",
 		},
 	}
-	log = utils.CreateLogger("debug")
+	utils.CreateLogger("debug")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := newServices()

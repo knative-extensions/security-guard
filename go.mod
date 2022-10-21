@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/emicklei/go-restful v2.9.5+incompatible
+	github.com/golang-jwt/jwt/v4 v4.3.0
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/kelseyhightower/envconfig v1.4.0
 	go.uber.org/zap v1.22.0

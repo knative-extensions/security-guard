@@ -21,6 +21,8 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"path"
+	"time"
 
 	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
 	guardKubeMgr "knative.dev/security-guard/pkg/guard-kubemgr"
@@ -28,15 +30,46 @@ import (
 )
 
 type httpClientInterface interface {
+	ReadToken(audience string)
 	Do(req *http.Request) (*http.Response, error)
 }
 
 type httpClient struct {
-	client http.Client
+	client           http.Client
+	token            string
+	tokenRefreshTime time.Time
+	missingToken     bool
 }
 
 func (hc *httpClient) Do(req *http.Request) (*http.Response, error) {
+	if !hc.missingToken {
+		// add authorization header - optional for this revision of guard
+		req.Header.Add("Authorization", "Bearer "+hc.token)
+	}
 	return hc.client.Do(req)
+}
+
+func (hc *httpClient) ReadToken(audience string) {
+	// If not yet tokenRefreshTime, skip reading
+	now := time.Now()
+	if hc.tokenRefreshTime.After(now) {
+		return
+	}
+	// refresh in 100 minuets
+	hc.tokenRefreshTime = now.Add(100 * time.Minute)
+
+	// TODO: replace  "/var/run/secrets/tokens" with sharedMain.QPOptionTokenDirPath once merged.
+	b, err := ioutil.ReadFile(path.Join("/var/run/secrets/tokens", audience))
+
+	if err != nil {
+		pi.Log.Infof("Token %s is missing - working without token", audience)
+		hc.missingToken = true
+		return
+	}
+	hc.token = string(b)
+	hc.missingToken = false
+
+	pi.Log.Debugf("Refreshing client token - next refresh at %s", hc.tokenRefreshTime.String())
 }
 
 type gateClient struct {
@@ -56,8 +89,10 @@ func NewGateClient(guardServiceUrl string, sid string, ns string, useCm bool) *g
 	srv.ns = ns
 	srv.useCm = useCm
 	srv.httpClient = new(httpClient)
+	srv.httpClient.ReadToken(guardKubeMgr.ServiceAudience)
 	srv.clearPile()
 	srv.kubeMgr = guardKubeMgr.NewKubeMgr()
+
 	return srv
 }
 
@@ -68,13 +103,13 @@ func (srv *gateClient) start() {
 
 func (srv *gateClient) reportPile() {
 	if srv.pile.Count == 0 {
-		pi.Log.Debugf("No pile to report to guard-service!")
 		return
 	}
 	defer srv.clearPile()
 
-	postBody, marshalErr := json.Marshal(srv.pile)
+	srv.httpClient.ReadToken(guardKubeMgr.ServiceAudience)
 
+	postBody, marshalErr := json.Marshal(srv.pile)
 	if marshalErr != nil {
 		// should never happen
 		pi.Log.Infof("Error during marshal: %v", marshalErr)
@@ -132,6 +167,8 @@ func (srv *gateClient) loadGuardian() *spec.GuardianSpec {
 }
 
 func (srv *gateClient) loadGuardianFromService() *spec.GuardianSpec {
+	srv.httpClient.ReadToken(guardKubeMgr.ServiceAudience)
+
 	req, err := http.NewRequest(http.MethodGet, srv.guardServiceUrl+"/config", nil)
 	if err != nil {
 		pi.Log.Infof("loadGuardianFromService Http.NewRequest error %v", err)

@@ -19,6 +19,7 @@ package main
 import (
 	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
 	guardKubeMgr "knative.dev/security-guard/pkg/guard-kubemgr"
+	pi "knative.dev/security-guard/pkg/pluginterfaces"
 )
 
 var maxPileCount = uint32(1000)
@@ -100,7 +101,7 @@ func (s *services) tick() {
 func (s *services) delete(ns string, sid string, cmFlag bool) {
 	service := serviceKey(ns, sid, cmFlag)
 	delete(s.cache, service)
-	log.Debugf("deleteSession %s", service)
+	pi.Log.Debugf("deleteSession %s", service)
 }
 
 // get from cache or from KubeApi (or get a default Guardian)
@@ -136,7 +137,7 @@ func (s *services) set(ns string, sid string, cmFlag bool, guardianSpec *spec.Gu
 		s.namespaces[ns] = true
 		go s.kmgr.Watch(ns, cmFlag, s.update)
 	}
-	log.Debugf("cache record for %s.%s", ns, sid)
+	pi.Log.Debugf("cache record for %s.%s", ns, sid)
 }
 
 // update cache
@@ -179,9 +180,9 @@ func (s *services) learnPile(record *serviceRecord) bool {
 
 	// update the kubeApi record
 	if err := s.kmgr.Set(record.ns, record.sid, record.cmFlag, record.guardianSpec); err != nil {
-		log.Infof("Failed to update KubeApi with new config %s.%s: %v", record.ns, record.sid, err)
+		pi.Log.Infof("Failed to update KubeApi with new config %s.%s: %v", record.ns, record.sid, err)
 		return true
 	}
-	log.Debugf("Update KubeApi with new config %s.%s", record.ns, record.sid)
+	pi.Log.Debugf("Update KubeApi with new config %s.%s", record.ns, record.sid)
 	return true
 }

@@ -18,6 +18,8 @@ package guardutils
 
 import (
 	"testing"
+
+	pi "knative.dev/security-guard/pkg/pluginterfaces"
 )
 
 func TestCreateLogger(t *testing.T) {
@@ -36,8 +38,8 @@ func TestCreateLogger(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.logLevel, func(t *testing.T) {
-			l := CreateLogger(tt.logLevel)
-			l.Debug("test")
+			CreateLogger(tt.logLevel)
+			pi.Log.Debugf("test")
 		})
 	}
 }

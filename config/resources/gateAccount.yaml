@@ -5,14 +5,22 @@ metadata:
   labels:
     rbac.authorization.k8s.io/guardian: 'true'
 rules:
-  - verbs:
-      - get
-      - list
-      - watch
-    apiGroups:
+  - apiGroups:
       - guard.security.knative.dev
     resources:
       - guardians
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
 ---
 apiVersion: v1
 kind: ServiceAccount

@@ -21,6 +21,8 @@ import (
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	pi "knative.dev/security-guard/pkg/pluginterfaces"
 )
 
 func getLogLevel(level string) zapcore.Level {
@@ -37,7 +39,7 @@ func getLogLevel(level string) zapcore.Level {
 	}
 }
 
-func CreateLogger(logLevel string) *zap.SugaredLogger {
+func CreateLogger(logLevel string) {
 	rawJSON := []byte(`{
 		"level": "info",
 		"encoding": "console",
@@ -61,5 +63,9 @@ func CreateLogger(logLevel string) *zap.SugaredLogger {
 	if err != nil {
 		panic(err)
 	}
-	return logger.Sugar()
+	pi.Log = logger.Sugar()
+}
+
+func SyncLogger() {
+	pi.Log.Sync()
 }

@@ -84,7 +84,7 @@ func Test_preMain(t *testing.T) {
 				os.Setenv(k, v)
 			}
 			//guardGate, mux, target, plugConfig, sid, ns, log := preMain()
-			_, mux, target, _, _, _, _ := preMain()
+			_, mux, target, _, _, _ := preMain()
 			if (mux != nil) != tt.mux {
 				t.Errorf("preMain() mux expected %t, received %t", tt.mux, mux != nil)
 			}
