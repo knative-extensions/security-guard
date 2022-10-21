@@ -26,7 +26,6 @@ import (
 	"runtime/debug"
 
 	"github.com/kelseyhightower/envconfig"
-	"go.uber.org/zap"
 
 	"knative.dev/pkg/signals"
 	_ "knative.dev/security-guard/pkg/guard-gate"
@@ -84,7 +83,7 @@ func (p *GuardGate) Transport(t http.RoundTripper) http.RoundTripper {
 	return p
 }
 
-func preMain() (guardGate *GuardGate, mux *http.ServeMux, target string, plugConfig map[string]string, sid string, ns string, log *zap.SugaredLogger) {
+func preMain() (guardGate *GuardGate, mux *http.ServeMux, target string, plugConfig map[string]string, sid string, ns string) {
 	var env config
 	if err := envconfig.Process("", &env); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to process environment: %s\n", err.Error())
@@ -94,9 +93,7 @@ func preMain() (guardGate *GuardGate, mux *http.ServeMux, target string, plugCon
 	plugConfig = make(map[string]string)
 	guardGate = new(GuardGate)
 
-	log = utils.CreateLogger(env.LogLevel)
-	defer log.Sync()
-	pi.Log = log
+	utils.CreateLogger(env.LogLevel)
 
 	if env.GuardUrl == "" {
 		// use default
@@ -124,13 +121,13 @@ func preMain() (guardGate *GuardGate, mux *http.ServeMux, target string, plugCon
 	sid = env.ServiceName
 	ns = env.Namespace
 
-	log.Infof("guard-proxy serving serviceName: %s, namespace: %s, serviceUrl: %s", sid, ns, env.ServiceUrl)
+	pi.Log.Infof("guard-proxy serving serviceName: %s, namespace: %s, serviceUrl: %s", sid, ns, env.ServiceUrl)
 	parsedUrl, err := url.Parse(env.ServiceUrl)
 	if err != nil {
-		log.Errorf("Failed to parse serviceUrl: %s", err.Error())
+		pi.Log.Errorf("Failed to parse serviceUrl: %s", err.Error())
 		return
 	}
-	log.Infof("guard-proxy parsedUrl: %v", parsedUrl)
+	pi.Log.Infof("guard-proxy parsedUrl: %v", parsedUrl)
 
 	proxy := httputil.NewSingleHostReverseProxy(parsedUrl)
 
@@ -148,19 +145,20 @@ func preMain() (guardGate *GuardGate, mux *http.ServeMux, target string, plugCon
 
 	mux = http.NewServeMux()
 	mux.Handle("/", proxy)
-	log.Infof("Starting Reverse Proxy on port %s", target)
+	pi.Log.Infof("Starting Reverse Proxy on port %s", target)
 	return
 }
 
 func main() {
-	guardGate, mux, target, plugConfig, sid, ns, log := preMain()
+	guardGate, mux, target, plugConfig, sid, ns := preMain()
 	if mux == nil {
 		os.Exit(1)
 	}
+	defer utils.SyncLogger()
 
-	guardGate.securityPlug.Init(signals.NewContext(), plugConfig, sid, ns, log)
+	guardGate.securityPlug.Init(signals.NewContext(), plugConfig, sid, ns, pi.Log)
 	defer guardGate.securityPlug.Shutdown()
 
 	err := http.ListenAndServe(target, mux)
-	log.Fatalf("Failed to open http local service: %s", err.Error())
+	pi.Log.Errorf("Failed to open http local service: %s", err.Error())
 }

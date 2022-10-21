@@ -25,14 +25,12 @@ import (
 	"strings"
 	"time"
 
-	"go.uber.org/zap"
+	"github.com/kelseyhightower/envconfig"
 	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
 	utils "knative.dev/security-guard/pkg/guard-utils"
 
-	"github.com/kelseyhightower/envconfig"
+	pi "knative.dev/security-guard/pkg/pluginterfaces"
 )
-
-var log *zap.SugaredLogger
 
 const (
 	serviceIntervalDefault = 5 * time.Minute
@@ -114,24 +112,24 @@ func (l *learner) baseHandler(w http.ResponseWriter, req *http.Request) (record 
 
 	cmFlag, querySid, queryNs, err = l.queryData(req.URL.Query())
 	if err != nil {
-		log.Infof("baseHandler queryData failed with %v", err)
+		pi.Log.Infof("baseHandler queryData failed with %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	log.Debugf("queryData ns %s, sid %s cmFlag %t", queryNs, querySid, cmFlag)
+	pi.Log.Debugf("queryData ns %s, sid %s cmFlag %t", queryNs, querySid, cmFlag)
 
 	if env.GuardServiceAuth {
 		sid, ns, err = l.authenticate(req)
 		if err != nil {
-			log.Infof("baseHandler authenticate failed with %v", err)
+			pi.Log.Infof("baseHandler authenticate failed with %v", err)
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
 		}
-		log.Debugf("Authorized ns %s, sid %s", ns, sid)
+		pi.Log.Debugf("Authorized ns %s, sid %s", ns, sid)
 	} else {
 		sid = querySid
 		ns = queryNs
-		log.Debugf("Authorization skipped ns %s, sid %s", ns, sid)
+		pi.Log.Debugf("Authorization skipped ns %s, sid %s", ns, sid)
 	}
 
 	// get session record, create one if does not exist
@@ -139,10 +137,10 @@ func (l *learner) baseHandler(w http.ResponseWriter, req *http.Request) (record 
 	if record == nil {
 		// should never happen
 		err = fmt.Errorf("no record created")
-		log.Infof("internal error %v", err)
+		pi.Log.Infof("internal error %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-	log.Debugf("record found for ns %s, sid %s", ns, sid)
+	pi.Log.Debugf("record found for ns %s, sid %s", ns, sid)
 	return
 }
 
@@ -159,11 +157,11 @@ func (l *learner) fetchConfig(w http.ResponseWriter, req *http.Request) {
 	buf, err := json.Marshal(record.guardianSpec)
 	if err != nil {
 		// should never happen
-		log.Infof("Servicing fetchConfig error while JSON Marshal %v", err)
+		pi.Log.Infof("Servicing fetchConfig error while JSON Marshal %v", err)
 		http.Error(w, "Failed to marshal data", http.StatusInternalServerError)
 		return
 	}
-	log.Debugf("Servicing fetchConfig success")
+	pi.Log.Debugf("Servicing fetchConfig success")
 	w.Write(buf)
 }
 
@@ -185,13 +183,13 @@ func (l *learner) processPile(w http.ResponseWriter, req *http.Request) {
 	var pile spec.SessionDataPile
 	err = json.NewDecoder(req.Body).Decode(&pile)
 	if err != nil {
-		log.Infof("processPile error: %v", err)
+		pi.Log.Infof("processPile error: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	l.services.merge(record, &pile)
 
-	log.Debugf("Successful merging pile")
+	pi.Log.Debugf("Successful merging pile")
 
 	w.Write([]byte{})
 }
@@ -202,7 +200,7 @@ func (l *learner) mainEventLoop(quit chan string) {
 		case <-l.pileLearnTicker.Ch():
 			l.services.tick()
 		case reason := <-quit:
-			log.Infof("mainEventLoop was asked to quit! - Reason: %s", reason)
+			pi.Log.Infof("mainEventLoop was asked to quit! - Reason: %s", reason)
 			return
 		}
 	}
@@ -214,7 +212,7 @@ func preMain(minimumInterval time.Duration) (*learner, *http.ServeMux, string, c
 		fmt.Fprintf(os.Stderr, "Failed to process environment: %s\n", err.Error())
 		os.Exit(1)
 	}
-	log = utils.CreateLogger(env.GuardServiceLogLevel)
+	utils.CreateLogger(env.GuardServiceLogLevel)
 
 	l := new(learner)
 	l.pileLearnTicker = utils.NewTicker(minimumInterval)
@@ -231,7 +229,7 @@ func preMain(minimumInterval time.Duration) (*learner, *http.ServeMux, string, c
 
 	quit := make(chan string)
 
-	log.Infof("Starting guard-service on %s", target)
+	pi.Log.Infof("Starting guard-service on %s", target)
 	return l, mux, target, quit
 }
 
@@ -244,6 +242,6 @@ func main() {
 	go l.mainEventLoop(quit)
 
 	err := http.ListenAndServe(target, mux)
-	log.Infof("Using target: %s - Failed to start %v", target, err)
+	pi.Log.Infof("Using target: %s - Failed to start %v", target, err)
 	quit <- "ListenAndServe failed"
 }
