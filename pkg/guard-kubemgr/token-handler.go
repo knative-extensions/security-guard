@@ -26,11 +26,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const ServiceAudience = "guard-service"
+
 func (k *KubeMgr) validateToken(token string) (err error) {
 	tr := authv1.TokenReview{
 		Spec: authv1.TokenReviewSpec{
 			Token:     token,
-			Audiences: []string{"guard-service"},
+			Audiences: []string{ServiceAudience},
 		},
 	}
 	tokenReview, err := k.cmClient.AuthenticationV1().TokenReviews().Create(context.TODO(), &tr, metav1.CreateOptions{})

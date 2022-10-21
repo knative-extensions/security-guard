@@ -29,8 +29,6 @@ import (
 	pi "knative.dev/security-guard/pkg/pluginterfaces"
 )
 
-const guardServiceAudience = "guard-service"
-
 type httpClientInterface interface {
 	ReadToken(audience string)
 	Do(req *http.Request) (*http.Response, error)
@@ -91,7 +89,7 @@ func NewGateClient(guardServiceUrl string, sid string, ns string, useCm bool) *g
 	srv.ns = ns
 	srv.useCm = useCm
 	srv.httpClient = new(httpClient)
-	srv.httpClient.ReadToken(guardServiceAudience)
+	srv.httpClient.ReadToken(guardKubeMgr.ServiceAudience)
 	srv.clearPile()
 	srv.kubeMgr = guardKubeMgr.NewKubeMgr()
 
@@ -109,7 +107,7 @@ func (srv *gateClient) reportPile() {
 	}
 	defer srv.clearPile()
 
-	srv.httpClient.ReadToken(guardServiceAudience)
+	srv.httpClient.ReadToken(guardKubeMgr.ServiceAudience)
 
 	postBody, marshalErr := json.Marshal(srv.pile)
 	if marshalErr != nil {
@@ -169,7 +167,7 @@ func (srv *gateClient) loadGuardian() *spec.GuardianSpec {
 }
 
 func (srv *gateClient) loadGuardianFromService() *spec.GuardianSpec {
-	srv.httpClient.ReadToken(guardServiceAudience)
+	srv.httpClient.ReadToken(guardKubeMgr.ServiceAudience)
 
 	req, err := http.NewRequest(http.MethodGet, srv.guardServiceUrl+"/config", nil)
 	if err != nil {
