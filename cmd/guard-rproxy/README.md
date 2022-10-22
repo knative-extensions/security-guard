@@ -25,21 +25,21 @@ Auto-learning requires you to deploy a `guard-service` on your kubernetes cluste
 
 1. Add the necessary Security-Guard resources to your cluster using:
 
-        kubectl apply -f https://raw.githubusercontent.com/knative-sandbox/security-guard/release-0.1/config/resources/gateAccount.yaml
-        kubectl apply -f https://raw.githubusercontent.com/knative-sandbox/security-guard/release-0.1/config/resources/serviceAccount.yaml
-        kubectl apply -f https://raw.githubusercontent.com/knative-sandbox/security-guard/release-0.1/config/resources/guardiansCrd.yaml
+        kubectl apply -f https://raw.githubusercontent.com/knative-sandbox/security-guard/release-0.2/config/resources/gateAccount.yaml
+        kubectl apply -f https://raw.githubusercontent.com/knative-sandbox/security-guard/release-0.2/config/resources/serviceAccount.yaml
+        kubectl apply -f https://raw.githubusercontent.com/knative-sandbox/security-guard/release-0.2/config/resources/guardiansCrd.yaml
 
 1. Deploy `guard-service` on your system to enable automated learning of micro-rules. In the current version, it is recommended to deploy `guard-service` in any namespace where knative services are deployed.
 
 An easy way to do that is using:
 
-    kubectl apply -f https://github.com/knative-sandbox/security-guard/releases/download/v0.1.2/guard-service.yaml
+    kubectl apply -f https://github.com/knative-sandbox/security-guard/releases/download/v0.2.0/guard-service.yaml
 
 ## Deploying a pod with a Security-Guard sidecar
 
 Use the following example yaml to deploy an example helloworld container with a guard sidecar:
 
-    kubectl apply -f https://github.com/knative-sandbox/security-guard/releases/download/v0.1.2/secured-helloworld.yaml
+    kubectl apply -f https://github.com/knative-sandbox/security-guard/releases/download/v0.2.0/secured-helloworld.yaml
 
 Security alerts can be seen in the  `guard-rproxy` container of the `secured-helloworld` pod using:
 
@@ -49,7 +49,7 @@ Security alerts can be seen in the  `guard-rproxy` container of the `secured-hel
 
 Use the following example yaml to deploy one example `myapp` pod that include a container running helloworld, (this pod is not exposed outside of the cluster) and one `myapp-guard` pod that include a guard container to expose the myapp service outside the cluster while performing security-behavior monitoring and control on client requests:
 
-    kubectl apply -f https://github.com/knative-sandbox/security-guard/releases/download/v0.1.2/secured-layered-myapp.yaml
+    kubectl apply -f https://github.com/knative-sandbox/security-guard/releases/download/v0.2.0/secured-layered-myapp.yaml
 
 Security alerts can be seen in the `myapp-guard` pod using:
 
