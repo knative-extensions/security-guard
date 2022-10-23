@@ -37,9 +37,10 @@ const (
 )
 
 type config struct {
-	GuardServiceLogLevel string `split_words:"true" required:"false"`
-	GuardServiceInterval string `split_words:"true" required:"false"`
-	GuardServiceAuth     bool   `split_words:"true" required:"false"`
+	GuardServiceLogLevel string   `split_words:"true" required:"false"`
+	GuardServiceInterval string   `split_words:"true" required:"false"`
+	GuardServiceAuth     bool     `split_words:"true" required:"false"`
+	GuardServiceLabels   []string `split_words:"true" required:"false"`
 }
 
 type learner struct {
@@ -56,7 +57,7 @@ func (l *learner) authenticate(req *http.Request) (sid string, ns string, err er
 		return
 	}
 	token = token[7:]
-	sid, ns, err = l.services.kmgr.TokenData(token)
+	sid, ns, err = l.services.kmgr.TokenData(token, env.GuardServiceLabels)
 	if err != nil {
 		err = fmt.Errorf("cant verify token %w", err)
 		return
