@@ -51,14 +51,7 @@ cat << EOF >guard.v3-ext
 subjectAltName = DNS:guard-service.default,DNS:guard-service.default.cluster.local
 EOF
 
-
-
-
-
-PATH="/usr/local/opt/openssl@1.1/bin/":$PATH
-
 openssl version
-
 
 # Create CA certificate
 # Create private key
@@ -67,9 +60,9 @@ openssl genrsa -out ca-key.pem 2048
 # Create ca certificate
 openssl req -x509 -new -nodes -key ca-key.pem -days 3650 -out ca-cert.pem -config ca.config
 
-# Certificate Verbose 
+# Certificate Verbose
 echo "CA Certificate"
-openssl x509 -in ca-cert.pem -text   
+openssl x509 -in ca-cert.pem -text
 echo
 
 # Create server csr
@@ -79,7 +72,7 @@ openssl genrsa -out guard-service-key.pem 2048
 # Create secuity-guard certificate
 openssl req -new -key guard-service-key.pem -sha256 -out guard-service.csr -config guard.config
 
-# CSR Verbose 
+# CSR Verbose
 echo "Guard Service CSR"
 openssl req -in guard-service.csr -noout -text
 echo
@@ -87,7 +80,7 @@ echo
 # Create guard certificate
 openssl x509 -req -sha256 -in guard-service.csr -CA ca-cert.pem -CAkey ca-key.pem -CAcreateserial -out guard-service-cret.pem -days 365 -extfile guard.v3-ext
 
-# Certificate Verbose 
+# Certificate Verbose
 echo "Guard Service Certificate"
 openssl x509 -in guard-service-cret.pem -text
 echo
@@ -98,19 +91,16 @@ kubectl create secret tls guard-service-tls \
   --cert=guard-service-cret.pem  \
   --key=guard-service-key.pem
 
-
-# RootCA Verbose 
+# RootCA Verbose
 echo "Guard Service Certificate"
 kubectl get configmap guard-rootca -o yaml
 echo
-
-
 
 # Create RootCA for guard-gates
 kubectl delete configmap guard-rootca
 kubectl create configmap guard-rootca --from-file=ca-cert.pem
 
-# RootCA Verbose 
+# RootCA Verbose
 echo "Guard Service Certificate"
 kubectl get configmap guard-rootca -o yaml
 echo
