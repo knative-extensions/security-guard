@@ -33,7 +33,7 @@ metadata:
   name: read-guardians
 subjects:
   - kind: ServiceAccount
-    name: default
+    name: guardian-reader
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole

@@ -35,6 +35,8 @@ spec:
         - mountPath: /var/run/secrets/tokens
           name: guard-token-volume
         env:
+        - name: GUARD_URL
+          value: "http://guard-service.default"
         - name: LOG_LEVEL
           value: "debug"
         - name: SERVICE_NAME

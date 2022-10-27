@@ -15,13 +15,24 @@ spec:
         app: guard-service
     spec:
       serviceAccountName: guard-service-account
+      volumes:
+      - name: guard-service-tls-volume
+        secret:
+          secretName: guard-service-tls
       containers:
       - name: guard-service
         image: ko://knative.dev/security-guard/cmd/guard-service
         imagePullPolicy: Always
+        volumeMounts:
+        - mountPath: /secrets
+          name: guard-service-tls-volume
         ports:
           - containerPort: 8888
         env:
+          - name: GUARD_SERVICE_LABELS
+            value: ""
+          - name: GUARD_SERVICE_TLS
+            value: "false"
           - name: GUARD_SERVICE_AUTH
             value: "false"
           - name: GUARD_SERVICE_LOG_LEVEL
@@ -35,6 +46,11 @@ spec:
   selector:
     app: guard-service
   ports:
-    - protocol: TCP
+    - name: http
+      protocol: TCP
       port: 80
+      targetPort: 8888
+    - name: https
+      protocol: TCP
+      port: 443
       targetPort: 8888

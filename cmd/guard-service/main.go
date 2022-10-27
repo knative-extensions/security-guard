@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -40,6 +41,7 @@ type config struct {
 	GuardServiceLogLevel string `split_words:"true" required:"false"`
 	GuardServiceInterval string `split_words:"true" required:"false"`
 	GuardServiceAuth     bool   `split_words:"true" required:"false"`
+	GuardServiceTls      bool   `split_words:"true" required:"false"`
 }
 
 type learner struct {
@@ -234,6 +236,7 @@ func preMain(minimumInterval time.Duration) (*learner, *http.ServeMux, string, c
 }
 
 func main() {
+	var err error
 	l, mux, target, quit := preMain(utils.MinimumInterval)
 
 	// cant be tested due to KubeMgr
@@ -241,7 +244,20 @@ func main() {
 	// start a mainLoop
 	go l.mainEventLoop(quit)
 
-	err := http.ListenAndServe(target, mux)
+	if env.GuardServiceTls {
+		srv := &http.Server{
+			Addr:    target,
+			Handler: mux,
+			TLSConfig: &tls.Config{
+				MinVersion:               tls.VersionTLS13,
+				PreferServerCipherSuites: true,
+			},
+		}
+
+		err = srv.ListenAndServeTLS("/secrets/tls.crt", "/secrets/tls.key")
+	} else {
+		err = http.ListenAndServe(target, mux)
+	}
 	pi.Log.Infof("Using target: %s - Failed to start %v", target, err)
 	quit <- "ListenAndServe failed"
 }

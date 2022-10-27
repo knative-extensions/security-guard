@@ -55,6 +55,10 @@ func (f *fakeKmgr) TokenData(token string) (sid string, ns string, err error) {
 	return "mysid", "myns", nil
 }
 
+func (f *fakeKmgr) GetConfig(ns string, cmName string, config map[string]string) error {
+	return nil
+}
+
 type fakeHttpClient struct {
 	statusCode int
 	json       []byte

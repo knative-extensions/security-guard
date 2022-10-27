@@ -18,6 +18,8 @@ package guardgate
 
 import (
 	"bytes"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -46,6 +48,7 @@ func (hc *httpClient) Do(req *http.Request) (*http.Response, error) {
 		// add authorization header - optional for this revision of guard
 		req.Header.Add("Authorization", "Bearer "+hc.token)
 	}
+
 	return hc.client.Do(req)
 }
 
@@ -84,14 +87,13 @@ type gateClient struct {
 
 func NewGateClient(guardServiceUrl string, sid string, ns string, useCm bool) *gateClient {
 	srv := new(gateClient)
+	srv.kubeMgr = guardKubeMgr.NewKubeMgr()
 	srv.guardServiceUrl = guardServiceUrl
 	srv.sid = sid
 	srv.ns = ns
 	srv.useCm = useCm
-	srv.httpClient = new(httpClient)
-	srv.httpClient.ReadToken(guardKubeMgr.ServiceAudience)
+
 	srv.clearPile()
-	srv.kubeMgr = guardKubeMgr.NewKubeMgr()
 
 	return srv
 }
@@ -99,6 +101,35 @@ func NewGateClient(guardServiceUrl string, sid string, ns string, useCm bool) *g
 func (srv *gateClient) start() {
 	// initializtion that cant be tested due to use of KubeAMgr
 	srv.kubeMgr.InitConfigs()
+
+	client := new(httpClient)
+
+	certPool, err := x509.SystemCertPool()
+	if err != nil {
+		certPool = x509.NewCertPool()
+	}
+
+	data := make(map[string]string)
+	if err := srv.kubeMgr.GetConfig("default", "guard-rootca", data); err != nil {
+		pi.Log.Infof("TLS: No guard-rootca configmap (%s)", err.Error())
+		client.client.Transport = &http.Transport{}
+	} else if crt, ok := data["ca-cert.pem"]; !ok {
+		pi.Log.Infof("TLS: No ca-cert.pem key in configmap")
+		client.client.Transport = &http.Transport{}
+	} else if ok := certPool.AppendCertsFromPEM([]byte(crt)); !ok {
+		client.client.Transport = &http.Transport{}
+		pi.Log.Infof("TLS: Failed to AppendCertsFromPEM ca-cert.pem %s", err.Error())
+	} else {
+		pi.Log.Infof("TLS: Succcess to reading ca-cert.pem")
+		client.client.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{
+				RootCAs: certPool,
+			},
+		}
+	}
+
+	srv.httpClient = client
+	srv.httpClient.ReadToken(guardKubeMgr.ServiceAudience)
 }
 
 func (srv *gateClient) reportPile() {
@@ -183,6 +214,7 @@ func (srv *gateClient) loadGuardianFromService() *spec.GuardianSpec {
 	req.URL.RawQuery = query.Encode()
 
 	res, err := srv.httpClient.Do(req)
+
 	if err != nil {
 		pi.Log.Infof("loadGuardianFromService httpClient.Do error %v", err)
 		return nil

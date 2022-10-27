@@ -50,6 +50,10 @@ func (f *fakeKmgr) TokenData(token string) (sid string, ns string, err error) {
 	return "mysid", "myns", nil
 }
 
+func (f *fakeKmgr) GetConfig(ns string, cmName string, config map[string]string) error {
+	return nil
+}
+
 func Test_serviceKey(t *testing.T) {
 	type args struct {
 		ns     string
