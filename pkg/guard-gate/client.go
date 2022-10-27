@@ -98,10 +98,12 @@ func NewGateClient(guardServiceUrl string, sid string, ns string, useCm bool) *g
 	return srv
 }
 
-func (srv *gateClient) start() {
+func (srv *gateClient) initKubeMgr() {
 	// initializtion that cant be tested due to use of KubeAMgr
 	srv.kubeMgr.InitConfigs()
+}
 
+func (srv *gateClient) initHttpClient() {
 	client := new(httpClient)
 
 	certPool, err := x509.SystemCertPool()
@@ -118,7 +120,7 @@ func (srv *gateClient) start() {
 		client.client.Transport = &http.Transport{}
 	} else if ok := certPool.AppendCertsFromPEM([]byte(crt)); !ok {
 		client.client.Transport = &http.Transport{}
-		pi.Log.Infof("TLS: Failed to AppendCertsFromPEM ca-cert.pem %s", err.Error())
+		pi.Log.Infof("TLS: Failed to AppendCertsFromPEM ca-cert.pem")
 	} else {
 		pi.Log.Infof("TLS: Succcess to reading ca-cert.pem")
 		client.client.Transport = &http.Transport{

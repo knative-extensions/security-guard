@@ -49,7 +49,8 @@ func (gs *gateState) init(cancelFunc context.CancelFunc, monitorPod bool, guardS
 
 func (gs gateState) start() {
 	// initializtion that cant be tested due to use of KubeAMgr
-	gs.srv.start()
+	gs.srv.initKubeMgr()
+	gs.srv.initHttpClient()
 }
 
 // loadConfig is called periodically to load updated configuration from a Guardian
