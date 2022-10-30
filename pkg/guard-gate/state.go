@@ -18,7 +18,9 @@ package guardgate
 
 import (
 	"context"
+	"crypto/x509"
 	"fmt"
+	"os"
 
 	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
 	utils "knative.dev/security-guard/pkg/guard-utils"
@@ -38,19 +40,34 @@ type gateState struct {
 	monitorPod bool                    // should gate profile the pod?
 	pod        spec.PodProfile         // pod profile
 	srv        *gateClient             // maintainer of the pile, include client to the guard-service & kubeApi
+	certPool   *x509.CertPool          // rootCAs
 }
 
 func (gs *gateState) init(cancelFunc context.CancelFunc, monitorPod bool, guardServiceUrl string, sid string, ns string, useCm bool) {
+	var err error
 	gs.stat.Init()
 	gs.monitorPod = monitorPod
 	gs.cancelFunc = cancelFunc
 	gs.srv = NewGateClient(guardServiceUrl, sid, ns, useCm)
+
+	gs.certPool, err = x509.SystemCertPool()
+	if err != nil {
+		gs.certPool = x509.NewCertPool()
+	}
+
+	if rootCA := os.Getenv("ROOT_CA"); rootCA != "" {
+		if ok := gs.certPool.AppendCertsFromPEM([]byte(rootCA)); ok {
+			pi.Log.Infof("TLS: Success adding ROOT_CA")
+		} else {
+			pi.Log.Infof("TLS: Failed to AppendCertsFromPEM from ROOT_CA")
+		}
+	}
 }
 
 func (gs gateState) start() {
 	// initializtion that cant be tested due to use of KubeAMgr
 	gs.srv.initKubeMgr()
-	gs.srv.initHttpClient()
+	gs.srv.initHttpClient(gs.certPool)
 }
 
 // loadConfig is called periodically to load updated configuration from a Guardian

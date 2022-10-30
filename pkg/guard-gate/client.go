@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"path"
 	"time"
 
@@ -104,21 +103,8 @@ func (srv *gateClient) initKubeMgr() {
 	srv.kubeMgr.InitConfigs()
 }
 
-func (srv *gateClient) initHttpClient() {
+func (srv *gateClient) initHttpClient(certPool *x509.CertPool) {
 	client := new(httpClient)
-
-	certPool, err := x509.SystemCertPool()
-	if err != nil {
-		certPool = x509.NewCertPool()
-	}
-
-	if rootCA := os.Getenv("ROOT_CA"); rootCA != "" {
-		if ok := certPool.AppendCertsFromPEM([]byte(rootCA)); ok {
-			pi.Log.Infof("TLS: Success adding ROOT_CA")
-		} else {
-			pi.Log.Infof("TLS: Failed to AppendCertsFromPEM from ROOT_CA")
-		}
-	}
 
 	client.client.Transport = &http.Transport{
 		TLSClientConfig: &tls.Config{

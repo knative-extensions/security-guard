@@ -18,6 +18,7 @@ package guardgate
 
 import (
 	"bytes"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -27,7 +28,6 @@ import (
 	"testing"
 
 	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
-	guardkubemgr "knative.dev/security-guard/pkg/guard-kubemgr"
 )
 
 const testCert = `
@@ -186,36 +186,13 @@ func Test_guardClient_loadGuardian(t *testing.T) {
 }
 
 func Test_gateClient_initHttpClient(t *testing.T) {
-	tests := []struct {
-		name string
-		kmgr guardkubemgr.KubeMgrInterface
-	}{
-		{
-			name: "no cm",
-			kmgr: &fakeKmgr{},
-		},
-		{
-			name: "no cert",
-			kmgr: &fakeKmgr{config: map[string]string{"x": "y"}},
-		},
-		{
-			name: "illegal cert",
-			kmgr: &fakeKmgr{config: map[string]string{"ca-cert.pem": "xx"}},
-		},
-		{
-			name: "legal cert",
-			kmgr: &fakeKmgr{config: map[string]string{"ca-cert.pem": testCert}},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			srv := &gateClient{
-				sid:     "mysid",
-				ns:      "myns",
-				useCm:   false,
-				kubeMgr: tt.kmgr,
-			}
-			srv.initHttpClient()
-		})
-	}
+	t.Run("base", func(t *testing.T) {
+		srv := &gateClient{
+			sid:     "mysid",
+			ns:      "myns",
+			useCm:   false,
+			kubeMgr: &fakeKmgr{},
+		}
+		srv.initHttpClient(x509.NewCertPool())
+	})
 }

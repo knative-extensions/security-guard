@@ -17,8 +17,10 @@ limitations under the License.
 package guardgate
 
 import (
+	"crypto/x509"
 	"net"
 	"net/http"
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -161,4 +163,41 @@ func Test_gateState_loadConfig(t *testing.T) {
 		}
 	})
 
+}
+
+func Test_gateState_init(t *testing.T) {
+	tests := []struct {
+		name  string
+		cert  string
+		newCA bool
+	}{
+		{
+			name: "empty",
+			cert: "",
+		},
+		{
+			name: "bad",
+			cert: "xx",
+		},
+		{
+			name:  "good",
+			cert:  testCert,
+			newCA: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			os.Setenv("ROOT_CA", tt.cert)
+			gs := new(gateState)
+			certPool, _ := x509.SystemCertPool()
+			gs.init(fakeGateCancel, false, "myurl", "mysid", "myns", true)
+			if !certPool.Equal(gs.certPool) && !tt.newCA {
+				t.Errorf("expected no new cert to be added")
+			}
+			if certPool.Equal(gs.certPool) && tt.newCA {
+				t.Errorf("expected new cert to be added")
+			}
+			os.Unsetenv("ROOT_CA")
+		})
+	}
 }
