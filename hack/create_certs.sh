@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -o errexit
 set -o nounset
 set -o pipefail
 
@@ -90,11 +89,6 @@ kubectl delete secret guard-service-tls
 kubectl create secret tls guard-service-tls \
   --cert=guard-service-cret.pem  \
   --key=guard-service-key.pem
-
-# RootCA Verbose
-echo "Guard Service Certificate"
-kubectl get configmap guard-rootca -o yaml
-echo
 
 # Create RootCA for guard-gates
 kubectl delete configmap guard-rootca

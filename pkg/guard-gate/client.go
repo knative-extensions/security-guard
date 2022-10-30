@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"path"
 	"time"
 
@@ -111,25 +112,19 @@ func (srv *gateClient) initHttpClient() {
 		certPool = x509.NewCertPool()
 	}
 
-	data := make(map[string]string)
-	if err := srv.kubeMgr.GetConfig("default", "guard-rootca", data); err != nil {
-		pi.Log.Infof("TLS: No guard-rootca configmap (%s)", err.Error())
-		client.client.Transport = &http.Transport{}
-	} else if crt, ok := data["ca-cert.pem"]; !ok {
-		pi.Log.Infof("TLS: No ca-cert.pem key in configmap")
-		client.client.Transport = &http.Transport{}
-	} else if ok := certPool.AppendCertsFromPEM([]byte(crt)); !ok {
-		client.client.Transport = &http.Transport{}
-		pi.Log.Infof("TLS: Failed to AppendCertsFromPEM ca-cert.pem")
-	} else {
-		pi.Log.Infof("TLS: Succcess to reading ca-cert.pem")
-		client.client.Transport = &http.Transport{
-			TLSClientConfig: &tls.Config{
-				RootCAs: certPool,
-			},
+	if rootCA := os.Getenv("ROOT_CA"); rootCA != "" {
+		if ok := certPool.AppendCertsFromPEM([]byte(rootCA)); ok {
+			pi.Log.Infof("TLS: Success adding ROOT_CA")
+		} else {
+			pi.Log.Infof("TLS: Failed to AppendCertsFromPEM from ROOT_CA")
 		}
 	}
 
+	client.client.Transport = &http.Transport{
+		TLSClientConfig: &tls.Config{
+			RootCAs: certPool,
+		},
+	}
 	srv.httpClient = client
 	srv.httpClient.ReadToken(guardKubeMgr.ServiceAudience)
 }
