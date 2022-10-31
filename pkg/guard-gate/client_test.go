@@ -21,7 +21,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"reflect"
@@ -49,9 +48,7 @@ T30ny2EMCCPdmZfEpITjZrNl2rT2GY47AYBk44LWvKRDvrkiKzcpDxVJ7ggUrWyE
 W+ve1pVd/1brFQJi1dF1J+QwhjCv7K1x
 -----END CERTIFICATE-----`
 
-type fakeKmgr struct {
-	config map[string]string
-}
+type fakeKmgr struct{}
 
 func (f *fakeKmgr) InitConfigs() {}
 
@@ -76,16 +73,6 @@ func (f *fakeKmgr) Watch(ns string, cmFlag bool, set func(ns string, sid string,
 
 func (f *fakeKmgr) TokenData(token string) (sid string, ns string, err error) {
 	return "mysid", "myns", nil
-}
-
-func (f *fakeKmgr) GetConfig(ns string, cmName string, config map[string]string) error {
-	if f.config == nil {
-		return fmt.Errorf("Mimic error")
-	}
-	for k, v := range f.config {
-		config[k] = v
-	}
-	return nil
 }
 
 type fakeHttpClient struct {

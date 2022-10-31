@@ -49,7 +49,6 @@ type KubeMgrInterface interface {
 	GetGuardian(ns string, sid string, cm bool, autoActivate bool) *spec.GuardianSpec
 	Watch(ns string, cmFlag bool, set func(ns string, sid string, cmFlag bool, g *spec.GuardianSpec))
 	TokenData(token string) (sid string, ns string, err error)
-	GetConfig(ns string, cmName string, config map[string]string) error
 }
 
 // KubeMgr manages Guardian CRDs and Guardian CMs
