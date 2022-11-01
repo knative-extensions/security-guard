@@ -22,21 +22,13 @@ Per Sample:
 
 Periodically:
 
-1. Pile.Merge(someOtherPile) - Merge someOtherPile to Pile. Note that Piles consume other piles - once someOtherPile is added to pile it is no longer usable.
-1. Config.Learn(pile) - Learn a new config rules based on a pile.  Note that Configs consume piles - once pile is learned by a config it is no longer usable.
-1. Config.Fuse(someOtherConfig) - Fuse configs to form a new config from an old one. Note that configs consume someOtherConfigs - once someOtherConfig is fused to a config it is no longer usable.
+1. Pile.Merge(someOtherPile) - Merge someOtherPile to Pile.
+1. Config.Learn(pile) - Learn a new config rules based on a pile.
+1. Config.Fuse(someOtherConfig) - Fuse configs to form a new config from an old one.
 
 Note:
 
 - Profiles, Piles and Configs are build to be transportable across a distributed system.
-- Piles consume Profiles using Add()
-  - Once a profile is added to Pile it is no longer usable.
-- Piles consume other piles using Merge()
-  - Once a pile is merged to another pile the merged pile is no longer usable.
-- Configs consume piles using Learn()
-  - Once a pile is learned by a config, the pile is no longer usable.
-- Configs consume other configs using Fuse()
-  - Once a config is fused to another config, the config is no longer usable.
 
 ## Distributed System
 

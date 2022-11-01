@@ -6,6 +6,7 @@ import (
 
 //////////////////// FlagSliceProfile ////////////////
 
+// extra is RO and no internal objects are used
 func mergeFlagSlices(base []uint32, extra []uint32) []uint32 {
 	if missing := len(extra) - len(base); missing > 0 {
 		// Dynamically allocate as many blockElements as needed
@@ -40,6 +41,7 @@ func (pile *FlagSlicePile) addI(valProfile ValueProfile) {
 	pile.Add(*valProfile.(*FlagSliceProfile))
 }
 
+// profile is RO and unchanged - never uses profile internal objects
 func (pile *FlagSlicePile) Add(profile FlagSliceProfile) {
 	*pile = mergeFlagSlices(*pile, profile)
 }
@@ -52,6 +54,7 @@ func (pile *FlagSlicePile) mergeI(otherValPile ValuePile) {
 	pile.Merge(*otherValPile.(*FlagSlicePile))
 }
 
+// otherPile is RO and unchanged - never uses otherPile internal objects
 func (pile *FlagSlicePile) Merge(otherPile FlagSlicePile) {
 	*pile = mergeFlagSlices(*pile, otherPile)
 }
@@ -82,14 +85,17 @@ func (config *FlagSliceConfig) learnI(valPile ValuePile) {
 	config.Learn(*valPile.(*FlagSlicePile))
 }
 
+// otherPile is RO and unchanged - never uses otherPile internal objects
 func (config *FlagSliceConfig) Learn(pile FlagSlicePile) {
-	*config = FlagSliceConfig(pile)
+	*config = make(FlagSliceConfig, len(pile))
+	copy(*config, pile)
 }
 
 func (config *FlagSliceConfig) fuseI(otherValConfig ValueConfig) {
 	config.Fuse(*otherValConfig.(*FlagSliceConfig))
 }
 
+// otherConfig is RO and unchanged - never uses otherConfig internal objects
 func (config *FlagSliceConfig) Fuse(otherConfig FlagSliceConfig) {
 	*config = mergeFlagSlices(*config, otherConfig)
 }

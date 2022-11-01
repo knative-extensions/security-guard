@@ -43,6 +43,7 @@ func (pile *BodyPile) addI(valProfile ValueProfile) {
 	pile.Add(valProfile.(*BodyProfile))
 }
 
+// profile is RO and unchanged - never uses profile internal objects
 func (pile *BodyPile) Add(profile *BodyProfile) {
 	if profile.Structured != nil {
 		if pile.Structured == nil {
@@ -67,21 +68,19 @@ func (pile *BodyPile) mergeI(otherValPile ValuePile) {
 	pile.Merge(otherValPile.(*BodyPile))
 }
 
+// otherPile is RO and unchanged - never uses otherPile internal objects
 func (pile *BodyPile) Merge(otherPile *BodyPile) {
 	if otherPile.Structured != nil {
 		if pile.Structured == nil {
-			pile.Structured = otherPile.Structured
-		} else {
-			pile.Structured.Merge(otherPile.Structured)
+			pile.Structured = new(StructuredPile)
 		}
+		pile.Structured.Merge(otherPile.Structured)
 	}
 	if otherPile.Unstructured != nil {
 		if pile.Unstructured == nil {
-			pile.Unstructured = otherPile.Unstructured
-		} else {
-			pile.Unstructured.Merge(otherPile.Unstructured)
+			pile.Unstructured = new(SimpleValPile)
 		}
-
+		pile.Unstructured.Merge(otherPile.Unstructured)
 	}
 }
 
@@ -125,6 +124,7 @@ func (config *BodyConfig) learnI(valPile ValuePile) {
 	config.Learn(valPile.(*BodyPile))
 }
 
+// pile is RO and unchanged - never uses pile internal objects
 func (config *BodyConfig) Learn(pile *BodyPile) {
 	if pile.Structured != nil {
 		if config.Structured == nil {
@@ -144,19 +144,18 @@ func (config *BodyConfig) fuseI(otherValConfig ValueConfig) {
 	config.Fuse(otherValConfig.(*BodyConfig))
 }
 
+// otherConfig is RO and unchanged - never uses otherConfig internal objects
 func (config *BodyConfig) Fuse(otherConfig *BodyConfig) {
 	if otherConfig.Structured != nil {
 		if config.Structured == nil {
-			config.Structured = otherConfig.Structured
-		} else {
-			config.Structured.Fuse(otherConfig.Structured)
+			config.Structured = new(StructuredConfig)
 		}
+		config.Structured.Fuse(otherConfig.Structured)
 	}
 	if otherConfig.Unstructured != nil {
 		if config.Unstructured == nil {
-			config.Unstructured = otherConfig.Unstructured
-		} else {
-			config.Unstructured.Fuse(otherConfig.Unstructured)
+			config.Unstructured = new(SimpleValConfig)
 		}
+		config.Unstructured.Fuse(otherConfig.Unstructured)
 	}
 }

@@ -78,6 +78,7 @@ func (pile *AsciiFlagsPile) addI(valProfile ValueProfile) {
 	pile.Add(*valProfile.(*AsciiFlagsProfile))
 }
 
+// profile is RO and unchanged - never uses profile internal objects
 func (pile *AsciiFlagsPile) Add(profile AsciiFlagsProfile) {
 	*pile |= AsciiFlagsPile(profile)
 }
@@ -90,6 +91,7 @@ func (pile *AsciiFlagsPile) mergeI(otherValPile ValuePile) {
 	pile.Merge(*otherValPile.(*AsciiFlagsPile))
 }
 
+// otherPile is RO and unchanged - never uses otherPile internal objects
 func (pile *AsciiFlagsPile) Merge(otherPile AsciiFlagsPile) {
 	*pile |= otherPile
 }
@@ -114,6 +116,7 @@ func (config *AsciiFlagsConfig) learnI(valPile ValuePile) {
 	config.Learn(*valPile.(*AsciiFlagsPile))
 }
 
+// pile is RO and unchanged - never uses pile internal objects
 func (config *AsciiFlagsConfig) Learn(pile AsciiFlagsPile) {
 	*config = AsciiFlagsConfig(pile)
 }
@@ -122,6 +125,7 @@ func (config *AsciiFlagsConfig) fuseI(otherValConfig ValueConfig) {
 	config.Fuse(*otherValConfig.(*AsciiFlagsConfig))
 }
 
+// otherConfig is RO and unchanged - never uses otherConfig internal objects
 func (config *AsciiFlagsConfig) Fuse(otherConfig AsciiFlagsConfig) {
 	*config |= otherConfig
 }
