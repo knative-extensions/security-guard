@@ -97,13 +97,10 @@ func (pile *KeyValPile) Merge(otherPile *KeyValPile) {
 		return
 	}
 	for key, val := range *otherPile {
-		if myVal, exists := (*pile)[key]; exists {
-			myVal.Merge(val)
-		} else {
-			svp := new(SimpleValPile)
-			svp.Merge(val)
-			(*pile)[key] = svp
+		if _, exists := (*pile)[key]; !exists {
+			(*pile)[key] = new(SimpleValPile)
 		}
+		(*pile)[key].Merge(val)
 	}
 }
 
@@ -205,20 +202,18 @@ func (config *KeyValConfig) Fuse(otherConfig *KeyValConfig) {
 	}
 
 	// fuse keynames of unknown keys
-	if config.OtherKeynames == nil {
-		svc := new(SimpleValConfig)
-		svc.Fuse(otherConfig.OtherKeynames)
-		config.OtherKeynames = svc
-	} else {
+	if otherConfig.OtherKeynames != nil {
+		if config.OtherKeynames == nil {
+			config.OtherKeynames = new(SimpleValConfig)
+		}
 		config.OtherKeynames.Fuse(otherConfig.OtherKeynames)
 	}
 
 	// fuse key values of unknown keys
-	if config.OtherVals == nil {
-		svc := new(SimpleValConfig)
-		svc.Fuse(otherConfig.OtherVals)
-		config.OtherVals = svc
-	} else {
+	if otherConfig.OtherVals != nil {
+		if config.OtherVals == nil {
+			config.OtherVals = new(SimpleValConfig)
+		}
 		config.OtherVals.Fuse(otherConfig.OtherVals)
 	}
 }
