@@ -226,7 +226,7 @@ func TestKubeMgr_getPodData(t *testing.T) {
 					Labels:      tt.labels,
 				},
 			})
-			gotSid, err := k.getPodData(tt.podname, tt.ns)
+			gotSid, err := k.getPodData(tt.podname, tt.ns, nil)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("KubeMgr.getPodData() error = %v, wantErr %v", err, tt.wantErr)
 				return

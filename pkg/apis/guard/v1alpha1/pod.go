@@ -3,8 +3,8 @@ package v1alpha1
 import (
 	"encoding/binary"
 	"fmt"
-	"io/ioutil"
 	"net"
+	"os"
 	"strconv"
 
 	pi "knative.dev/security-guard/pkg/pluginterfaces"
@@ -94,7 +94,7 @@ NextLine:
 // Given a protocol {tcp|udp|udpite|tcp6|udp6|tcplite6} get the list of Remote Ips from /proc/net
 func IpNetFromProc(protocol string) (ips []net.IP) {
 	procfile := procNet + protocol
-	data, err := ioutil.ReadFile(procfile)
+	data, err := os.ReadFile(procfile)
 	if err != nil {
 		pi.Log.Infof("error while reading %s: %s\n", procfile, err.Error())
 		return

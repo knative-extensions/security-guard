@@ -64,6 +64,7 @@ func (pile *KeyValPile) addI(valProfile ValueProfile) {
 	pile.Add(valProfile.(*KeyValProfile))
 }
 
+// profile is RO and unchanged - never uses profile internal objects
 func (pile *KeyValPile) Add(profile *KeyValProfile) {
 	if *pile == nil {
 		*pile = make(map[string]*SimpleValPile, 16)
@@ -86,6 +87,7 @@ func (pile *KeyValPile) mergeI(otherValPile ValuePile) {
 	pile.Merge(otherValPile.(*KeyValPile))
 }
 
+// otherPile is RO and unchanged - never uses otherPile internal objects
 func (pile *KeyValPile) Merge(otherPile *KeyValPile) {
 	if otherPile == nil {
 		return
@@ -95,11 +97,10 @@ func (pile *KeyValPile) Merge(otherPile *KeyValPile) {
 		return
 	}
 	for key, val := range *otherPile {
-		if myVal, exists := (*pile)[key]; exists {
-			myVal.Merge(val)
-		} else {
-			(*pile)[key] = val
+		if _, exists := (*pile)[key]; !exists {
+			(*pile)[key] = new(SimpleValPile)
 		}
+		(*pile)[key].Merge(val)
 	}
 }
 
@@ -149,14 +150,15 @@ func (config *KeyValConfig) Decide(profile *KeyValProfile) string {
 	return ""
 }
 
-// Learn implementation currently is not optimized for a large number of keys
-// Future: When the number of keys grow, Learn may reduce the number of known keys by
-// aggregating all known keys which have common low security fingerprint into
-// OtherKeynames and OtherVals
 func (config *KeyValConfig) learnI(valPile ValuePile) {
 	config.Learn(valPile.(*KeyValPile))
 }
 
+// Learn implementation currently is not optimized for a large number of keys
+// pile is RO and unchanged - never uses pile internal objects
+// Future: When the number of keys grow, Learn may reduce the number of known keys by
+// aggregating all known keys which have common low security fingerprint into
+// OtherKeynames and OtherVals
 func (config *KeyValConfig) Learn(pile *KeyValPile) {
 	config.OtherVals = nil
 	config.OtherKeynames = nil
@@ -179,35 +181,39 @@ func (config *KeyValConfig) fuseI(otherValConfig ValueConfig) {
 	config.Fuse(otherValConfig.(*KeyValConfig))
 }
 
+// otherConfig is RO and unchanged - never uses otherConfig internal objects
 func (config *KeyValConfig) Fuse(otherConfig *KeyValConfig) {
 	if otherConfig == nil {
 		return
 	}
 	if config.Vals == nil {
-		config.Vals = otherConfig.Vals
-	} else {
-		// fuse known keys
-		for k, v := range otherConfig.Vals {
-			svc, exists := config.Vals[k]
-			if exists {
-				svc.Fuse(v)
-			} else {
-				config.Vals[k] = v
-			}
+		config.Vals = make(map[string]*SimpleValConfig, len(otherConfig.Vals))
+	}
+	// fuse known keys
+	for k, v := range otherConfig.Vals {
+		svc, exists := config.Vals[k]
+		if exists {
+			svc.Fuse(v)
+		} else {
+			svc := new(SimpleValConfig)
+			svc.Fuse(v)
+			config.Vals[k] = svc
 		}
 	}
 
 	// fuse keynames of unknown keys
-	if config.OtherKeynames == nil {
-		config.OtherKeynames = otherConfig.OtherKeynames
-	} else {
+	if otherConfig.OtherKeynames != nil {
+		if config.OtherKeynames == nil {
+			config.OtherKeynames = new(SimpleValConfig)
+		}
 		config.OtherKeynames.Fuse(otherConfig.OtherKeynames)
 	}
 
 	// fuse key values of unknown keys
-	if config.OtherVals == nil {
-		config.OtherVals = otherConfig.OtherVals
-	} else {
+	if otherConfig.OtherVals != nil {
+		if config.OtherVals == nil {
+			config.OtherVals = new(SimpleValConfig)
+		}
 		config.OtherVals.Fuse(otherConfig.OtherVals)
 	}
 }

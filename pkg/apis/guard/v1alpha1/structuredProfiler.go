@@ -18,14 +18,15 @@ const (
 //////////////////// StructuredProfile ////////////////
 
 // Exposes ValueProfile interface
-//  JsonProfile struct - maintain the profile of a json with some structure
-//	Data Types: The default Golang data types for decoding and encoding JSON are as follows:
-//		bool for JSON booleans.
-//		float64 for JSON numbers.
-//		string for JSON strings.
-//		nil for JSON null.
-//		array as JSON array.
-//		map or struct as JSON Object.
+//
+//	 JsonProfile struct - maintain the profile of a json with some structure
+//		Data Types: The default Golang data types for decoding and encoding JSON are as follows:
+//			bool for JSON booleans.
+//			float64 for JSON numbers.
+//			string for JSON strings.
+//			nil for JSON null.
+//			array as JSON array.
+//			map or struct as JSON Object.
 type StructuredProfile struct {
 	Kind string                        `json:"kind"` // bool, float64, string, array, map
 	Vals []SimpleValProfile            `json:"vals"` // used for: array, boolean, number, string items
@@ -98,6 +99,7 @@ func (pile *StructuredPile) addI(valProfile ValueProfile) {
 	pile.Add(valProfile.(*StructuredProfile))
 }
 
+// profile is RO and unchanged - never uses profile internal objects
 func (pile *StructuredPile) Add(profile *StructuredProfile) {
 	if pile.Kind == KindEmpty {
 		switch profile.Kind {
@@ -150,6 +152,7 @@ func (pile *StructuredPile) mergeI(otherValPile ValuePile) {
 	pile.Merge(otherValPile.(*StructuredPile))
 }
 
+// otherPile is RO and unchanged - never uses otherPile internal objects
 func (pile *StructuredPile) Merge(otherPile *StructuredPile) {
 	if pile.Kind == KindEmpty {
 		pile.Kind = otherPile.Kind
@@ -171,8 +174,9 @@ func (pile *StructuredPile) Merge(otherPile *StructuredPile) {
 			if !exists {
 				vPile = new(StructuredPile)
 				pile.Kv[k] = vPile
+			} else {
+				vPile.Merge(v)
 			}
-			vPile.Merge(v)
 		}
 	case KindArray, KindBoolean, KindNumber, KindString:
 		pile.Val.Merge(otherPile.Val)
@@ -232,11 +236,11 @@ func (config *StructuredConfig) learnI(valPile ValuePile) {
 	config.Learn(valPile.(*StructuredPile))
 }
 
+// pile is RO and unchanged - never uses pile internal objects
 func (config *StructuredConfig) Learn(pile *StructuredPile) {
 	config.Kind = pile.Kind
 	switch config.Kind {
 	case KindObject:
-		config.Kv = make(map[string]*StructuredConfig, len(pile.Kv))
 		config.Kv = make(map[string]*StructuredConfig, len(pile.Kv))
 		for k, v := range pile.Kv {
 			config.Kv[k] = new(StructuredConfig)
@@ -252,6 +256,7 @@ func (config *StructuredConfig) fuseI(otherValConfig ValueConfig) {
 	config.Fuse(otherValConfig.(*StructuredConfig))
 }
 
+// otherConfig is RO and unchanged - never uses otherConfig internal objects
 func (config *StructuredConfig) Fuse(otherConfig *StructuredConfig) {
 	if config.Kind == KindEmpty {
 		config.Kind = otherConfig.Kind

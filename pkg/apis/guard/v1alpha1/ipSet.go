@@ -71,6 +71,7 @@ func (pile *IpSetPile) addI(valProfile ValueProfile) {
 	pile.Add(valProfile.(*IpSetProfile))
 }
 
+// profile is RO and unchanged - never uses profile internal objects
 func (pile *IpSetPile) Add(profile *IpSetProfile) {
 	if pile.m == nil {
 		pile.m = make(map[string]bool, len(pile.List)+16)
@@ -83,7 +84,9 @@ func (pile *IpSetPile) Add(profile *IpSetProfile) {
 		ipStr := v.String()
 		if !pile.m[ipStr] {
 			pile.m[ipStr] = true
-			pile.List = append(pile.List, v)
+			v_copy := make(net.IP, len(v))
+			copy(v_copy, v)
+			pile.List = append(pile.List, v_copy)
 		}
 	}
 }
@@ -97,13 +100,8 @@ func (pile *IpSetPile) mergeI(otherValPile ValuePile) {
 	pile.Merge(otherValPile.(*IpSetPile))
 }
 
+// otherPile is RO and unchanged - never uses otherPile internal objects
 func (pile *IpSetPile) Merge(otherPile *IpSetPile) {
-	if pile.List == nil {
-		pile.List = otherPile.List
-		pile.m = otherPile.m
-		return
-	}
-
 	if pile.m == nil {
 		pile.m = make(map[string]bool, len(pile.List)+len(otherPile.List))
 		// Populate the map from the information in List
@@ -115,7 +113,9 @@ func (pile *IpSetPile) Merge(otherPile *IpSetPile) {
 		ipStr := v.String()
 		if !pile.m[ipStr] {
 			pile.m[ipStr] = true
-			pile.List = append(pile.List, v)
+			v_copy := make(net.IP, len(v))
+			copy(v_copy, v)
+			pile.List = append(pile.List, v_copy)
 		}
 	}
 }
@@ -213,6 +213,7 @@ func (config *IpSetConfig) learnI(valPile ValuePile) {
 	config.Learn(valPile.(*IpSetPile))
 }
 
+// pile is RO and unchanged - never uses pile internal objects
 func (config *IpSetConfig) Learn(pile *IpSetPile) {
 	*config = nil
 LoopPileIPs:
@@ -223,22 +224,25 @@ LoopPileIPs:
 			}
 		}
 		// Unsuccessful inflating CIDRs to include IP
+		ip_copy := make(net.IP, len(ip))
+		copy(ip_copy, ip)
 		if len(ip) == 4 {
-			*config = append(*config, (CIDR)(net.IPNet{IP: ip, Mask: net.CIDRMask(32, 32)}))
+			*config = append(*config, (CIDR)(net.IPNet{IP: ip_copy, Mask: net.CIDRMask(32, 32)}))
 		} else {
-			*config = append(*config, (CIDR)(net.IPNet{IP: ip, Mask: net.CIDRMask(128, 128)}))
+			*config = append(*config, (CIDR)(net.IPNet{IP: ip_copy, Mask: net.CIDRMask(128, 128)}))
 		}
 	}
 }
 
-// Fuse CidrSetConfig
-// The implementation look to opportunistically skip new entries
-// The implementation does not squash new and old entries
-// Future: Improve Fuse to squash consecutive cidrs
 func (config *IpSetConfig) fuseI(otherValConfig ValueConfig) {
 	config.Fuse(otherValConfig.(*IpSetConfig))
 }
 
+// Fuse CidrSetConfig
+// otherConfig is RO and unchanged - never uses otherConfig internal objects
+// The implementation look to opportunistically skip new entries
+// The implementation does not squash new and old entries
+// Future: Improve Fuse to squash consecutive cidrs
 func (config *IpSetConfig) Fuse(otherConfig *IpSetConfig) {
 LoopOtherCidrs:
 	for _, otherCidr := range *otherConfig {
@@ -256,7 +260,7 @@ LoopOtherCidrs:
 				continue LoopOtherCidrs
 			}
 		}
-		// Add the otherCidr to my list of CIDRs
-		*config = append(*config, otherCidr)
+		// Add a copy of the otherCidr to my list of CIDRs
+		*config = append(*config, *otherCidr.DeepCopy())
 	}
 }
