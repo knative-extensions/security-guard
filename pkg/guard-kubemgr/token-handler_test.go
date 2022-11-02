@@ -53,7 +53,7 @@ func TestKubeMgr_TokenData(t *testing.T) {
 		})
 		k.cmClient = &cmClient
 
-		sid, ns, err := k.TokenData(testToken)
+		sid, ns, err := k.TokenData(testToken, nil)
 		if err == nil {
 			// TBD investigate fake client behavior
 			t.Errorf("fake client always produce an error %s", err.Error())
