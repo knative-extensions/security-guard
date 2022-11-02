@@ -46,6 +46,7 @@ func (pile *SetPile) addI(valProfile ValueProfile) {
 	pile.Add(valProfile.(*SetProfile))
 }
 
+// profile is RO and unchanged - never uses profile internal objects
 func (pile *SetPile) Add(profile *SetProfile) {
 	if *profile == nil {
 		return
@@ -74,13 +75,8 @@ func (pile *SetPile) mergeI(otherValPile ValuePile) {
 	pile.Merge(otherValPile.(*SetPile))
 }
 
+// otherPile is RO and unchanged - never uses otherPile internal objects
 func (pile *SetPile) Merge(otherPile *SetPile) {
-	if pile.List == nil {
-		pile.List = otherPile.List
-		pile.m = otherPile.m
-		return
-	}
-
 	if pile.m == nil {
 		pile.m = make(map[string]bool, len(pile.List)+len(otherPile.List))
 		// Populate the map from the information in List
@@ -137,21 +133,23 @@ func (config *SetConfig) learnI(valPile ValuePile) {
 	config.Learn(valPile.(*SetPile))
 }
 
+// pile is RO and unchanged - never uses pile internal objects
 func (config *SetConfig) Learn(pile *SetPile) {
-	config.List = pile.List
-	config.m = pile.m
+	config.List = make([]string, len(pile.List))
+	config.m = make(map[string]bool, len(pile.List))
+
+	for i, v := range pile.List {
+		config.m[v] = true
+		config.List[i] = v
+	}
 }
 
 func (config *SetConfig) fuseI(otherValConfig ValueConfig) {
 	config.Fuse(otherValConfig.(*SetConfig))
 }
 
+// otherConfig is RO and unchanged - never uses otherConfig internal objects
 func (config *SetConfig) Fuse(otherConfig *SetConfig) {
-	if config.List == nil {
-		config.List = otherConfig.List
-		config.m = otherConfig.m
-		return
-	}
 	if config.m == nil {
 		config.m = make(map[string]bool, len(config.List)+len(otherConfig.List))
 		// Populate the map from the information in List

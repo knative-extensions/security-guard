@@ -26,6 +26,7 @@ func (pile *CountPile) addI(valProfile ValueProfile) {
 	pile.Add(*valProfile.(*CountProfile))
 }
 
+// profile is RO and unchanged - never uses profile internal objects
 func (pile *CountPile) Add(profile CountProfile) {
 	*pile = append(*pile, uint8(profile))
 }
@@ -38,11 +39,12 @@ func (pile *CountPile) mergeI(otherValPile ValuePile) {
 	pile.Merge(*otherValPile.(*CountPile))
 }
 
+// otherPile is RO and unchanged - never uses otherPile internal objects
 func (pile *CountPile) Merge(otherPile CountPile) {
 	*pile = append(*pile, otherPile...)
 }
 
-//////////////////// CountConfig ////////////////
+// ////////////////// CountConfig ////////////////
 type countRange struct {
 	Min uint8 `json:"min"`
 	Max uint8 `json:"max"`
@@ -71,6 +73,7 @@ func (config *CountConfig) decideI(valProfile ValueProfile) string {
 	return config.Decide(*valProfile.(*CountProfile))
 }
 
+// profile is RO and unchanged - never uses profile internal objects
 func (config *CountConfig) Decide(profile CountProfile) string {
 	if profile == 0 {
 		return ""
@@ -91,12 +94,13 @@ func (config *CountConfig) Decide(profile CountProfile) string {
 	return fmt.Sprintf("Counter out of Range: %d   ", profile)
 }
 
-// Learn now offers the simplest single rule support
-// Future: Improve Learn
 func (config *CountConfig) learnI(valPile ValuePile) {
 	config.Learn(*valPile.(*CountPile))
 }
 
+// Learn now offers the simplest single rule support
+// pile is RO and unchanged - never uses pile internal objects
+// Future: Improve Learn
 func (config *CountConfig) Learn(pile CountPile) {
 	min := uint8(0)
 	max := uint8(0)
@@ -115,16 +119,16 @@ func (config *CountConfig) Learn(pile CountPile) {
 	*config = append(*config, countRange{min, max})
 }
 
-// Fuse CountConfig in-place
-// The implementation look to opportunistically merge new entries to existing ones
-// The implementation does now squash entries even if after the Fuse they may be squashed
-// This is done to achieve Fuse in-place
-// Future: Improve Fuse - e.g. by keeping extra entries in Range [0,0] and reusing them
-//                        instead of adding new entries
 func (config *CountConfig) fuseI(otherValConfig ValueConfig) {
 	config.Fuse(*otherValConfig.(*CountConfig))
 }
 
+// Fuse CountConfig in-place
+// otherValConfig is RO and unchanged - never uses otherValConfig internal objects
+// The implementation look to opportunistically merge new entries to existing ones
+// The implementation does now squash entries even if after the Fuse they may be squashed
+// This is done to achieve Fuse in-place
+// Future: Improve Fuse - e.g. by keeping extra entries in Range [0,0] and reusing them instead of adding new entries
 func (config *CountConfig) Fuse(otherConfig CountConfig) {
 	var fused bool
 	for _, other := range otherConfig {
@@ -136,7 +140,8 @@ func (config *CountConfig) Fuse(otherConfig CountConfig) {
 			}
 		}
 		if !fused {
-			*config = append(*config, other)
+			// Creating new countRange avoids both objects pointing to the same object
+			*config = append(*config, countRange{other.Min, other.Max})
 		}
 	}
 }
