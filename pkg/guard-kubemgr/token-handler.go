@@ -91,7 +91,7 @@ func (k *KubeMgr) parseJwt(token string) (podname string, ns string, err error) 
 	return
 }
 
-func (k *KubeMgr) getPodData(podname string, ns string) (sid string, err error) {
+func (k *KubeMgr) getPodData(podname string, ns string, labels []string) (sid string, err error) {
 	var ok bool
 
 	pod, err := k.cmClient.CoreV1().Pods(ns).Get(context.TODO(), podname, metav1.GetOptions{})
@@ -99,15 +99,26 @@ func (k *KubeMgr) getPodData(podname string, ns string) (sid string, err error) 
 		err = fmt.Errorf("cant get pod data from kubeAPI %w", err)
 		return
 	}
-	if sid, ok = pod.Labels["serving.knative.dev/service"]; !ok {
-		if sid, ok = pod.Labels["app"]; !ok {
-			sid = podname
+
+	// get sid from a label
+	for _, label := range labels {
+		if sid, ok = pod.Labels[label]; ok {
+			break
+		}
+	}
+
+	// no sid found, try default labels or use podname if no sid found
+	if sid == "" {
+		if sid, ok = pod.Labels["serving.knative.dev/service"]; !ok {
+			if sid, ok = pod.Labels["app"]; !ok {
+				sid = podname
+			}
 		}
 	}
 	return
 }
 
-func (k *KubeMgr) TokenData(token string) (sid string, ns string, err error) {
+func (k *KubeMgr) TokenData(token string, labels []string) (sid string, ns string, err error) {
 	var podname string
 
 	// stage 1 - first validate the jwt using kubeAPI
@@ -123,6 +134,6 @@ func (k *KubeMgr) TokenData(token string) (sid string, ns string, err error) {
 	}
 
 	// stage 3 - get pod data from kubeAPI - extract the service/app name
-	sid, err = k.getPodData(podname, ns)
+	sid, err = k.getPodData(podname, ns, labels)
 	return
 }

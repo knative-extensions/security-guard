@@ -41,7 +41,7 @@ func TestKubeMgr_TokenData(t *testing.T) {
 		},
 	})
 	t.Run("base", func(t *testing.T) {
-		sid, ns, err := k.TokenData("xy")
+		sid, ns, err := k.TokenData("xy", []string{"app"})
 		if err == nil {
 			t.Errorf("KubeMgr.TokenData() expected error")
 			return
@@ -212,7 +212,7 @@ func TestKubeMgr_getPodData(t *testing.T) {
 					Labels:      tt.labels,
 				},
 			})
-			gotSid, err := k.getPodData(tt.podname, tt.ns)
+			gotSid, err := k.getPodData(tt.podname, tt.ns, nil)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("KubeMgr.getPodData() error = %v, wantErr %v", err, tt.wantErr)
 				return
