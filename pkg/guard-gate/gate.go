@@ -154,7 +154,7 @@ func (p *plug) preInit(ctx context.Context, c map[string]string, sid string, ns 
 	ctx, cancelFunction := context.WithCancel(ctx)
 
 	// Defaults used without config when used as a qpoption
-	guardServiceUrl := "https://guard-service.knative-serving"
+	guardServiceUrl := "http://guard-service.knative-serving"
 	useCm := false
 	monitorPod := true
 

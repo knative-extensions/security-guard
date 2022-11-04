@@ -97,7 +97,7 @@ func preMain() (guardGate *GuardGate, mux *http.ServeMux, target string, plugCon
 
 	if env.GuardUrl == "" {
 		// use default
-		env.GuardUrl = "https://guard-service.knative-serving"
+		env.GuardUrl = "http://guard-service.knative-serving"
 	} else {
 		plugConfig["guard-url"] = env.GuardUrl
 	}
