@@ -26,6 +26,7 @@ import (
 	"path"
 	"time"
 
+	"knative.dev/control-protocol/pkg/certificates"
 	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
 	guardKubeMgr "knative.dev/security-guard/pkg/guard-kubemgr"
 	pi "knative.dev/security-guard/pkg/pluginterfaces"
@@ -105,10 +106,11 @@ func (srv *gateClient) initKubeMgr() {
 
 func (srv *gateClient) initHttpClient(certPool *x509.CertPool) {
 	client := new(httpClient)
-
+	pi.Log.Infof("initHttpClient using ServerName %s\n", certificates.FakeDnsName)
 	client.client.Transport = &http.Transport{
 		TLSClientConfig: &tls.Config{
-			RootCAs: certPool,
+			ServerName: certificates.FakeDnsName,
+			RootCAs:    certPool,
 		},
 	}
 	srv.httpClient = client

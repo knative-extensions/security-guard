@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: guard-service
+  namespace: knative-serving
   labels:
     app: guard-service
 spec:
@@ -18,7 +19,9 @@ spec:
       volumes:
       - name: guard-service-tls-volume
         secret:
-          secretName: guard-service-tls
+          secretName: knative-serving-certs
+      imagePullSecrets:
+      - name: all-icr-io
       containers:
       - name: guard-service
         image: ko://knative.dev/security-guard/cmd/guard-service
@@ -42,6 +45,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: guard-service
+  namespace: knative-serving
 spec:
   selector:
     app: guard-service
