@@ -15,8 +15,6 @@ spec:
       labels:
         app: guard-service
     spec:
-#      imagePullSecrets:
-#      - name: all-icr-io
       serviceAccountName: guard-service-account
       volumes:
       - name: guard-service-tls-volume
