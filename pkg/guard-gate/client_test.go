@@ -18,6 +18,7 @@ package guardgate
 
 import (
 	"bytes"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
@@ -27,6 +28,25 @@ import (
 
 	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
 )
+
+const testCert = `
+-----BEGIN CERTIFICATE-----
+MIICtDCCAZwCCQDzpJfrosIDzzANBgkqhkiG9w0BAQsFADAcMRowGAYDVQQDDBFz
+ZWN1cml0eS1ndWFyZC1jYTAeFw0yMjEwMjcxMzA0MzFaFw0zMjEwMjQxMzA0MzFa
+MBwxGjAYBgNVBAMMEXNlY3VyaXR5LWd1YXJkLWNhMIIBIjANBgkqhkiG9w0BAQEF
+AAOCAQ8AMIIBCgKCAQEAnhNCuciY7qUqzskkBkZxe9zGJRtKONVof94oAT+nzilS
+BBrs3zuHcI8v3qBQk63Hdj8xGw860A1fliKkO15iaC6QCRevVCUQ+pypIgRFY4Hj
+S7ryLGStLjqXvBH/zaxio5Sz4+yAxwChsnlqvyGqNUTjzxh82s1Y6wN7Vmjn2Pfe
+zNP2us/QhTqenBUYEsl16wPHwa62ZB4sP78yuRWeNkot2rq9qtC1DmgZl8u9wmcF
+D+IYME0Ihqqm4VhmnK9fmqt4ozuGBSL3Cs3+Xu8t3et+riAYkVKbXUQWqoKiSven
+PNJI8wRj2S6gZLCS7Z7zW3nlnKI4qKQijlNvjzw3tQIDAQABMA0GCSqGSIb3DQEB
+CwUAA4IBAQBbdn4zo2p3dAH2qIdaap92sgT/A7D0ciX4bworVQwCHVPKRtWZlI4x
+Wrlo/+VQFJ7YBJgpqJf//kTiWJ6ZHCxETpJrJ2X+48oxB6DNnx14+ykI10LSYmiJ
+2aCs1vkrgzcp0+qXTRLNQBnNnMmmghsTgxkCwRvwAn1+KupJeFj7y8Jxxbp9cWLy
+CNyW8U4UpaeAqRgzAHzjyodt4S1zxxpQJ5FSaxSL05OJtDodgokImhgJAoTNJVqZ
+T30ny2EMCCPdmZfEpITjZrNl2rT2GY47AYBk44LWvKRDvrkiKzcpDxVJ7ggUrWyE
+W+ve1pVd/1brFQJi1dF1J+QwhjCv7K1x
+-----END CERTIFICATE-----`
 
 type fakeKmgr struct{}
 
@@ -149,5 +169,17 @@ func Test_guardClient_loadGuardian(t *testing.T) {
 		if got := srv.loadGuardian(); !reflect.DeepEqual(got, g) {
 			t.Errorf("guardClient.loadGuardian() = %v, want %v", got, g)
 		}
+	})
+}
+
+func Test_gateClient_initHttpClient(t *testing.T) {
+	t.Run("base", func(t *testing.T) {
+		srv := &gateClient{
+			sid:     "mysid",
+			ns:      "myns",
+			useCm:   false,
+			kubeMgr: &fakeKmgr{},
+		}
+		srv.initHttpClient(x509.NewCertPool())
 	})
 }

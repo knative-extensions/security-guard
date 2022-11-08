@@ -112,8 +112,8 @@ func (p *GateQPOption) ProcessAnnotations() bool {
 						p.activated = true
 					}
 				case "config":
-					if len(keyParts) == 3 {
-						extensionKey := keyParts[2]
+					if len(keyParts) >= 3 {
+						extensionKey := strings.Join(keyParts[2:], "-")
 						p.config[extensionKey] = v
 					}
 				}

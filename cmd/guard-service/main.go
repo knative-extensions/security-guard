@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -41,6 +42,7 @@ type config struct {
 	GuardServiceInterval string   `split_words:"true" required:"false"`
 	GuardServiceAuth     bool     `split_words:"true" required:"false"`
 	GuardServiceLabels   []string `split_words:"true" required:"false"`
+	GuardServiceTls      bool     `split_words:"true" required:"false"`
 }
 
 type learner struct {
@@ -235,6 +237,7 @@ func preMain(minimumInterval time.Duration) (*learner, *http.ServeMux, string, c
 }
 
 func main() {
+	var err error
 	l, mux, target, quit := preMain(utils.MinimumInterval)
 
 	// cant be tested due to KubeMgr
@@ -242,7 +245,30 @@ func main() {
 	// start a mainLoop
 	go l.mainEventLoop(quit)
 
-	err := http.ListenAndServe(target, mux)
+	if env.GuardServiceTls {
+		pi.Log.Infof("TLS turned on")
+		srv := &http.Server{
+			Addr:    target,
+			Handler: mux,
+			TLSConfig: &tls.Config{
+				MinVersion:               tls.VersionTLS12,
+				PreferServerCipherSuites: true,
+			},
+		}
+
+		_, err = os.Stat("/secrets/public-cert.pem")
+		if err == nil {
+			err = srv.ListenAndServeTLS("/secrets/public-cert.pem", "/secrets/private-key.pem")
+		} else {
+			if os.IsNotExist(err) {
+				// Since the secret keys should be at some point renamed, if we are here lets try the new names
+				err = srv.ListenAndServeTLS("/secrets/tls.crt", "/secrets/tls.key")
+			}
+		}
+	} else {
+		pi.Log.Infof("TLS turned off")
+		err = http.ListenAndServe(target, mux)
+	}
 	pi.Log.Infof("Using target: %s - Failed to start %v", target, err)
 	quit <- "ListenAndServe failed"
 }

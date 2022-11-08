@@ -18,12 +18,15 @@ package guardgate
 
 import (
 	"bytes"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"path"
 	"time"
 
+	"knative.dev/control-protocol/pkg/certificates"
 	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
 	guardKubeMgr "knative.dev/security-guard/pkg/guard-kubemgr"
 	pi "knative.dev/security-guard/pkg/pluginterfaces"
@@ -46,6 +49,7 @@ func (hc *httpClient) Do(req *http.Request) (*http.Response, error) {
 		// add authorization header - optional for this revision of guard
 		req.Header.Add("Authorization", "Bearer "+hc.token)
 	}
+
 	return hc.client.Do(req)
 }
 
@@ -84,21 +88,33 @@ type gateClient struct {
 
 func NewGateClient(guardServiceUrl string, sid string, ns string, useCm bool) *gateClient {
 	srv := new(gateClient)
+	srv.kubeMgr = guardKubeMgr.NewKubeMgr()
 	srv.guardServiceUrl = guardServiceUrl
 	srv.sid = sid
 	srv.ns = ns
 	srv.useCm = useCm
-	srv.httpClient = new(httpClient)
-	srv.httpClient.ReadToken(guardKubeMgr.ServiceAudience)
+
 	srv.clearPile()
-	srv.kubeMgr = guardKubeMgr.NewKubeMgr()
 
 	return srv
 }
 
-func (srv *gateClient) start() {
+func (srv *gateClient) initKubeMgr() {
 	// initializtion that cant be tested due to use of KubeAMgr
 	srv.kubeMgr.InitConfigs()
+}
+
+func (srv *gateClient) initHttpClient(certPool *x509.CertPool) {
+	client := new(httpClient)
+	pi.Log.Infof("initHttpClient using ServerName %s\n", certificates.FakeDnsName)
+	client.client.Transport = &http.Transport{
+		TLSClientConfig: &tls.Config{
+			ServerName: certificates.FakeDnsName,
+			RootCAs:    certPool,
+		},
+	}
+	srv.httpClient = client
+	srv.httpClient.ReadToken(guardKubeMgr.ServiceAudience)
 }
 
 func (srv *gateClient) reportPile() {
@@ -183,6 +199,7 @@ func (srv *gateClient) loadGuardianFromService() *spec.GuardianSpec {
 	req.URL.RawQuery = query.Encode()
 
 	res, err := srv.httpClient.Do(req)
+
 	if err != nil {
 		pi.Log.Infof("loadGuardianFromService httpClient.Do error %v", err)
 		return nil

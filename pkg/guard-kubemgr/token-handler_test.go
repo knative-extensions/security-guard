@@ -22,29 +22,43 @@ import (
 	authv1 "k8s.io/api/authentication/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	k8sfake "k8s.io/client-go/kubernetes/fake"
+	ctest "k8s.io/client-go/testing"
 )
+
+const testToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjEyMzQ1NiJ9.eyJpc3MiOiJodHRwczovL3h4eHh4LmF1dGgwLmNvbS8iLCJzdWIiOiJhdXRoMHwxMjM0NTY3ODkiLCJhdWQiOiJzZWN1cml0eS1ndWFyZCIsImlhdCI6MTYzNDMzMjg5NSwiZXhwIjoxNjM0NDE5Mjk1LCJhenAiOiJNWV9DTElFTlRfSURfMTIzNDU2Iiwic2NvcGUiOiJvcGVuaWQgZW1haWwiLCJwZXJtaXNzaW9ucyI6W119.RnoWlTU2UwfllQv4AwmUNa6kVISJdQrfJLRt1oW_c_A"
 
 func TestKubeMgr_TokenData(t *testing.T) {
 	k := new(KubeMgr)
 	k.getConfigFunc = fakeGetInclusterConfig
-	k.cmClient = k8sfake.NewSimpleClientset(&authv1.TokenReview{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        "guardian.sid",
-			Namespace:   "ns",
-			Annotations: map[string]string{},
+
+	tokenReview := &authv1.TokenReview{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "TokenReview",
+			APIVersion: "authentication.k8s.io/v1",
 		},
 		Status: authv1.TokenReviewStatus{
 			Authenticated: true,
+			Audiences:     []string{ServiceAudience},
 			User:          authv1.UserInfo{},
 		},
-	})
+	}
+
 	t.Run("base", func(t *testing.T) {
-		sid, ns, err := k.TokenData("xy", []string{"app"})
+		cmClient := k8sfake.Clientset{}
+		cmClient.AddReactor("create", "tokenreviews", func(action ctest.Action) (handled bool, ret runtime.Object, err error) {
+			return true, tokenReview, nil
+		})
+		k.cmClient = &cmClient
+
+		sid, ns, err := k.TokenData(testToken, nil)
 		if err == nil {
-			t.Errorf("KubeMgr.TokenData() expected error")
+			// TBD investigate fake client behavior
+			t.Errorf("fake client always produce an error %s", err.Error())
 			return
+
 		}
 		if ns != "" {
 			t.Errorf("KubeMgr.TokenData() ns = %v", ns)
