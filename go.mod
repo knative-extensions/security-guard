@@ -14,7 +14,7 @@ require (
 	knative.dev/control-protocol v0.0.0-20221107200116-1b58fafda5dc
 	knative.dev/hack v0.0.0-20221104013908-8f3c7050408b
 	knative.dev/pkg v0.0.0-20221107171117-0243d641354d
-	knative.dev/serving v0.35.1-0.20221108223618-c3e0f1247b05
+	knative.dev/serving v0.35.1-0.20221109155914-bd88e059b905
 )
 
 require (
