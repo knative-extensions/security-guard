@@ -117,7 +117,7 @@ function fail_test() {
     message='test failed'
   fi
   function_exists on_failure && on_failure
-  add_trap "dump_cluster_state" EXIT
+  (( ! SKIP_DUMP_ON_FAILURE )) && dump_cluster_state
   abort "${message}"
 }
 
@@ -126,6 +126,7 @@ function fail_test() {
 # invocation
 TEARDOWN=${TEARDOWN:-0}
 CLOUD_PROVIDER=${CLOUD_PROVIDER:-"gke"}
+SKIP_DUMP_ON_FAILURE=${SKIP_DUMP_ON_FAILURE:-0}
 E2E_SCRIPT=""
 
 # Parse flags and initialize the test cluster.
@@ -165,6 +166,7 @@ function initialize() {
       --run-tests) run_tests=1 ;;
       --teardown) TEARDOWN=1 ;;
       --skip-teardowns) echo "--skip-teardowns is no longer supported - opt in with --teardown" ;;
+      --skip-dump-on-failure) SKIP_DUMP_ON_FAILURE=1 ;;
       --skip-istio-addon) echo "--skip-istio-addon is no longer supported" ;;
       *)
         case ${parameter} in
@@ -179,6 +181,7 @@ function initialize() {
       custom_flags+=("--addons=NodeLocalDNS")
   fi
 
+  readonly SKIP_DUMP_ON_FAILURE
   readonly TEARDOWN
   readonly CLOUD_PROVIDER
 
