@@ -1,9 +1,5 @@
 package v1alpha1
 
-import (
-	"fmt"
-)
-
 //////////////////// SetProfile ////////////////
 
 // Exposes ValueProfile interface
@@ -104,13 +100,15 @@ type SetConfig struct {
 	m    map[string]bool
 }
 
-func (config *SetConfig) decideI(valProfile ValueProfile) string {
+func (config *SetConfig) decideI(valProfile ValueProfile) *Decision {
 	return config.Decide(valProfile.(*SetProfile))
 }
 
-func (config *SetConfig) Decide(profile *SetProfile) string {
+func (config *SetConfig) Decide(profile *SetProfile) *Decision {
+	var current *Decision
+
 	if *profile == nil {
-		return ""
+		return nil
 	}
 
 	if config.m == nil {
@@ -122,11 +120,11 @@ func (config *SetConfig) Decide(profile *SetProfile) string {
 	}
 	for _, v := range *profile {
 		if !config.m[v] {
-			return fmt.Sprintf("Unexpected key %s in Set   ", v)
+			DecideInner(&current, 1, "Unexpected key %s in Set", v)
 		}
 	}
 
-	return ""
+	return current
 }
 
 func (config *SetConfig) learnI(valPile ValuePile) {

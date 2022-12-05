@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	"fmt"
 	"net/url"
 )
 
@@ -63,16 +62,14 @@ type QueryConfig struct {
 	Kv KeyValConfig `json:"kv"`
 }
 
-func (config *QueryConfig) decideI(valProfile ValueProfile) string {
+func (config *QueryConfig) decideI(valProfile ValueProfile) *Decision {
 	return config.Decide(valProfile.(*QueryProfile))
 }
 
-func (config *QueryConfig) Decide(profile *QueryProfile) string {
-	str := config.Kv.Decide(&profile.Kv)
-	if str == "" {
-		return str
-	}
-	return fmt.Sprintf("KeyVal: %s", str)
+func (config *QueryConfig) Decide(profile *QueryProfile) *Decision {
+	var current *Decision
+	DecideChild(&current, config.Kv.Decide(&profile.Kv), "KeyVal")
+	return current
 }
 
 func (config *QueryConfig) learnI(valPile ValuePile) {

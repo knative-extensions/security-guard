@@ -2,7 +2,6 @@ package v1alpha1
 
 import (
 	"encoding/binary"
-	"fmt"
 	"net"
 	"os"
 	"strconv"
@@ -196,37 +195,19 @@ type PodConfig struct {
 	Udplite6Peers IpSetConfig `json:"udplite6peers"` // from /proc/net/udpline6
 }
 
-func (config *PodConfig) decideI(valProfile ValueProfile) string {
+func (config *PodConfig) decideI(valProfile ValueProfile) *Decision {
 	return config.Decide(valProfile.(*PodProfile))
 }
 
-func (config *PodConfig) Decide(profile *PodProfile) string {
-	var ret string
-	ret = config.Tcp4Peers.Decide(&profile.Tcp4Peers)
-	if ret != "" {
-		return fmt.Sprintf("Tcp4Peers: %s", ret)
-	}
-	ret = config.Udp4Peers.Decide(&profile.Udp4Peers)
-	if ret != "" {
-		return fmt.Sprintf("Udp4Peers: %s", ret)
-	}
-	ret = config.Udplite4Peers.Decide(&profile.Udplite4Peers)
-	if ret != "" {
-		return fmt.Sprintf("Udplite4Peers: %s", ret)
-	}
-	ret = config.Tcp6Peers.Decide(&profile.Tcp6Peers)
-	if ret != "" {
-		return fmt.Sprintf("Tcp6Peers: %s", ret)
-	}
-	ret = config.Udp6Peers.Decide(&profile.Udp6Peers)
-	if ret != "" {
-		return fmt.Sprintf("Udp6Peers: %s", ret)
-	}
-	ret = config.Udplite6Peers.Decide(&profile.Udplite6Peers)
-	if ret != "" {
-		return fmt.Sprintf("Udplite6Peers: %s", ret)
-	}
-	return ""
+func (config *PodConfig) Decide(profile *PodProfile) *Decision {
+	var current *Decision
+	DecideChild(&current, config.Tcp4Peers.Decide(&profile.Tcp4Peers), "Tcp4Peers")
+	DecideChild(&current, config.Udp4Peers.Decide(&profile.Udp4Peers), "Udp4Peers")
+	DecideChild(&current, config.Udplite4Peers.Decide(&profile.Udplite4Peers), "Udplite4Peers")
+	DecideChild(&current, config.Tcp6Peers.Decide(&profile.Tcp6Peers), "Tcp6Peers")
+	DecideChild(&current, config.Udp6Peers.Decide(&profile.Udp6Peers), "Udp6Peers")
+	DecideChild(&current, config.Udplite6Peers.Decide(&profile.Udplite6Peers), "Udplite6Peers")
+	return current
 }
 
 func (config *PodConfig) learnI(valPile ValuePile) {

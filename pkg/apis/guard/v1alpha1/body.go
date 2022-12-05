@@ -1,7 +1,5 @@
 package v1alpha1
 
-import "fmt"
-
 //////////////////// BodyProfile ////////////////
 
 // Exposes ValueProfile interface
@@ -92,32 +90,28 @@ type BodyConfig struct {
 	Structured   *StructuredConfig `json:"structured"`
 }
 
-func (config *BodyConfig) decideI(valProfile ValueProfile) string {
+func (config *BodyConfig) decideI(valProfile ValueProfile) *Decision {
 	return config.Decide(valProfile.(*BodyProfile))
 }
 
-func (config *BodyConfig) Decide(profile *BodyProfile) string {
+func (config *BodyConfig) Decide(profile *BodyProfile) *Decision {
+	var current *Decision
+
 	if profile.Structured != nil {
 		if config.Structured != nil {
-			str := config.Structured.Decide(profile.Structured)
-			if str != "" {
-				return fmt.Sprintf("Body %s", str)
-			}
+			DecideChild(&current, config.Structured.Decide(profile.Structured), "Body")
 		} else {
-			return "Structured Body not allowed"
+			DecideInner(&current, 1, "Structured Body not allowed")
 		}
 	}
 	if profile.Unstructured != nil {
 		if config.Unstructured != nil {
-			str := config.Unstructured.Decide(profile.Unstructured)
-			if str != "" {
-				return fmt.Sprintf("Body %s", str)
-			}
+			DecideChild(&current, config.Unstructured.Decide(profile.Unstructured), "Body")
 		} else {
-			return "Unstructured Body not allowed"
+			DecideInner(&current, 1, "Unstructured Body not allowed")
 		}
 	}
-	return ""
+	return current
 }
 
 func (config *BodyConfig) learnI(valPile ValuePile) {

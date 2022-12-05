@@ -21,8 +21,10 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
-	"io/ioutil"
+	"io"
+
 	"net/http"
+	"os"
 	"path"
 	"time"
 
@@ -63,7 +65,7 @@ func (hc *httpClient) ReadToken(audience string) {
 	hc.tokenRefreshTime = now.Add(100 * time.Minute)
 
 	// TODO: replace  "/var/run/secrets/tokens" with sharedMain.QPOptionTokenDirPath once merged.
-	b, err := ioutil.ReadFile(path.Join("/var/run/secrets/tokens", audience))
+	b, err := os.ReadFile(path.Join("/var/run/secrets/tokens", audience))
 
 	if err != nil {
 		pi.Log.Infof("Token %s is missing - working without token", audience)
@@ -153,7 +155,7 @@ func (srv *gateClient) reportPile() {
 	}
 	if res.Body != nil {
 		defer res.Body.Close()
-		body, readErr := ioutil.ReadAll(res.Body)
+		body, readErr := io.ReadAll(res.Body)
 		if readErr != nil {
 			pi.Log.Infof("Response error %v", readErr)
 			return
@@ -206,7 +208,7 @@ func (srv *gateClient) loadGuardianFromService() *spec.GuardianSpec {
 	}
 
 	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		pi.Log.Infof("loadGuardianFromService Response error %v", err)
 		return nil

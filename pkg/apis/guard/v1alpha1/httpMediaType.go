@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	"fmt"
 	"mime"
 )
 
@@ -69,18 +68,15 @@ type MediaTypeConfig struct {
 	Params     KeyValConfig `json:"params"`
 }
 
-func (config *MediaTypeConfig) decideI(valProfile ValueProfile) string {
+func (config *MediaTypeConfig) decideI(valProfile ValueProfile) *Decision {
 	return config.Decide(valProfile.(*MediaTypeProfile))
 }
 
-func (config *MediaTypeConfig) Decide(profile *MediaTypeProfile) string {
-	if str := config.TypeTokens.Decide(&profile.TypeTokens); str != "" {
-		return fmt.Sprintf("Type: %s", str)
-	}
-	if str := config.Params.Decide(&profile.Params); str != "" {
-		return fmt.Sprintf("Params: %s", str)
-	}
-	return ""
+func (config *MediaTypeConfig) Decide(profile *MediaTypeProfile) *Decision {
+	var current *Decision
+	DecideChild(&current, config.TypeTokens.Decide(&profile.TypeTokens), "Type")
+	DecideChild(&current, config.Params.Decide(&profile.Params), "Params")
+	return current
 }
 
 func (config *MediaTypeConfig) learnI(valPile ValuePile) {

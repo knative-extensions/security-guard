@@ -21,7 +21,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"reflect"
 	"testing"
@@ -103,7 +103,7 @@ func (hc *fakeHttpClient) Do(req *http.Request) (*http.Response, error) {
 
 	}
 	// create a new reader with that JSON
-	r := ioutil.NopCloser(bytes.NewReader(hc.json))
+	r := io.NopCloser(bytes.NewReader(hc.json))
 	return &http.Response{StatusCode: hc.statusCode, Body: r}, hc.err
 }
 

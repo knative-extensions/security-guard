@@ -1,9 +1,5 @@
 package v1alpha1
 
-import (
-	"fmt"
-)
-
 //////////////////// FlagSliceProfile ////////////////
 
 // extra is RO and no internal objects are used
@@ -64,11 +60,13 @@ func (pile *FlagSlicePile) Merge(otherPile FlagSlicePile) {
 // Exposes ValueConfig interface
 type FlagSliceConfig []uint32
 
-func (config *FlagSliceConfig) decideI(valProfile ValueProfile) string {
+func (config *FlagSliceConfig) decideI(valProfile ValueProfile) *Decision {
 	return config.Decide(*valProfile.(*FlagSliceProfile))
 }
 
-func (config *FlagSliceConfig) Decide(profile FlagSliceProfile) string {
+func (config *FlagSliceConfig) Decide(profile FlagSliceProfile) *Decision {
+	var current *Decision
+
 	for i, v := range profile {
 		if v == 0 {
 			continue
@@ -76,9 +74,9 @@ func (config *FlagSliceConfig) Decide(profile FlagSliceProfile) string {
 		if i < len(*config) && (v & ^(*config)[i]) == 0 {
 			continue
 		}
-		return fmt.Sprintf("Unexpected Flags in FlagSlice %x on Element %d", v, i)
+		DecideInner(&current, 1, "Unexpected Flags in FlagSlice %x on Element %d", v, i)
 	}
-	return ""
+	return current
 }
 
 func (config *FlagSliceConfig) learnI(valPile ValuePile) {

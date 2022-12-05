@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -78,17 +77,6 @@ type UrlConfig struct {
 	Segments CountConfig     `json:"segments"`
 }
 
-func (config *UrlConfig) Decide(profile *UrlProfile) string {
-	if str := config.Segments.Decide(profile.Segments); str != "" {
-		return fmt.Sprintf("Segmengs: %s", str)
-	}
-
-	if str := config.Val.Decide(&profile.Val); str != "" {
-		return fmt.Sprintf("KeyVal: %s", str)
-	}
-	return ""
-}
-
 func (config *UrlConfig) learnI(valPile ValuePile) {
 	config.Learn(valPile.(*UrlPile))
 }
@@ -107,6 +95,14 @@ func (config *UrlConfig) Fuse(otherConfig *UrlConfig) {
 	config.Val.Fuse(&otherConfig.Val)
 }
 
-func (config *UrlConfig) decideI(valProfile ValueProfile) string {
+func (config *UrlConfig) decideI(valProfile ValueProfile) *Decision {
+
 	return config.Decide(valProfile.(*UrlProfile))
+}
+
+func (config *UrlConfig) Decide(profile *UrlProfile) *Decision {
+	var current *Decision
+	DecideChild(&current, config.Segments.Decide(profile.Segments), "Segments")
+	DecideChild(&current, config.Val.Decide(&profile.Val), "Val")
+	return current
 }

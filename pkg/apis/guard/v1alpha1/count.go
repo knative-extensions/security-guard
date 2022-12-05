@@ -1,9 +1,5 @@
 package v1alpha1
 
-import (
-	"fmt"
-)
-
 //////////////////// CountProfile ////////////////
 
 // Exposes ValueProfile interface
@@ -69,18 +65,21 @@ func (cRange *countRange) fuseTwoRanges(otherRange *countRange) bool {
 // Exposes ValueConfig interface
 type CountConfig []countRange
 
-func (config *CountConfig) decideI(valProfile ValueProfile) string {
+func (config *CountConfig) decideI(valProfile ValueProfile) *Decision {
 	return config.Decide(*valProfile.(*CountProfile))
 }
 
 // profile is RO and unchanged - never uses profile internal objects
-func (config *CountConfig) Decide(profile CountProfile) string {
+func (config *CountConfig) Decide(profile CountProfile) *Decision {
+	var current *Decision
+
 	if profile == 0 {
-		return ""
+		return nil
 	}
 	// v>0
 	if len(*config) == 0 {
-		return fmt.Sprintf("Value %d Not Allowed!", profile)
+		DecideInner(&current, 1, "Value %d Not Allowed!", profile)
+		return current
 	}
 
 	for _, cRange := range *config {
@@ -88,10 +87,11 @@ func (config *CountConfig) Decide(profile CountProfile) string {
 			break
 		}
 		if uint8(profile) <= cRange.Max { // found ok interval
-			return ""
+			return nil
 		}
 	}
-	return fmt.Sprintf("Counter out of Range: %d   ", profile)
+	DecideInner(&current, 1, "Counter out of Range: %d", profile)
+	return current
 }
 
 func (config *CountConfig) learnI(valPile ValuePile) {

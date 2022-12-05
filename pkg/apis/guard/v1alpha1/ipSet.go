@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	"fmt"
 	"math/bits"
 	"net"
 )
@@ -182,13 +181,15 @@ func (cidr *CIDR) InflateBy(ip net.IP) bool {
 // Exposes ValueConfig interface
 type IpSetConfig []CIDR
 
-func (config *IpSetConfig) decideI(valProfile ValueProfile) string {
+func (config *IpSetConfig) decideI(valProfile ValueProfile) *Decision {
 	return config.Decide((valProfile.(*IpSetProfile)))
 }
 
-func (config *IpSetConfig) Decide(profile *IpSetProfile) string {
+func (config *IpSetConfig) Decide(profile *IpSetProfile) *Decision {
+	var current *Decision
+
 	if len(*profile) == 0 {
-		return ""
+		return nil
 	}
 
 LoopProfileIPs:
@@ -201,9 +202,9 @@ LoopProfileIPs:
 				continue LoopProfileIPs
 			}
 		}
-		return fmt.Sprintf("IP %s not allowed", ip.String())
+		DecideInner(&current, 1, "IP %s not allowed", ip.String())
 	}
-	return ""
+	return current
 }
 
 // Learn currently offers a rough and simple CIDR support

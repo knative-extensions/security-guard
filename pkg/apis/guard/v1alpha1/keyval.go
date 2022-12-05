@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -113,41 +112,38 @@ type KeyValConfig struct {
 	OtherKeynames *SimpleValConfig            `json:"otherKeynames"` // Profile the keynames of other keys
 }
 
-func (config *KeyValConfig) decideI(valProfile ValueProfile) string {
+func (config *KeyValConfig) decideI(valProfile ValueProfile) *Decision {
 	return config.Decide(valProfile.(*KeyValProfile))
 }
 
-func (config *KeyValConfig) Decide(profile *KeyValProfile) string {
+func (config *KeyValConfig) Decide(profile *KeyValProfile) *Decision {
+	var current *Decision
+
 	if profile == nil {
-		return ""
+		return nil
 	}
 
 	// For each key-val, decide
 	for k, v := range *profile {
 		// Decide based on a known keys
 		if config.Vals != nil && config.Vals[k] != nil {
-			if ret := config.Vals[k].Decide(v); ret != "" {
-				return fmt.Sprintf("Known Key %s: %s", k, ret)
-			}
+			DecideChild(&current, config.Vals[k].Decide(v), "KnownKey %s", k)
 			continue
 		}
 		// Decide based on unknown key...
 		if config.OtherKeynames == nil || config.OtherVals == nil {
-			return fmt.Sprintf("Key %s is not known", k)
+			DecideInner(&current, 1, "Key %s is not known", k)
+			continue
 		}
 		// Cosnider the keyname
 		var keyname SimpleValProfile
 		keyname.Profile(k)
-		if ret := config.OtherKeynames.Decide(&keyname); ret != "" {
-			return fmt.Sprintf("Other keyname %s: %s", k, ret)
-		}
+		DecideChild(&current, config.OtherKeynames.Decide(&keyname), "OtherKeyname %s:", k)
+
 		// Cosnider the key value
-		if ret := config.OtherVals.Decide(v); ret != "" {
-			return fmt.Sprintf("Other keyname %s: %s", k, ret)
-		}
-		continue
+		DecideChild(&current, config.OtherVals.Decide(v), "OtherVals %s", k)
 	}
-	return ""
+	return current
 }
 
 func (config *KeyValConfig) learnI(valPile ValuePile) {

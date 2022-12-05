@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -75,21 +74,15 @@ type EnvelopConfig struct {
 	CompletionTime CountConfig `json:"completiontime"`
 }
 
-func (config *EnvelopConfig) decideI(valProfile ValueProfile) string {
+func (config *EnvelopConfig) decideI(valProfile ValueProfile) *Decision {
 	return config.Decide(valProfile.(*EnvelopProfile))
 }
 
-func (config *EnvelopConfig) Decide(profile *EnvelopProfile) string {
-	var ret string
-	ret = config.ResponseTime.Decide(profile.ResponseTime)
-	if ret != "" {
-		return fmt.Sprintf("ResponseTime: %s", ret)
-	}
-	ret = config.CompletionTime.Decide(profile.CompletionTime)
-	if ret != "" {
-		return fmt.Sprintf("CompletionTime: %s", ret)
-	}
-	return ""
+func (config *EnvelopConfig) Decide(profile *EnvelopProfile) *Decision {
+	var current *Decision
+	DecideChild(&current, config.ResponseTime.Decide(profile.ResponseTime), "ResponseTime")
+	DecideChild(&current, config.CompletionTime.Decide(profile.CompletionTime), "CompletionTime")
+	return current
 }
 
 func (config *EnvelopConfig) learnI(valPile ValuePile) {

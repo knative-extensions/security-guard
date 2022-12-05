@@ -1,9 +1,5 @@
 package v1alpha1
 
-import (
-	"fmt"
-)
-
 // Slots and counters for Ascii Data:
 // 0-31 (32) nonReadableRCharCounter
 // 32-47 (16) slots 0-15 respectively
@@ -333,37 +329,20 @@ func (config *SimpleValConfig) Fuse(otherConfig *SimpleValConfig) {
 	config.UnicodeFlags.Fuse(otherConfig.UnicodeFlags)
 }
 
-func (config *SimpleValConfig) decideI(valProfile ValueProfile) string {
+func (config *SimpleValConfig) decideI(valProfile ValueProfile) *Decision {
 	return config.Decide(valProfile.(*SimpleValProfile))
 }
 
-func (config *SimpleValConfig) Decide(profile *SimpleValProfile) string {
-	if ret := config.Letters.Decide(profile.Letters); ret != "" {
-		return fmt.Sprintf("Letters: %s", ret)
-	}
-	if ret := config.Digits.Decide(profile.Digits); ret != "" {
-		return fmt.Sprintf("Digits: %s", ret)
-	}
-	if ret := config.Spaces.Decide(profile.Spaces); ret != "" {
-		return fmt.Sprintf("Spaces: %s", ret)
-	}
-	if ret := config.SpecialChars.Decide(profile.SpecialChars); ret != "" {
-		return fmt.Sprintf("SpecialChars: %s", ret)
-	}
-	if ret := config.NonReadables.Decide(profile.NonReadables); ret != "" {
-		return fmt.Sprintf("NonReadables: %s", ret)
-	}
-	if ret := config.Unicodes.Decide(profile.Unicodes); ret != "" {
-		return fmt.Sprintf("Unicodes: %s", ret)
-	}
-	if ret := config.Sequences.Decide(profile.Sequences); ret != "" {
-		return fmt.Sprintf("Sequences: %s", ret)
-	}
-	if ret := config.Flags.Decide(profile.Flags); ret != "" {
-		return fmt.Sprintf("Special Chars Used: %s", ret)
-	}
-	if ret := config.UnicodeFlags.Decide(profile.UnicodeFlags); ret != "" {
-		return fmt.Sprintf("Unicode Blocks: %s", ret)
-	}
-	return ""
+func (config *SimpleValConfig) Decide(profile *SimpleValProfile) *Decision {
+	var current *Decision
+	DecideChild(&current, config.Letters.Decide(profile.Letters), "Letters")
+	DecideChild(&current, config.Digits.Decide(profile.Digits), "Digits")
+	DecideChild(&current, config.Spaces.Decide(profile.Spaces), "Spaces")
+	DecideChild(&current, config.SpecialChars.Decide(profile.SpecialChars), "SpecialChars")
+	DecideChild(&current, config.NonReadables.Decide(profile.NonReadables), "NonReadables")
+	DecideChild(&current, config.Unicodes.Decide(profile.Unicodes), "Unicodes")
+	DecideChild(&current, config.Sequences.Decide(profile.Sequences), "Sequences")
+	DecideChild(&current, config.Flags.Decide(profile.Flags), "Special Chars Used")
+	DecideChild(&current, config.UnicodeFlags.Decide(profile.UnicodeFlags), "Unicode Blocks")
+	return current
 }

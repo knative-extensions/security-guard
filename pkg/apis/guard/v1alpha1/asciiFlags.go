@@ -2,7 +2,6 @@ package v1alpha1
 
 import (
 	"bytes"
-	"fmt"
 )
 
 var AsciiFlagNames = []string{
@@ -101,15 +100,16 @@ func (pile *AsciiFlagsPile) Merge(otherPile AsciiFlagsPile) {
 // Exposes ValueConfig interface
 type AsciiFlagsConfig uint32
 
-func (config *AsciiFlagsConfig) decideI(valProfile ValueProfile) string {
+func (config *AsciiFlagsConfig) decideI(valProfile ValueProfile) *Decision {
 	return config.Decide(*valProfile.(*AsciiFlagsProfile))
 }
 
-func (config *AsciiFlagsConfig) Decide(profile AsciiFlagsProfile) string {
+func (config *AsciiFlagsConfig) Decide(profile AsciiFlagsProfile) *Decision {
+	var current *Decision
 	if flags := AsciiFlagsConfig(profile) & ^*config; flags != 0 {
-		return fmt.Sprintf("Unexpected Flags %s (0x%x) in Value", nameFlags(uint32(flags)), flags)
+		DecideInner(&current, 1, "Unexpected Flags %s (0x%x) in Value", nameFlags(uint32(flags)), flags)
 	}
-	return ""
+	return current
 }
 
 func (config *AsciiFlagsConfig) learnI(valPile ValuePile) {

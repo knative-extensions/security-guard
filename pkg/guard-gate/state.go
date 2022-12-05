@@ -19,7 +19,6 @@ package guardgate
 import (
 	"context"
 	"crypto/x509"
-	"fmt"
 	"os"
 
 	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
@@ -119,9 +118,10 @@ func (gs *gateState) profileAndDecidePod() {
 	// Future - add more controls to decide what to do in this situation
 	if gs.criteria.Active {
 		decision := gs.criteria.Pod.Decide(&gs.pod)
-		if decision != "" {
+		if decision != nil {
 			gs.addStat("PodAlert")
-			gs.alert = fmt.Sprintf("Pod: %s", decision)
+			gs.alert = decision.String("Pod  -> ")
+
 			logAlert(gs.alert)
 			// terminate the reverse proxy
 			gs.cancelFunc()
@@ -143,9 +143,9 @@ func (gs *gateState) copyPodProfile(pp *spec.PodProfile) {
 // returns the alert text if needed
 func (gs *gateState) decideReq(rp *spec.ReqProfile) string {
 	if gs.criteria.Active {
-		if decision := gs.criteria.Req.Decide(rp); decision != "" {
+		if decision := gs.criteria.Req.Decide(rp); decision != nil {
 			gs.addStat("ReqAlert")
-			return fmt.Sprintf("HttpRequest: %s", decision)
+			return decision.String("HttpRequest -> ")
 		}
 	}
 	return ""
@@ -154,9 +154,9 @@ func (gs *gateState) decideReq(rp *spec.ReqProfile) string {
 // returns the alert text if needed
 func (gs *gateState) decideResp(rp *spec.RespProfile) string {
 	if gs.criteria.Active {
-		if decision := gs.criteria.Resp.Decide(rp); decision != "" {
+		if decision := gs.criteria.Resp.Decide(rp); decision != nil {
 			gs.addStat("RespAlert")
-			return fmt.Sprintf("HttpResponse: %s", decision)
+			return decision.String("HttpResponse  -> ")
 		}
 	}
 	return ""
@@ -165,9 +165,9 @@ func (gs *gateState) decideResp(rp *spec.RespProfile) string {
 // returns the alert text if needed
 func (gs *gateState) decideReqBody(bp *spec.BodyProfile) string {
 	if gs.criteria.Active {
-		if decision := gs.criteria.ReqBody.Decide(bp); decision != "" {
+		if decision := gs.criteria.ReqBody.Decide(bp); decision != nil {
 			gs.addStat("ReqBodyAlert")
-			return fmt.Sprintf("HttpRequestBody: %s", decision)
+			return decision.String("HttpRequestBody -> ")
 		}
 	}
 	return ""
@@ -176,9 +176,9 @@ func (gs *gateState) decideReqBody(bp *spec.BodyProfile) string {
 // returns the alert text if needed
 func (gs *gateState) decideRespBody(bp *spec.BodyProfile) string {
 	if gs.criteria.Active {
-		if decision := gs.criteria.RespBody.Decide(bp); decision != "" {
+		if decision := gs.criteria.RespBody.Decide(bp); decision != nil {
 			gs.addStat("RespBodyAlert")
-			return fmt.Sprintf("HttpResponseBody: %s", decision)
+			return decision.String("HttpResponseBody  -> ")
 		}
 	}
 	return ""
@@ -187,9 +187,9 @@ func (gs *gateState) decideRespBody(bp *spec.BodyProfile) string {
 // returns the alert text if needed
 func (gs *gateState) decideEnvelop(ep *spec.EnvelopProfile) string {
 	if gs.criteria.Active {
-		if decision := gs.criteria.Envelop.Decide(ep); decision != "" {
+		if decision := gs.criteria.Envelop.Decide(ep); decision != nil {
 			gs.addStat("EnvelopAlert")
-			return fmt.Sprintf("Envelop: %s", decision)
+			return decision.String("Envelop  -> ")
 		}
 	}
 	return ""

@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	"fmt"
 	"net/http"
 )
 
@@ -63,16 +62,14 @@ type HeadersConfig struct {
 	Kv KeyValConfig `json:"kv"`
 }
 
-func (config *HeadersConfig) decideI(valProfile ValueProfile) string {
+func (config *HeadersConfig) decideI(valProfile ValueProfile) *Decision {
 	return config.Decide(valProfile.(*HeadersProfile))
 }
 
-func (config *HeadersConfig) Decide(profile *HeadersProfile) string {
-	str := config.Kv.Decide(&profile.Kv)
-	if str == "" {
-		return str
-	}
-	return fmt.Sprintf("KeyVal: %s", str)
+func (config *HeadersConfig) Decide(profile *HeadersProfile) *Decision {
+	var current *Decision
+	DecideChild(&current, config.Kv.Decide(&profile.Kv), "KeyVal")
+	return current
 }
 
 func (config *HeadersConfig) learnI(valPile ValuePile) {

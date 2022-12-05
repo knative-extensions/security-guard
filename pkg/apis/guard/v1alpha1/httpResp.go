@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	"fmt"
 	"net/http"
 )
 
@@ -80,21 +79,16 @@ type RespConfig struct {
 	ContentLength CountConfig     `json:"contentlength"`
 }
 
-func (config *RespConfig) decideI(valProfile ValueProfile) string {
+func (config *RespConfig) decideI(valProfile ValueProfile) *Decision {
 	return config.Decide(valProfile.(*RespProfile))
 }
 
-func (config *RespConfig) Decide(profile *RespProfile) string {
-	if ret := config.Headers.Decide(&profile.Headers); ret != "" {
-		return fmt.Sprintf("Headers: %s", ret)
-	}
-	if ret := config.MediaType.Decide(&profile.MediaType); ret != "" {
-		return fmt.Sprintf("Media Type: %s", ret)
-	}
-	if ret := config.ContentLength.Decide(profile.ContentLength); ret != "" {
-		return fmt.Sprintf("Content Length: %s", ret)
-	}
-	return ""
+func (config *RespConfig) Decide(profile *RespProfile) *Decision {
+	var current *Decision
+	DecideChild(&current, config.Headers.Decide(&profile.Headers), "Headers")
+	DecideChild(&current, config.MediaType.Decide(&profile.MediaType), "MediaType")
+	DecideChild(&current, config.ContentLength.Decide(profile.ContentLength), "ContentLength")
+	return current
 }
 
 func (config *RespConfig) learnI(valPile ValuePile) {
