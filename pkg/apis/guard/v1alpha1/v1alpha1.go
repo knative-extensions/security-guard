@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -31,22 +32,6 @@ type Decision struct {
 	children map[string]*Decision
 	reasons  []string
 	result   int
-}
-
-func (parent *Decision) SpillOut(sb *strings.Builder) {
-	// sprintf("[ %s: %s, %s: %s, ... %s, %s, ... ], ", tag1 , child1.SpillOut(), tag1 , child1.SpillOut(), ..., reason1, reason2, ...  )
-	sb.WriteByte('[')
-	for tag, child := range parent.children {
-		sb.WriteString(tag)
-		sb.WriteByte(':')
-		child.SpillOut(sb)
-		sb.WriteByte(',')
-	}
-	for _, reason := range parent.reasons {
-		sb.WriteString(reason)
-		sb.WriteByte(',')
-	}
-	sb.WriteByte(']')
 }
 
 func DecideInner(current **Decision, result int, format string, a ...any) {
@@ -87,12 +72,66 @@ func (parent *Decision) Summary() string {
 	}
 	return ""
 }
+
+func (parent *Decision) SpillOut(sb *strings.Builder) {
+	// sprintf("[ %s: %s, %s: %s, ... %s, %s, ... ], ", tag1 , child1.SpillOut(), tag1 , child1.SpillOut(), ..., reason1, reason2, ...  )
+	sb.WriteByte('[')
+	for tag, child := range parent.children {
+		sb.WriteString(tag)
+		sb.WriteByte(':')
+		child.SpillOut(sb)
+		sb.WriteByte(',')
+	}
+	for _, reason := range parent.reasons {
+		sb.WriteString(reason)
+		sb.WriteByte(',')
+	}
+	sb.WriteByte(']')
+}
+
 func (parent *Decision) String(tag string) string {
 	if parent.result > 0 {
 		var sb strings.Builder
 
 		sb.WriteString(tag)
 		parent.SpillOut(&sb)
+		return sb.String()
+	}
+	return ""
+}
+
+func (parent *Decision) SortedSpillOut(sb *strings.Builder) {
+	// sprintf("[ %s: %s, %s: %s, ... %s, %s, ... ], ", tag1 , child1.SpillOut(), tag1 , child1.SpillOut(), ..., reason1, reason2, ...  )
+
+	var tags []string
+
+	sb.WriteByte('[')
+	for tag := range parent.children {
+		tags = append(tags, tag)
+	}
+	sort.Strings(tags)
+	sort.Strings(parent.reasons)
+
+	for _, tag := range tags {
+		child := parent.children[tag]
+		sb.WriteString(tag)
+		sb.WriteByte(':')
+		child.SortedSpillOut(sb)
+		sb.WriteByte(',')
+	}
+	for _, reason := range parent.reasons {
+		sb.WriteString(reason)
+		sb.WriteByte(',')
+	}
+	sb.WriteByte(']')
+}
+
+func (parent *Decision) SortedString(tag string) string {
+	if parent.result > 0 {
+		var sb strings.Builder
+
+		sb.WriteString(tag)
+		parent.SortedSpillOut(&sb)
 		return sb.String()
 	}
 	return ""

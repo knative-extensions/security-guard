@@ -98,3 +98,58 @@ func TestPile_Json(t *testing.T) {
 		}
 	})
 }
+
+func TestSessionData_Decide(t *testing.T) {
+	type profile struct {
+		reqMethod string
+		reqTarget string
+		cip       net.IP
+		resp      http.Response
+		reqData   interface{}
+		respData  interface{}
+		reqTime   time.Time
+		respTime  time.Time
+		endTime   time.Time
+	}
+	tests := []struct {
+		name     string
+		profile  profile
+		decision string
+	}{
+		{
+			name:     "minimal",
+			decision: "[Req:[MediaType:[Type:[Unexpected key none in Set,],],Method:[Unexpected key GET in Set,],Proto:[Unexpected key HTTP/1.1 in Set,],],ReqBody:[Structured Body not allowed,],Resp:[MediaType:[Type:[Unexpected key none in Set,],],],RespBody:[Structured Body not allowed,],]",
+		},
+		{
+			name: "minimal",
+			profile: profile{
+				reqMethod: "Post",
+				reqTarget: "/abc2/א",
+				reqData:   "abc",
+				reqTime:   time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC),
+			},
+			decision: "[Req:[MediaType:[Type:[Unexpected key none in Set,],],Method:[Unexpected key Post in Set,],Proto:[Unexpected key HTTP/1.1 in Set,],Url:[Segments:[Value 2 Not Allowed!,],Val:[Digits:[Value 1 Not Allowed!,],Letters:[Value 3 Not Allowed!,],Sequences:[Value 3 Not Allowed!,],Unicode Blocks:[Unexpected Flags in FlagSlice 400 on Element 0,],Unicodes:[Value 1 Not Allowed!,],],],],ReqBody:[Structured Body not allowed,],Resp:[MediaType:[Type:[Unexpected key none in Set,],],],RespBody:[Structured Body not allowed,],]",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var profile SessionDataProfile
+			var config SessionDataConfig
+			if tt.profile.reqTarget == "" {
+				tt.profile.reqTarget = "/"
+			}
+			req := httptest.NewRequest(tt.profile.reqMethod, tt.profile.reqTarget, nil)
+
+			profile.Profile(req, tt.profile.cip, &tt.profile.resp, tt.profile.reqData, tt.profile.respData, tt.profile.reqTime, tt.profile.respTime, tt.profile.endTime)
+			d := config.Decide(&profile)
+			if d == nil {
+				t.Errorf("Decision expected to fail with %s but did not fail!", tt.decision)
+				return
+			}
+			str := d.SortedString("")
+			if str != tt.decision {
+				t.Errorf("Decision \nexpected %s \nreceived %s", tt.decision, str)
+			}
+		})
+	}
+}
