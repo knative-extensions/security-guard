@@ -133,6 +133,14 @@ func Test_session_sessionEventLoop(t *testing.T) {
 		s.gotResponse = true
 		s.cancel()
 		s.sessionEventLoop(ctx)
+		if ret := gs.stat.Log(); ret != "map[NoAlertCriteriaNotActive:1]" {
+			t.Errorf("expected stat %s received %s", "map[NoAlertCriteriaNotActive:1]", ret)
+		}
+		gs.stat.Init()
+		s.gotResponse = true
+		s.gateState.criteria.Active = true
+		s.cancel()
+		s.sessionEventLoop(ctx)
 		if ret := gs.stat.Log(); ret != "map[NoAlert:1]" {
 			t.Errorf("expected stat %s received %s", "map[NoAlert:1]", ret)
 		}
