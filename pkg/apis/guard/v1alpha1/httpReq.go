@@ -1,7 +1,22 @@
+/*
+Copyright 2022 The Knative Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package v1alpha1
 
 import (
-	"fmt"
 	"net"
 	"net/http"
 )
@@ -131,47 +146,22 @@ type ReqConfig struct {
 	Headers       HeadersConfig   `json:"headers"`
 }
 
-func (config *ReqConfig) decideI(valProfile ValueProfile) string {
+func (config *ReqConfig) decideI(valProfile ValueProfile) *Decision {
 	return config.Decide(valProfile.(*ReqProfile))
 }
 
-func (config *ReqConfig) Decide(profile *ReqProfile) string {
-	if ret := config.Url.Decide(&profile.Url); ret != "" {
-		return fmt.Sprintf("Url: %s", ret)
-	}
-
-	if ret := config.Qs.Decide(&profile.Qs); ret != "" {
-		return fmt.Sprintf("QueryString: %s", ret)
-	}
-
-	if ret := config.Headers.Decide(&profile.Headers); ret != "" {
-		return fmt.Sprintf("Headers: %s", ret)
-	}
-
-	if ret := config.ClientIp.Decide(&profile.ClientIp); ret != "" {
-		return fmt.Sprintf("ClientIp: %s", ret)
-	}
-
-	if ret := config.HopIp.Decide(&profile.HopIp); ret != "" {
-		return fmt.Sprintf("HopIp: %s", ret)
-	}
-
-	if ret := config.Method.Decide(&profile.Method); ret != "" {
-		return fmt.Sprintf("Method: %s", ret)
-	}
-
-	if ret := config.Proto.Decide(&profile.Proto); ret != "" {
-		return fmt.Sprintf("Proto: %s", ret)
-	}
-
-	if ret := config.MediaType.Decide(&profile.MediaType); ret != "" {
-		return fmt.Sprintf("MediaType: %s", ret)
-	}
-
-	if ret := config.ContentLength.Decide(profile.ContentLength); ret != "" {
-		return fmt.Sprintf("ContentLength: %s", ret)
-	}
-	return ""
+func (config *ReqConfig) Decide(profile *ReqProfile) *Decision {
+	var current *Decision
+	DecideChild(&current, config.Url.Decide(&profile.Url), "Url")
+	DecideChild(&current, config.Qs.Decide(&profile.Qs), "QueryString")
+	DecideChild(&current, config.Headers.Decide(&profile.Headers), "Headers")
+	DecideChild(&current, config.ClientIp.Decide(&profile.ClientIp), "ClientIp")
+	DecideChild(&current, config.HopIp.Decide(&profile.HopIp), "HopIp")
+	DecideChild(&current, config.Method.Decide(&profile.Method), "Method")
+	DecideChild(&current, config.Proto.Decide(&profile.Proto), "Proto")
+	DecideChild(&current, config.MediaType.Decide(&profile.MediaType), "MediaType")
+	DecideChild(&current, config.ContentLength.Decide(profile.ContentLength), "ContentLength")
+	return current
 }
 
 func (config *ReqConfig) learnI(valPile ValuePile) {

@@ -105,9 +105,20 @@ func (s *session) sessionEventLoop(ctx context.Context) {
 			s.gateState.addStat("SessionLevelAlert")
 			return
 		}
+		// no alert
 		if !s.gotResponse {
 			pi.Log.Debugf("No Alert but completed before receiving a response!")
 			s.gateState.addStat("NoResponse")
+			return
+		}
+		if s.gateState.criteria == nil {
+			pi.Log.Debugf("No Alert since no criteria")
+			s.gateState.addStat("NoAlertNoCriteria")
+			return
+		}
+		if !s.gateState.criteria.Active {
+			pi.Log.Debugf("No Alert since criteria is not active")
+			s.gateState.addStat("NoAlertCriteriaNotActive")
 			return
 		}
 		pi.Log.Debugf("No Alert!")

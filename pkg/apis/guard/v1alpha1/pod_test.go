@@ -1,3 +1,19 @@
+/*
+Copyright 2022 The Knative Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package v1alpha1
 
 import (
@@ -70,29 +86,29 @@ func TestPod_V1(t *testing.T) {
 
 		pile1.Add(&profile1)
 		config1.Learn(&pile1)
-		if ret := config1.Decide(&profile1); ret != "" {
-			t.Errorf("Decide return error %s when expected to ok", ret)
+		if d := config1.Decide(&profile1); d != nil {
+			t.Errorf(d.String("Decide expected to ok but returned error"))
 		}
-		if ret := config1.Decide(&profile2); ret == "" {
+		if d := config1.Decide(&profile2); d == nil {
 			t.Errorf("Decide return ok when expected an error")
 		}
-		if ret := config1.Decide(&profile3); ret == "" {
+		if d := config1.Decide(&profile3); d == nil {
 			t.Errorf("Decide return ok when expected an error")
 		}
 		pile2.Add(&profile2)
 		pile2.Merge(&pile1)
 		config2.Learn(&pile2)
-		if ret := config2.Decide(&profile1); ret != "" {
-			t.Errorf("Decide return error %s when expected to ok", ret)
+		if d := config2.Decide(&profile1); d != nil {
+			t.Errorf(d.String("Decide expected to ok but returned error"))
 		}
-		if ret := config2.Decide(&profile2); ret != "" {
-			t.Errorf("Decide return error %s when expected to ok", ret)
+		if d := config2.Decide(&profile2); d != nil {
+			t.Errorf(d.String("Decide expected to ok but returned error"))
 		}
-		if ret := config2.Decide(&profile3); ret != "" {
-			t.Errorf("Decide return error %s when expected to ok", ret)
+		if d := config2.Decide(&profile3); d != nil {
+			t.Errorf(d.String("Decide expected to ok but returned error"))
 		}
-		if ret := config2.Decide(&profile5); ret != "" {
-			t.Errorf("Decide return error %s when expected to ok", ret)
+		if d := config2.Decide(&profile5); d != nil {
+			t.Errorf(d.String("Decide expected to ok but returned error"))
 		}
 
 		pile1.Clear()
@@ -102,15 +118,15 @@ func TestPod_V1(t *testing.T) {
 		config1a.Learn(&pile1)
 		config2a.Learn(&pile2)
 		config1a.Fuse(&config2a)
-		if ret := config1a.Decide(&profile1); ret != "" {
-			t.Errorf("Decide return error %s when expected to ok", ret)
+		if d := config1a.Decide(&profile1); d != nil {
+			t.Errorf(d.String("Decide expected to ok but returned error"))
 		}
-		if ret := config1a.Decide(&profile2); ret != "" {
-			t.Errorf("Decide return error %s when expected to ok", ret)
+		if d := config1a.Decide(&profile2); d != nil {
+			t.Errorf(d.String("Decide expected to ok but returned error"))
 		}
 
-		if ret := config1a.Decide(&profile3); ret != "" {
-			t.Errorf("Decide return error %s when expected to ok", ret)
+		if d := config1a.Decide(&profile3); d != nil {
+			t.Errorf(d.String("Decide expected to ok but returned error"))
 		}
 
 		pile1.Clear()
@@ -125,12 +141,12 @@ func TestPod_V1(t *testing.T) {
 		config56.Learn(&pile2)
 		config56.Fuse(&config34)
 
-		if ret := config56.Decide(&profile3); ret != "" {
-			t.Errorf("Decide return error %s when expected to ok", ret)
+		if d := config56.Decide(&profile3); d != nil {
+			t.Errorf(d.String("Decide expected to ok but returned error"))
 		}
 
-		if ret := config56.Decide(&profile5); ret != "" {
-			t.Errorf("Decide return error %s when expected to ok", ret)
+		if d := config56.Decide(&profile5); d != nil {
+			t.Errorf(d.String("Decide expected to ok but returned error"))
 		}
 
 	})

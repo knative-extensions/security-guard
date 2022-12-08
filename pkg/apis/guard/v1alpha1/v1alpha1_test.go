@@ -1,3 +1,19 @@
+/*
+Copyright 2022 The Knative Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package v1alpha1
 
 import (
@@ -63,8 +79,8 @@ func ValueTests_Test(t *testing.T, profiles []ValueProfile, piles []ValuePile, c
 			configs[i].learnI(pile)
 			configs[0].fuseI(configs[i])
 			configs[0].fuseI(configs[i])
-			if str := configs[0].decideI(profiles[i]); str != "" {
-				t.Errorf("config.Decide(profile) wrong decission: %s\nFor profile %s\nwhen using config %s\n", str, profiles[i], configs[0])
+			if d := configs[0].decideI(profiles[i]); d != nil {
+				t.Errorf("config.Decide(profile) wrong decission: %s\nFor profile %s\nwhen using config %s\n", d.String(""), profiles[i], configs[0])
 			}
 		}
 	})
@@ -102,8 +118,8 @@ func ValueTests_Test_WithMarshal(t *testing.T, profiles []ValueProfile, piles []
 		config.fuseI(config)
 		config.fuseI(config)
 
-		if str := config.decideI(profile); str != "" {
-			t.Errorf("config.Decide(profile) wrong decission: %s", str)
+		if d := config.decideI(profile); d != nil {
+			t.Errorf(d.String("config.Decide(profile) wrong decission:"))
 		}
 
 		if bytes, err = json.Marshal(config); err != nil {
@@ -131,13 +147,13 @@ func ValueTests_SimpleTest(t *testing.T, profiles []ValueProfile, piles []ValueP
 
 		// test ConfigValue
 		config.learnI(pile)
-		if str := config.decideI(profiles[0]); str != "" {
-			t.Errorf("config.Decide(profile) wrong decission: %s", str)
+		if d := config.decideI(profiles[0]); d != nil {
+			t.Errorf("config.Decide(profile) wrong decission: %s", d.String(""))
 		}
-		if str := config.decideI(profiles[1]); str == "" {
+		if d := config.decideI(profiles[1]); d == nil {
 			t.Errorf("config.Decide(profile) expected a reject of %s after learning %s\n", args[1], args[0])
 		}
-		if str := config.decideI(profiles[2]); str == "" {
+		if d := config.decideI(profiles[2]); d == nil {
 			t.Errorf("config.Decide(profile) expected a reject of %s after learning %s\n", args[2], args[0])
 		}
 	})
@@ -207,11 +223,11 @@ func ValueTests_TestAdd(t *testing.T, profiles []ValueProfile, piles []ValuePile
 
 		// test ConfigValue
 		configs[0].learnI(piles[0])
-		if str := configs[0].decideI(profiles[0]); str != "" {
-			t.Errorf("config.Decide(profile) wrong decission: %s", str)
+		if d := configs[0].decideI(profiles[0]); d != nil {
+			t.Errorf("config.Decide(profile) wrong decission: %s", d.String(""))
 		}
-		if str := configs[0].decideI(profiles[1]); str != "" {
-			t.Errorf("config.Decide(profile) wrong decission: %s", str)
+		if d := configs[0].decideI(profiles[1]); d != nil {
+			t.Errorf("config.Decide(profile) wrong decission: %s", d.String(""))
 		}
 	})
 }
@@ -231,11 +247,11 @@ func ValueTests_TestMerge(t *testing.T, profiles []ValueProfile, piles []ValuePi
 
 		// test ConfigValue
 		configs[0].learnI(piles[0])
-		if str := configs[0].decideI(profiles[0]); str != "" {
-			t.Errorf("config.Decide(profile) wrong decission: %s", str)
+		if d := configs[0].decideI(profiles[0]); d != nil {
+			t.Errorf(d.String("config.Decide(profile) wrong decission: "))
 		}
-		if str := configs[0].decideI(profiles[1]); str != "" {
-			t.Errorf("config.Decide(profile) wrong decission: %s", str)
+		if d := configs[0].decideI(profiles[1]); d != nil {
+			t.Errorf(d.String("config.Decide(profile) wrong decission: "))
 		}
 	})
 }
@@ -256,11 +272,11 @@ func ValueTests_TestFuse(t *testing.T, profiles []ValueProfile, piles []ValuePil
 		configs[0].learnI(piles[0])
 		configs[1].learnI(piles[1])
 		configs[0].fuseI(configs[1])
-		if str := configs[0].decideI(profiles[0]); str != "" {
-			t.Errorf("config.Decide(profile) wrong decission: %s", str)
+		if d := configs[0].decideI(profiles[0]); d != nil {
+			t.Errorf(d.String("config.Decide(profile) wrong decission: "))
 		}
-		if str := configs[0].decideI(profiles[1]); str != "" {
-			t.Errorf("config.Decide(profile) wrong decission: %s", str)
+		if d := configs[0].decideI(profiles[1]); d != nil {
+			t.Errorf(d.String("config.Decide(profile) wrong decission: "))
 		}
 	})
 }
@@ -275,4 +291,140 @@ func ValueTests_All(t *testing.T, profiles []ValueProfile, piles []ValuePile, co
 	ValuePile_MarshalTest(t, piles)
 	ValueProfile_MarshalTest(t, profiles)
 	ValueTests_Test_WithMarshal(t, profiles, piles, configs, args...)
+}
+
+func TestDecideInner(t *testing.T) {
+	t.Run("Simple", func(t *testing.T) {
+		var current *Decision
+		var str, expected string
+
+		DecideInner(&current, 7, "X")
+		if current == nil {
+			t.Error("Expected current to no longer be nil")
+			return
+		}
+		if current.result != 7 {
+			t.Error("Expected current.result to be 7")
+			return
+		}
+		str = current.Summary()
+		expected = "Fail (7)"
+		if str != expected {
+			t.Errorf("Expected current.Summary to be '%s' received '%s'", expected, str)
+			return
+		}
+		str = current.String("Y")
+		expected = "Y[X,]"
+		if str != expected {
+			t.Errorf("Expected string '%s' received '%s'", expected, str)
+			return
+		}
+		DecideInner(&current, 3, "Z(%d)", 8)
+		if current == nil {
+			t.Error("Expected current to no longer be nil")
+			return
+		}
+		if current.result != 10 {
+			t.Error("Expected current.result to be 10")
+			return
+		}
+		str = current.Summary()
+		expected = "Fail (10)"
+		if str != expected {
+			t.Errorf("Expected current.Summary to be '%s' received '%s'", expected, str)
+			return
+		}
+		str = current.String("Y")
+		expected = "Y[X,Z(8),]"
+		if str != expected {
+			t.Errorf("Expected string '%s' received '%s'", expected, str)
+			return
+		}
+	})
+
+}
+
+func TestDecideChild(t *testing.T) {
+	t.Run("empty", func(t *testing.T) {
+		var current *Decision
+		DecideChild(&current, nil, "X")
+		if current != nil {
+			t.Error("Expected current to be nil")
+		}
+	})
+
+	t.Run("simple", func(t *testing.T) {
+		var current, child *Decision
+		var str, expected, alternative string
+
+		childDecision := Decision{result: 4}
+
+		DecideChild(&current, &childDecision, "X")
+		if current == nil {
+			t.Error("Expected current to no longer be nil")
+			return
+		}
+
+		if current.result != 4 {
+			t.Errorf("Expected current.result to be 4 instead received %d", current.result)
+			return
+		}
+		str = current.Summary()
+		expected = "Fail (4)"
+		if str != expected {
+			t.Errorf("Expected current.Summary to be '%s' received %s", expected, str)
+			return
+		}
+		str = current.String("Y")
+		expected = "Y[X:[],]"
+		if str != expected {
+			t.Errorf("Expected string '%s' received '%s'", expected, str)
+			return
+		}
+
+		DecideChild(&current, &childDecision, "Z")
+		if current.result != 8 {
+			t.Errorf("Expected current.result to be 8 instead received %d", current.result)
+			return
+		}
+		str = current.Summary()
+		expected = "Fail (8)"
+		if str != expected {
+			t.Errorf("Expected current.Summary to be '%s' received '%s'", expected, str)
+			return
+		}
+		str = current.String("Y")
+		expected = "Y[X:[],Z:[],]"
+		alternative = "Y[Z:[],X:[],]"
+		if str != expected && str != alternative {
+			t.Errorf("Expected string '%s' or '%s' received '%s'", expected, alternative, str)
+			return
+		}
+
+		current = nil
+		DecideChild(&child, &childDecision, "Z")
+		DecideChild(&current, child, "X")
+		if current == nil {
+			t.Error("Expected current to no longer be nil")
+			return
+		}
+
+		if current.result != 4 {
+			t.Errorf("Expected current.result to be 4 instead received %d", current.result)
+			return
+		}
+		str = current.Summary()
+		expected = "Fail (4)"
+		if str != expected {
+			t.Errorf("Expected current.Summary to be '%s' received %s", expected, str)
+			return
+		}
+		str = current.String("Y")
+		expected = "Y[X:[Z:[],],]"
+		if str != expected {
+			t.Errorf("Expected string '%s' received '%s'", expected, str)
+			return
+		}
+	})
+
 }

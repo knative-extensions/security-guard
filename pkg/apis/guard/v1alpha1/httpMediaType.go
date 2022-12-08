@@ -1,7 +1,22 @@
+/*
+Copyright 2022 The Knative Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package v1alpha1
 
 import (
-	"fmt"
 	"mime"
 )
 
@@ -69,18 +84,15 @@ type MediaTypeConfig struct {
 	Params     KeyValConfig `json:"params"`
 }
 
-func (config *MediaTypeConfig) decideI(valProfile ValueProfile) string {
+func (config *MediaTypeConfig) decideI(valProfile ValueProfile) *Decision {
 	return config.Decide(valProfile.(*MediaTypeProfile))
 }
 
-func (config *MediaTypeConfig) Decide(profile *MediaTypeProfile) string {
-	if str := config.TypeTokens.Decide(&profile.TypeTokens); str != "" {
-		return fmt.Sprintf("Type: %s", str)
-	}
-	if str := config.Params.Decide(&profile.Params); str != "" {
-		return fmt.Sprintf("Params: %s", str)
-	}
-	return ""
+func (config *MediaTypeConfig) Decide(profile *MediaTypeProfile) *Decision {
+	var current *Decision
+	DecideChild(&current, config.TypeTokens.Decide(&profile.TypeTokens), "Type")
+	DecideChild(&current, config.Params.Decide(&profile.Params), "Params")
+	return current
 }
 
 func (config *MediaTypeConfig) learnI(valPile ValuePile) {

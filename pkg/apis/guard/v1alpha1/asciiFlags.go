@@ -1,8 +1,23 @@
+/*
+Copyright 2022 The Knative Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package v1alpha1
 
 import (
 	"bytes"
-	"fmt"
 )
 
 var AsciiFlagNames = []string{
@@ -101,15 +116,16 @@ func (pile *AsciiFlagsPile) Merge(otherPile AsciiFlagsPile) {
 // Exposes ValueConfig interface
 type AsciiFlagsConfig uint32
 
-func (config *AsciiFlagsConfig) decideI(valProfile ValueProfile) string {
+func (config *AsciiFlagsConfig) decideI(valProfile ValueProfile) *Decision {
 	return config.Decide(*valProfile.(*AsciiFlagsProfile))
 }
 
-func (config *AsciiFlagsConfig) Decide(profile AsciiFlagsProfile) string {
+func (config *AsciiFlagsConfig) Decide(profile AsciiFlagsProfile) *Decision {
+	var current *Decision
 	if flags := AsciiFlagsConfig(profile) & ^*config; flags != 0 {
-		return fmt.Sprintf("Unexpected Flags %s (0x%x) in Value", nameFlags(uint32(flags)), flags)
+		DecideInner(&current, 1, "Unexpected Flags %s (0x%x) in Value", nameFlags(uint32(flags)), flags)
 	}
-	return ""
+	return current
 }
 
 func (config *AsciiFlagsConfig) learnI(valPile ValuePile) {

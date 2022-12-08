@@ -1,7 +1,22 @@
+/*
+Copyright 2022 The Knative Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package v1alpha1
 
 import (
-	"fmt"
 	"net"
 	"net/http"
 	"time"
@@ -105,31 +120,19 @@ type SessionDataConfig struct {
 	Pod      PodConfig     `json:"pod"`      // Pod criteria for blocking/allowing
 }
 
-func (config *SessionDataConfig) decideI(valProfile ValueProfile) string {
+func (config *SessionDataConfig) decideI(valProfile ValueProfile) *Decision {
 	return config.Decide(valProfile.(*SessionDataProfile))
 }
 
-func (config *SessionDataConfig) Decide(profile *SessionDataProfile) string {
-	if ret := config.Req.Decide(&profile.Req); ret != "" {
-		return fmt.Sprintf("Req: %s", ret)
-	}
-	if ret := config.Resp.Decide(&profile.Resp); ret != "" {
-		return fmt.Sprintf("Resp: %s", ret)
-	}
-	if ret := config.ReqBody.Decide(&profile.ReqBody); ret != "" {
-		return fmt.Sprintf("ReqBody: %s", ret)
-	}
-	if ret := config.RespBody.Decide(&profile.RespBody); ret != "" {
-		return fmt.Sprintf("RespBody: %s", ret)
-	}
-	if ret := config.Envelop.Decide(&profile.Envelop); ret != "" {
-		return fmt.Sprintf("Envelop: %s", ret)
-	}
-	if ret := config.Pod.Decide(&profile.Pod); ret != "" {
-		return fmt.Sprintf("Pod: %s", ret)
-	}
-
-	return ""
+func (config *SessionDataConfig) Decide(profile *SessionDataProfile) *Decision {
+	var current *Decision
+	DecideChild(&current, config.Req.Decide(&profile.Req), "Req")
+	DecideChild(&current, config.Resp.Decide(&profile.Resp), "Resp")
+	DecideChild(&current, config.ReqBody.Decide(&profile.ReqBody), "ReqBody")
+	DecideChild(&current, config.RespBody.Decide(&profile.RespBody), "RespBody")
+	DecideChild(&current, config.Envelop.Decide(&profile.Envelop), "Envelop")
+	DecideChild(&current, config.Pod.Decide(&profile.Pod), "Pod")
+	return current
 }
 
 func (config *SessionDataConfig) learnI(valPile ValuePile) {

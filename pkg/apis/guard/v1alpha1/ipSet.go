@@ -1,7 +1,22 @@
+/*
+Copyright 2022 The Knative Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package v1alpha1
 
 import (
-	"fmt"
 	"math/bits"
 	"net"
 )
@@ -182,13 +197,15 @@ func (cidr *CIDR) InflateBy(ip net.IP) bool {
 // Exposes ValueConfig interface
 type IpSetConfig []CIDR
 
-func (config *IpSetConfig) decideI(valProfile ValueProfile) string {
+func (config *IpSetConfig) decideI(valProfile ValueProfile) *Decision {
 	return config.Decide((valProfile.(*IpSetProfile)))
 }
 
-func (config *IpSetConfig) Decide(profile *IpSetProfile) string {
+func (config *IpSetConfig) Decide(profile *IpSetProfile) *Decision {
+	var current *Decision
+
 	if len(*profile) == 0 {
-		return ""
+		return nil
 	}
 
 LoopProfileIPs:
@@ -201,9 +218,9 @@ LoopProfileIPs:
 				continue LoopProfileIPs
 			}
 		}
-		return fmt.Sprintf("IP %s not allowed", ip.String())
+		DecideInner(&current, 1, "IP %s not allowed", ip.String())
 	}
-	return ""
+	return current
 }
 
 // Learn currently offers a rough and simple CIDR support

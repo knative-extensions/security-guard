@@ -1,8 +1,20 @@
-package v1alpha1
+/*
+Copyright 2022 The Knative Authors
 
-import (
-	"fmt"
-)
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package v1alpha1
 
 //////////////////// CountProfile ////////////////
 
@@ -69,18 +81,21 @@ func (cRange *countRange) fuseTwoRanges(otherRange *countRange) bool {
 // Exposes ValueConfig interface
 type CountConfig []countRange
 
-func (config *CountConfig) decideI(valProfile ValueProfile) string {
+func (config *CountConfig) decideI(valProfile ValueProfile) *Decision {
 	return config.Decide(*valProfile.(*CountProfile))
 }
 
 // profile is RO and unchanged - never uses profile internal objects
-func (config *CountConfig) Decide(profile CountProfile) string {
+func (config *CountConfig) Decide(profile CountProfile) *Decision {
+	var current *Decision
+
 	if profile == 0 {
-		return ""
+		return nil
 	}
 	// v>0
 	if len(*config) == 0 {
-		return fmt.Sprintf("Value %d Not Allowed!", profile)
+		DecideInner(&current, 1, "Value %d Not Allowed!", profile)
+		return current
 	}
 
 	for _, cRange := range *config {
@@ -88,10 +103,11 @@ func (config *CountConfig) Decide(profile CountProfile) string {
 			break
 		}
 		if uint8(profile) <= cRange.Max { // found ok interval
-			return ""
+			return nil
 		}
 	}
-	return fmt.Sprintf("Counter out of Range: %d   ", profile)
+	DecideInner(&current, 1, "Counter out of Range: %d", profile)
+	return current
 }
 
 func (config *CountConfig) learnI(valPile ValuePile) {

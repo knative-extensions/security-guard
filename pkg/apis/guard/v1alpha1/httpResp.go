@@ -1,7 +1,22 @@
+/*
+Copyright 2022 The Knative Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package v1alpha1
 
 import (
-	"fmt"
 	"net/http"
 )
 
@@ -80,21 +95,16 @@ type RespConfig struct {
 	ContentLength CountConfig     `json:"contentlength"`
 }
 
-func (config *RespConfig) decideI(valProfile ValueProfile) string {
+func (config *RespConfig) decideI(valProfile ValueProfile) *Decision {
 	return config.Decide(valProfile.(*RespProfile))
 }
 
-func (config *RespConfig) Decide(profile *RespProfile) string {
-	if ret := config.Headers.Decide(&profile.Headers); ret != "" {
-		return fmt.Sprintf("Headers: %s", ret)
-	}
-	if ret := config.MediaType.Decide(&profile.MediaType); ret != "" {
-		return fmt.Sprintf("Media Type: %s", ret)
-	}
-	if ret := config.ContentLength.Decide(profile.ContentLength); ret != "" {
-		return fmt.Sprintf("Content Length: %s", ret)
-	}
-	return ""
+func (config *RespConfig) Decide(profile *RespProfile) *Decision {
+	var current *Decision
+	DecideChild(&current, config.Headers.Decide(&profile.Headers), "Headers")
+	DecideChild(&current, config.MediaType.Decide(&profile.MediaType), "MediaType")
+	DecideChild(&current, config.ContentLength.Decide(profile.ContentLength), "ContentLength")
+	return current
 }
 
 func (config *RespConfig) learnI(valPile ValuePile) {

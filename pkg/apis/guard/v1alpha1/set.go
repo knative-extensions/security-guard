@@ -1,8 +1,20 @@
-package v1alpha1
+/*
+Copyright 2022 The Knative Authors
 
-import (
-	"fmt"
-)
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package v1alpha1
 
 //////////////////// SetProfile ////////////////
 
@@ -104,13 +116,15 @@ type SetConfig struct {
 	m    map[string]bool
 }
 
-func (config *SetConfig) decideI(valProfile ValueProfile) string {
+func (config *SetConfig) decideI(valProfile ValueProfile) *Decision {
 	return config.Decide(valProfile.(*SetProfile))
 }
 
-func (config *SetConfig) Decide(profile *SetProfile) string {
+func (config *SetConfig) Decide(profile *SetProfile) *Decision {
+	var current *Decision
+
 	if *profile == nil {
-		return ""
+		return nil
 	}
 
 	if config.m == nil {
@@ -122,11 +136,11 @@ func (config *SetConfig) Decide(profile *SetProfile) string {
 	}
 	for _, v := range *profile {
 		if !config.m[v] {
-			return fmt.Sprintf("Unexpected key %s in Set   ", v)
+			DecideInner(&current, 1, "Unexpected key %s in Set", v)
 		}
 	}
 
-	return ""
+	return current
 }
 
 func (config *SetConfig) learnI(valPile ValuePile) {

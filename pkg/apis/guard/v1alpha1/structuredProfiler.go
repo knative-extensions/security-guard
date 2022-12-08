@@ -1,3 +1,19 @@
+/*
+Copyright 2022 The Knative Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package v1alpha1
 
 import (
@@ -192,44 +208,38 @@ type StructuredConfig struct {
 	Kv   map[string]*StructuredConfig `json:"kv"`   // used for: object items
 }
 
-func (config *StructuredConfig) decideI(valProfile ValueProfile) string {
+func (config *StructuredConfig) decideI(valProfile ValueProfile) *Decision {
 	return config.Decide(valProfile.(*StructuredProfile))
 }
 
-func (config *StructuredConfig) Decide(profile *StructuredProfile) string {
+func (config *StructuredConfig) Decide(profile *StructuredProfile) *Decision {
+	var current *Decision
+
 	if config.Kind != profile.Kind {
 		if config.Kind == KindMulti {
-			return ""
+			return nil
 		} else {
-			return fmt.Sprintf("Structured -  kind mismatch allowed %s has %s", config.Kind, profile.Kind)
+			DecideInner(&current, 1, "Structured -  kind mismatch allowed %s has %s", config.Kind, profile.Kind)
+			return current
 		}
 	}
 	switch config.Kind {
 	case KindObject:
 		for jpk, jpv := range profile.Kv {
 			if config.Kv[jpk] == nil {
-				return fmt.Sprintf("Structured - key not allowed: %s", jpk)
+				DecideInner(&current, 1, "Structured - key not allowed: %s", jpk)
 			} else {
-				str := config.Kv[jpk].Decide(jpv)
-				if str != "" {
-					return fmt.Sprintf("Structured - Key: %s - %s", jpk, str)
-				}
+				DecideChild(&current, config.Kv[jpk].Decide(jpv), "Structured - Key: %s", jpk)
 			}
 		}
 	case KindArray:
 		for _, jpv := range profile.Vals {
-			str := config.Val.Decide(&jpv)
-			if str != "" {
-				return fmt.Sprintf("Structured - array val: %s", str)
-			}
+			DecideChild(&current, config.Val.Decide(&jpv), "Structured - array val")
 		}
 	case KindBoolean, KindNumber, KindString:
-		str := config.Val.Decide(&profile.Vals[0])
-		if str != "" {
-			return fmt.Sprintf("Structured - Val: %s", str)
-		}
+		DecideChild(&current, config.Val.Decide(&profile.Vals[0]), "Structured - val")
 	}
-	return ""
+	return current
 }
 
 func (config *StructuredConfig) learnI(valPile ValuePile) {

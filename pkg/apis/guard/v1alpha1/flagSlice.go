@@ -1,8 +1,20 @@
-package v1alpha1
+/*
+Copyright 2022 The Knative Authors
 
-import (
-	"fmt"
-)
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package v1alpha1
 
 //////////////////// FlagSliceProfile ////////////////
 
@@ -64,11 +76,13 @@ func (pile *FlagSlicePile) Merge(otherPile FlagSlicePile) {
 // Exposes ValueConfig interface
 type FlagSliceConfig []uint32
 
-func (config *FlagSliceConfig) decideI(valProfile ValueProfile) string {
+func (config *FlagSliceConfig) decideI(valProfile ValueProfile) *Decision {
 	return config.Decide(*valProfile.(*FlagSliceProfile))
 }
 
-func (config *FlagSliceConfig) Decide(profile FlagSliceProfile) string {
+func (config *FlagSliceConfig) Decide(profile FlagSliceProfile) *Decision {
+	var current *Decision
+
 	for i, v := range profile {
 		if v == 0 {
 			continue
@@ -76,9 +90,9 @@ func (config *FlagSliceConfig) Decide(profile FlagSliceProfile) string {
 		if i < len(*config) && (v & ^(*config)[i]) == 0 {
 			continue
 		}
-		return fmt.Sprintf("Unexpected Flags in FlagSlice %x on Element %d", v, i)
+		DecideInner(&current, 1, "Unexpected Flags in FlagSlice %x on Element %d", v, i)
 	}
-	return ""
+	return current
 }
 
 func (config *FlagSliceConfig) learnI(valPile ValuePile) {
