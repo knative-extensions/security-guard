@@ -27,6 +27,7 @@ import (
 	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
 	guardianclientset "knative.dev/security-guard/pkg/client/clientset/versioned"
 	guardv1alpha1 "knative.dev/security-guard/pkg/client/clientset/versioned/typed/guard/v1alpha1"
+	pi "knative.dev/security-guard/pkg/pluginterfaces"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -385,17 +386,21 @@ func (k *KubeMgr) GetGuardian(ns string, sid string, cm bool, autoActivate bool)
 			if err != nil {
 				// try the namespace default guardian
 				g, _ = k.readCm(ns, "ns-"+ns)
+				pi.Log.Debugf("Read Guardian from ConfigMap for ns %s, sid %s", ns, sid)
 			}
 		} else {
 			g, err = k.readCrd(ns, sid)
 			if err != nil {
 				// try the namespace default crd
 				g, _ = k.readCrd(ns, "ns-"+ns)
+				pi.Log.Debugf("Read Guardian from CRD for ns %s, sid %s", ns, sid)
 			}
 		}
 	}
 
 	if g == nil {
+		pi.Log.Debugf("Create default Guardian for ns %s, sid %s", ns, sid)
+
 		// create a default guardian and return it
 		g = new(spec.GuardianSpec)
 		// a default guardianSpec has:

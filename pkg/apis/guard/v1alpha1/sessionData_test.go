@@ -121,7 +121,7 @@ func TestSessionData_Decide(t *testing.T) {
 			decision: "[Req:[MediaType:[Type:[Unexpected key none in Set,],],Method:[Unexpected key GET in Set,],Proto:[Unexpected key HTTP/1.1 in Set,],],ReqBody:[Structured Body not allowed,],Resp:[MediaType:[Type:[Unexpected key none in Set,],],],RespBody:[Structured Body not allowed,],]",
 		},
 		{
-			name: "minimal",
+			name: "req",
 			profile: profile{
 				reqMethod: "Post",
 				reqTarget: "/abc2/א",
