@@ -69,8 +69,8 @@ jobs:
            --env "TARGET=Secured World" \
            --annotation features.knative.dev/queueproxy-podinfo=enabled \
            --annotation qpoption.knative.dev/guard-activate=enable
-        kn service list|head -2|tail -1|awk '{print $2}' 
-        echo "SERVICE_URL=$?" >> $GITHUB_ENV
+        URL=`kn service list|head -2|tail -1|awk '{print $2}'`   
+        echo "SERVICE_URL=$URL" >> $GITHUB_ENV
 
     - name: Wait for Ready
       run: |
