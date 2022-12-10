@@ -69,6 +69,8 @@ jobs:
            --env "TARGET=Secured World" \
            --annotation features.knative.dev/queueproxy-podinfo=enabled \
            --annotation qpoption.knative.dev/guard-activate=enable
+        kn service list|head -2|tail -1|awk '{print $2}' 
+        echo "SERVICE_URL=$?" >> $GITHUB_ENV
 
     - name: Wait for Ready
       run: |
@@ -80,13 +82,13 @@ jobs:
     
     - name: Run e2e Tests
       run: |
-        ./test/e2e/e2e-tests.sh
+        ./test/e2e/e2e-tests.sh $SERVICE_URL
 
     - uses: chainguard-dev/actions/kind-diag@main
       # Only upload logs on failure.
       if: ${{ failure() }}
       with:
         cluster-resources: nodes,namespaces,crds
-        namespace-resources: pods,svc,guardians.guard.security.knative.dev
+        namespace-resources: pods,svc,services.serving.knative.dev,guardians.guard.security.knative.dev
         artifact-name: logs-${{ matrix.k8s-version }}
       
