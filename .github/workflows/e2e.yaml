@@ -53,12 +53,13 @@ jobs:
         kubectl apply -f https://storage.googleapis.com/knative-nightly/serving/latest/serving-crds.yaml
         kubectl apply -f https://storage.googleapis.com/knative-nightly/serving/latest/serving-core.yaml      
         kubectl apply -f https://storage.googleapis.com/knative-nightly/net-kourier/latest/kourier.yaml
-       
+        
         kubectl patch configmap/config-network \
           --namespace knative-serving \
           --type merge \
           --patch '{"data":{"ingress-class":"kourier.ingress.networking.knative.dev"}}'
-        kubectl patch cm config-domain -nknative-serving -p '{"data":{"127.0.0.1.sslip.io":""}}'
+        kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.8.3/serving-default-domain.yaml
+
       
     - name: Install  security-guard  
       run: ko apply -Rf ./config 
