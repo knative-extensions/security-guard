@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httptest
+  namespace: default
+  labels:
+    app: httptest
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: httptest
+  template:
+    metadata:
+      labels:
+        app: httptest
+    spec:
+      containers:
+      - env:
+        - name: PORT
+          value: "8080"
+        image: ko://knative.dev/security-guard/test/e2e/services/httptest
+        imagePullPolicy: IfNotPresent
+        name: httptest
+        ports:
+        - containerPort: 8082
+          name: user-port
+          protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httptest
+spec:
+  selector:
+    app: httptest
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8082
