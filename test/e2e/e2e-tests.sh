@@ -7,5 +7,5 @@ response=`kubectl logs deployment/httptest-00001-deployment queue-proxy|grep -i 
 responseEnd="${response#*Alert}"
 alert=${responseEnd%%\"*}
 if [ "$alert" != "!" ]; then
-   return 1
+   exit 1
 fi

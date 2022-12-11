@@ -66,12 +66,12 @@ spec:
                 min: 0
             Forwarded:
               digits:
-              - max: 11
-                min: 11
+              - max: 0
+                min: 20
               flags: 167936
               letters:
-              - max: 12
-                min: 12
+              - max: 0
+                min: 20
               nonreadables:
               - max: 0
                 min: 0
@@ -79,8 +79,8 @@ spec:
               - max: 6
                 min: 6
               sequences:
-              - max: 13
-                min: 13
+              - max: 0
+                min: 20
               spaces:
               - max: 0
                 min: 0
@@ -138,8 +138,8 @@ spec:
                 min: 0
             X-Forwarded-For:
               digits:
-              - max: 22
-                min: 22
+              - max: 0
+                min: 30
               flags: 5120
               letters:
               - max: 0
@@ -186,12 +186,12 @@ spec:
                 min: 0
             X-Request-Id:
               digits:
-              - max: 21
-                min: 20
+              - max: 30
+                min: 0
               flags: 2048
               letters:
-              - max: 12
-                min: 11
+              - max: 30
+                min: 0
               nonreadables:
               - max: 0
                 min: 0
@@ -199,8 +199,8 @@ spec:
               - max: 4
                 min: 4
               sequences:
-              - max: 27
-                min: 26
+              - max: 40
+                min: 0
               spaces:
               - max: 0
                 min: 0
