@@ -1,0 +1,377 @@
+apiVersion: guard.security.knative.dev/v1alpha1
+kind: Guardian
+metadata:
+  creationTimestamp: "2022-12-11T13:40:47Z"
+  generation: 1
+  name: httptest
+  namespace: default
+  resourceVersion: "40851122"
+  uid: 3b3a4231-a2b2-4bf8-bbbd-64714b7119e9
+spec:
+  control:
+    alert: true
+    auto: true
+    block: false
+    force: true
+    learn: true
+  learned:
+    active: true
+    envelop:
+      completiontime:
+      - max: 0
+        min: 0
+      responsetime:
+      - max: 0
+        min: 0
+    pod:
+      tcp4peers: null
+      tcp6peers: null
+      udp4peers: null
+      udp6peers: null
+      udplite4peers: null
+      udplite6peers: null
+    req:
+      cip: null
+      contentlength:
+      - max: 0
+        min: 0
+      headers:
+        kv:
+          otherKeynames: null
+          otherVals: null
+          vals:
+            Accept:
+              digits:
+              - max: 0
+                min: 0
+              flags: 1073750272
+              letters:
+              - max: 0
+                min: 0
+              nonreadables:
+              - max: 0
+                min: 0
+              schars:
+              - max: 3
+                min: 3
+              sequences:
+              - max: 1
+                min: 1
+              spaces:
+              - max: 0
+                min: 0
+              unicodeFlags: []
+              unicodes:
+              - max: 0
+                min: 0
+            Forwarded:
+              digits:
+              - max: 11
+                min: 11
+              flags: 167936
+              letters:
+              - max: 12
+                min: 12
+              nonreadables:
+              - max: 0
+                min: 0
+              schars:
+              - max: 6
+                min: 6
+              sequences:
+              - max: 13
+                min: 13
+              spaces:
+              - max: 0
+                min: 0
+              unicodeFlags: []
+              unicodes:
+              - max: 0
+                min: 0
+            K-Proxy-Request:
+              digits:
+              - max: 0
+                min: 0
+              flags: 0
+              letters:
+              - max: 9
+                min: 9
+              nonreadables:
+              - max: 0
+                min: 0
+              schars:
+              - max: 0
+                min: 0
+              sequences:
+              - max: 1
+                min: 1
+              spaces:
+              - max: 0
+                min: 0
+              unicodeFlags: []
+              unicodes:
+              - max: 0
+                min: 0
+            User-Agent:
+              digits:
+              - max: 4
+                min: 4
+              flags: 12288
+              letters:
+              - max: 4
+                min: 4
+              nonreadables:
+              - max: 0
+                min: 0
+              schars:
+              - max: 3
+                min: 3
+              sequences:
+              - max: 7
+                min: 7
+              spaces:
+              - max: 0
+                min: 0
+              unicodeFlags: []
+              unicodes:
+              - max: 0
+                min: 0
+            X-Forwarded-For:
+              digits:
+              - max: 22
+                min: 22
+              flags: 5120
+              letters:
+              - max: 0
+                min: 0
+              nonreadables:
+              - max: 0
+                min: 0
+              schars:
+              - max: 7
+                min: 7
+              sequences:
+              - max: 16
+                min: 16
+              spaces:
+              - max: 1
+                min: 1
+              unicodeFlags: []
+              unicodes:
+              - max: 0
+                min: 0
+            X-Forwarded-Proto:
+              digits:
+              - max: 0
+                min: 0
+              flags: 0
+              letters:
+              - max: 4
+                min: 4
+              nonreadables:
+              - max: 0
+                min: 0
+              schars:
+              - max: 0
+                min: 0
+              sequences:
+              - max: 1
+                min: 1
+              spaces:
+              - max: 0
+                min: 0
+              unicodeFlags: []
+              unicodes:
+              - max: 0
+                min: 0
+            X-Request-Id:
+              digits:
+              - max: 21
+                min: 20
+              flags: 2048
+              letters:
+              - max: 12
+                min: 11
+              nonreadables:
+              - max: 0
+                min: 0
+              schars:
+              - max: 4
+                min: 4
+              sequences:
+              - max: 27
+                min: 26
+              spaces:
+              - max: 0
+                min: 0
+              unicodeFlags: []
+              unicodes:
+              - max: 0
+                min: 0
+      hopip: null
+      mediatype:
+        params:
+          otherKeynames: null
+          otherVals: null
+          vals: {}
+        type:
+          set:
+          - none
+      method:
+        set:
+        - GET
+      proto:
+        set:
+        - HTTP/1.1
+      qs:
+        kv:
+          otherKeynames: null
+          otherVals: null
+          vals: {}
+      url:
+        segments:
+        - max: 0
+          min: 0
+        val:
+          digits:
+          - max: 0
+            min: 0
+          flags: 0
+          letters:
+          - max: 0
+            min: 0
+          nonreadables:
+          - max: 0
+            min: 0
+          schars:
+          - max: 0
+            min: 0
+          sequences:
+          - max: 0
+            min: 0
+          spaces:
+          - max: 0
+            min: 0
+          unicodeFlags: []
+          unicodes:
+          - max: 0
+            min: 0
+    reqbody:
+      structured: null
+      unstructured: null
+    resp:
+      contentlength:
+      - max: 5
+        min: 5
+      headers:
+        kv:
+          otherKeynames: null
+          otherVals: null
+          vals:
+            Content-Length:
+              digits:
+              - max: 2
+                min: 2
+              flags: 0
+              letters:
+              - max: 0
+                min: 0
+              nonreadables:
+              - max: 0
+                min: 0
+              schars:
+              - max: 0
+                min: 0
+              sequences:
+              - max: 1
+                min: 1
+              spaces:
+              - max: 0
+                min: 0
+              unicodeFlags: []
+              unicodes:
+              - max: 0
+                min: 0
+            Content-Type:
+              digits:
+              - max: 1
+                min: 1
+              flags: 174080
+              letters:
+              - max: 19
+                min: 19
+              nonreadables:
+              - max: 0
+                min: 0
+              schars:
+              - max: 4
+                min: 4
+              sequences:
+              - max: 10
+                min: 10
+              spaces:
+              - max: 1
+                min: 1
+              unicodeFlags: []
+              unicodes:
+              - max: 0
+                min: 0
+            Date:
+              digits:
+              - max: 12
+                min: 12
+              flags: 17408
+              letters:
+              - max: 9
+                min: 9
+              nonreadables:
+              - max: 0
+                min: 0
+              schars:
+              - max: 3
+                min: 3
+              sequences:
+              - max: 16
+                min: 16
+              spaces:
+              - max: 5
+                min: 5
+              unicodeFlags: []
+              unicodes:
+              - max: 0
+                min: 0
+      mediatype:
+        params:
+          otherKeynames: null
+          otherVals: null
+          vals:
+            charset:
+              digits:
+              - max: 1
+                min: 1
+              flags: 2048
+              letters:
+              - max: 3
+                min: 3
+              nonreadables:
+              - max: 0
+                min: 0
+              schars:
+              - max: 1
+                min: 1
+              sequences:
+              - max: 3
+                min: 3
+              spaces:
+              - max: 0
+                min: 0
+              unicodeFlags: []
+              unicodes:
+              - max: 0
+                min: 0
+        type:
+          set:
+          - text/plain
+    respbody:
+      structured: null
+      unstructured: null

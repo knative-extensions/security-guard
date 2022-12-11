@@ -78,6 +78,7 @@ jobs:
 
     - name: install test service
       run: |
+        kubectl apply -f ./test/e2e/deploy/httptestCrd.yaml
         kn service create httptest \
            --image gcr.io/knative-samples/helloworld-go \
            --env "TARGET=Secured World" \
