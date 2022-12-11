@@ -24,7 +24,7 @@ if [ "$alert" != "! HttpRequest -> [QueryString:[KeyVal:[Key a is not known,],],
 fi
 
 
-curl "$URL -H \"a:2\""
+curl $URL -H "a:2"
 kubectl logs deployment/httptest-00001-deployment queue-proxy
 response=`kubectl logs deployment/httptest-00001-deployment queue-proxy|grep "ALERT!"|tail -1`
 responseEnd="${response#*ALERT}"
