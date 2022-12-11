@@ -70,8 +70,8 @@ spec:
                 min: 20
               flags: 167936
               letters:
-              - max: 0
-                min: 20
+              - max: 20
+                min: 0
               nonreadables:
               - max: 0
                 min: 0
@@ -79,8 +79,8 @@ spec:
               - max: 6
                 min: 6
               sequences:
-              - max: 0
-                min: 20
+              - max: 30
+                min: 0
               spaces:
               - max: 0
                 min: 0
@@ -138,8 +138,8 @@ spec:
                 min: 0
             X-Forwarded-For:
               digits:
-              - max: 0
-                min: 30
+              - max: 30
+                min: 0
               flags: 5120
               letters:
               - max: 0
