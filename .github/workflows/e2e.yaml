@@ -53,11 +53,14 @@ jobs:
         kubectl apply -f https://storage.googleapis.com/knative-nightly/serving/latest/serving-crds.yaml
         kubectl apply -f https://storage.googleapis.com/knative-nightly/serving/latest/serving-core.yaml      
         kubectl apply -f https://storage.googleapis.com/knative-nightly/net-kourier/latest/kourier.yaml
-        
         kubectl patch configmap/config-network \
           --namespace knative-serving \
           --type merge \
           --patch '{"data":{"ingress-class":"kourier.ingress.networking.knative.dev"}}'
+        kubectl patch configmap/config-logging \
+          --namespace knative-serving \
+          --type merge \
+          --patch '{"data":{"loglevel.queueproxy":"debug"}}'  
       
     - name: Install  security-guard  
       run: ko apply -Rf ./config
