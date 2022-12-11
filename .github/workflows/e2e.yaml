@@ -75,7 +75,8 @@ jobs:
     - name: Set Cluster DNS
       run: |
         kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.8.3/serving-default-domain.yaml
-        kubectl wait --for=condition=complete job/default-domain -n knative-serving
+        kubectl wait --timeout 300s --for=condition=complete job/default-domain -n knative-serving
+
     - name: install test service
       run: |
         kubectl apply -f ./test/e2e/deploy/httptestCrd.yaml
