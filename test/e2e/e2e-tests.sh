@@ -31,7 +31,7 @@ responseEnd="${response#*ALERT}"
 alert=${responseEnd%%\"*}
 
 echo "Alert Value: $alert"
-if [ "$alert" != "! HttpRequest -> [Header:[KeyVal:[Key a is not known,],],]" ]; then
+if [ "$alert" != "! HttpRequest -> [Headers:[KeyVal:[Key A is not known,],],]" ]; then
    exit 1
 fi
 
