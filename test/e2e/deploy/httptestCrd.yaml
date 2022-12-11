@@ -66,8 +66,8 @@ spec:
                 min: 0
             Forwarded:
               digits:
-              - max: 0
-                min: 20
+              - max: 20
+                min: 0
               flags: 167936
               letters:
               - max: 20
