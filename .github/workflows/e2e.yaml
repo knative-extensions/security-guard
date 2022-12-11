@@ -58,8 +58,6 @@ jobs:
           --namespace knative-serving \
           --type merge \
           --patch '{"data":{"ingress-class":"kourier.ingress.networking.knative.dev"}}'
-        kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.8.3/serving-default-domain.yaml
-
       
     - name: Install  security-guard  
       run: ko apply -Rf ./config 
@@ -82,6 +80,10 @@ jobs:
         kubectl get pods --all-namespaces
   
     
+    - name: Set Cluster DNS
+      run: |
+        kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.8.3/serving-default-domain.yaml
+
     - name: Run e2e Tests
       run: |
         ./test/e2e/e2e-tests.sh $SERVICE_URL
