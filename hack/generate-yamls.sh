@@ -53,6 +53,9 @@ readonly SECURED_HELLO_YAML=${YAML_OUTPUT_DIR}/secured-helloworld.yaml
 readonly SECURED_LAYERED_MYAPP_YAML=${YAML_OUTPUT_DIR}/secured-layered-myapp.yaml
 readonly GUARD_SERVICE_YAML=${YAML_OUTPUT_DIR}/guard-service.yaml
 readonly QUEUE_PROXY_YAML=${YAML_OUTPUT_DIR}/queue-proxy.yaml
+readonly GATE_ACCOUNT_YAML=${YAML_OUTPUT_DIR}/gate-account.yaml
+readonly SERVICE_ACCOUNT_YAML=${YAML_OUTPUT_DIR}/service-account.yaml
+readonly GUARDIAN_CRD_YAML=${YAML_OUTPUT_DIR}/guardian-crd.yaml
 
 # Flags for all ko commands
 KO_YAML_FLAGS="-P"
@@ -82,6 +85,9 @@ ko resolve ${KO_YAML_FLAGS} -f config/deploy/secured-helloworld.yaml | "${LABEL_
 ko resolve ${KO_YAML_FLAGS} -f config/deploy/secured-layered-myapp.yaml | "${LABEL_YAML_CMD[@]}" > "${SECURED_LAYERED_MYAPP_YAML}"
 ko resolve ${KO_YAML_FLAGS} -f config/deploy/guard-service.yaml | "${LABEL_YAML_CMD[@]}" > "${GUARD_SERVICE_YAML}"
 ko resolve ${KO_YAML_FLAGS} -f config/deploy/queue-proxy.yaml | "${LABEL_YAML_CMD[@]}" > "${QUEUE_PROXY_YAML}"
+ko resolve ${KO_YAML_FLAGS} -f config/resources/gateAccount.yaml | "${LABEL_YAML_CMD[@]}" > "${GATE_ACCOUNT_YAML}"
+ko resolve ${KO_YAML_FLAGS} -f config/resources/serviceAccount.yaml | "${LABEL_YAML_CMD[@]}" > "${SERVICE_ACCOUNT_YAML}"
+ko resolve ${KO_YAML_FLAGS} -f config/resources/guardiansCrd.yaml | "${LABEL_YAML_CMD[@]}" > "${GUARDIAN_CRD_YAML}"
 echo "All manifests generated"
 
 # List generated YAML files
@@ -91,6 +97,10 @@ ${SECURED_HELLO_YAML}
 ${SECURED_LAYERED_MYAPP_YAML}
 ${GUARD_SERVICE_YAML}
 ${QUEUE_PROXY_YAML}
+${GATE_ACCOUNT_YAML}
+${SERVICE_ACCOUNT_YAML}
+${GUARDIAN_CRD_YAML}
+
 EOF
 
 cat << EOF > "${YAML_ENV_FILE}"
@@ -98,4 +108,7 @@ export SECURED_HELLO_YAML=${SECURED_HELLO_YAML}
 export SECURED_LAYERED_MYAPP_YAML=${SECURED_LAYERED_MYAPP_YAML}
 export GUARD_SERVICE_YAML=${GUARD_SERVICE_YAML}
 export QUEUE_PROXY_YAML=${QUEUE_PROXY_YAML}
+export GATE_ACCOUNT_YAML=${GATE_ACCOUNT_YAML}
+export SERVICE_ACCOUNT_YAML=${SERVICE_ACCOUNT_YAML}
+export GUARDIAN_CRD_YAML=${GUARDIAN_CRD_YAML}
 EOF
