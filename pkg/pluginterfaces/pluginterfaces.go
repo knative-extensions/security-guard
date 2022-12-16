@@ -39,8 +39,8 @@ var Log Logger
 // A plugin based on the newer RoundTripPlug supports offers this interface
 //
 // The plugin will have a function
-//		func NewPlug()  RoundTripPlug {}
 //
+//	func NewPlug()  RoundTripPlug {}
 type RoundTripPlug interface {
 	Init(ctx context.Context, config map[string]string, serviceName string, namespace string, logger Logger) context.Context
 	Shutdown()
