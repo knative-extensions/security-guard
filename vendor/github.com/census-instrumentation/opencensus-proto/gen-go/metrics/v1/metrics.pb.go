@@ -26,14 +26,15 @@
 package v1
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	v1 "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	proto "github.com/golang/protobuf/proto"
 	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
