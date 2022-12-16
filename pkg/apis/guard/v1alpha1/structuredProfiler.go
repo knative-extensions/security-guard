@@ -18,14 +18,15 @@ const (
 //////////////////// StructuredProfile ////////////////
 
 // Exposes ValueProfile interface
-//  JsonProfile struct - maintain the profile of a json with some structure
-//	Data Types: The default Golang data types for decoding and encoding JSON are as follows:
-//		bool for JSON booleans.
-//		float64 for JSON numbers.
-//		string for JSON strings.
-//		nil for JSON null.
-//		array as JSON array.
-//		map or struct as JSON Object.
+//
+//	 JsonProfile struct - maintain the profile of a json with some structure
+//		Data Types: The default Golang data types for decoding and encoding JSON are as follows:
+//			bool for JSON booleans.
+//			float64 for JSON numbers.
+//			string for JSON strings.
+//			nil for JSON null.
+//			array as JSON array.
+//			map or struct as JSON Object.
 type StructuredProfile struct {
 	Kind string                        `json:"kind"` // bool, float64, string, array, map
 	Vals []SimpleValProfile            `json:"vals"` // used for: array, boolean, number, string items

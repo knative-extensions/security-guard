@@ -43,6 +43,7 @@ func (pile *CountPile) Merge(otherPile CountPile) {
 }
 
 //////////////////// CountConfig ////////////////
+
 type countRange struct {
 	Min uint8 `json:"min"`
 	Max uint8 `json:"max"`
@@ -120,7 +121,8 @@ func (config *CountConfig) Learn(pile CountPile) {
 // The implementation does now squash entries even if after the Fuse they may be squashed
 // This is done to achieve Fuse in-place
 // Future: Improve Fuse - e.g. by keeping extra entries in Range [0,0] and reusing them
-//                        instead of adding new entries
+//
+//	instead of adding new entries
 func (config *CountConfig) fuseI(otherValConfig ValueConfig) {
 	config.Fuse(*otherValConfig.(*CountConfig))
 }
