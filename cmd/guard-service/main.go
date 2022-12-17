@@ -96,6 +96,11 @@ func (l *learner) queryData(query url.Values) (cmFlag bool, sid string, ns strin
 		return
 	}
 
+	if len(ns) < 1 {
+		err = fmt.Errorf("query missing ns")
+		return
+	}
+
 	// extract and sanitize cmFlag
 	if len(cmFlagSlice) > 0 {
 		cmFlag = (cmFlagSlice[0] == "true")

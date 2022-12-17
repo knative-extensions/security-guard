@@ -112,8 +112,6 @@ func (srv *gateClient) initHttpClient(certPool *x509.CertPool) {
 	client := new(httpClient)
 	pi.Log.Infof("initHttpClient using ServerName %s\n", certificates.FakeDnsName)
 	client.client.Transport = &http.Transport{
-		MaxIdleConns:        1000,
-		MaxIdleConnsPerHost: 1000,
 		TLSClientConfig: &tls.Config{
 			ServerName: certificates.FakeDnsName,
 			RootCAs:    certPool,

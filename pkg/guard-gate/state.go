@@ -64,11 +64,8 @@ func (gs *gateState) init(cancelFunc context.CancelFunc, monitorPod bool, guardS
 }
 
 func (gs gateState) start() {
-	// Skip during simulations
-	if len(gs.srv.ns) > 0 {
-		// initializtion that cant be tested due to use of KubeAMgr
-		gs.srv.initKubeMgr()
-	}
+	// initializtion that cant be tested due to use of KubeAMgr
+	gs.srv.initKubeMgr()
 	gs.srv.initHttpClient(gs.certPool)
 }
 

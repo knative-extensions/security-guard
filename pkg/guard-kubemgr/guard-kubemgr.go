@@ -159,11 +159,6 @@ func (k *KubeMgr) readCm(ns string, sid string) (*spec.GuardianSpec, error) {
 // Returns a Guardian
 // Returns error if can't read a well structured Guardian
 func (k *KubeMgr) Read(ns string, sid string, isCm bool) (*spec.GuardianSpec, error) {
-	// Skip during simulations
-	if len(ns) == 0 {
-		return nil, nil
-	}
-
 	if isCm {
 		return k.readCm(ns, sid)
 	} else {
@@ -237,11 +232,6 @@ func (k *KubeMgr) createCrd(ns string, sid string, guardianSpec *spec.GuardianSp
 // Lose of manual updates is reported to the user which will normally retry.
 // Lose guard-service updates occurs periodically such that data is not lost
 func (k *KubeMgr) Create(ns string, sid string, isCm bool, guardianSpec *spec.GuardianSpec) error {
-	// Skip during simulations
-	if len(ns) == 0 {
-		return nil
-	}
-
 	if isCm {
 		return k.createCm(ns, sid, guardianSpec)
 	} else {
@@ -372,11 +362,6 @@ func (k *KubeMgr) setCrd(ns string, sid string, guardianSpec *spec.GuardianSpec)
 // Lose of manual updates is reported to the user which will normally retry.
 // Lose guard-service updates occurs periodically such that data is not lost
 func (k *KubeMgr) Set(ns string, sid string, isCm bool, guardianSpec *spec.GuardianSpec) error {
-	// Skip during simulations
-	if len(ns) == 0 {
-		return nil
-	}
-
 	if isCm {
 		return k.setCm(ns, sid, guardianSpec)
 	} else {
@@ -394,8 +379,7 @@ func (k *KubeMgr) GetGuardian(ns string, sid string, cm bool, autoActivate bool)
 	var g *spec.GuardianSpec
 	var err error
 
-	// Skip during simulations, or if illegal sid
-	if len(ns) > 0 && !strings.EqualFold(sid, "ns-"+ns) {
+	if !strings.EqualFold(sid, "ns-"+ns) {
 		// legal sid
 		if cm {
 			g, err = k.readCm(ns, sid)
