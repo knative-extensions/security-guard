@@ -112,6 +112,9 @@ func (srv *gateClient) initHttpClient(certPool *x509.CertPool) {
 	client := new(httpClient)
 	pi.Log.Infof("initHttpClient using ServerName %s\n", certificates.FakeDnsName)
 	client.client.Transport = &http.Transport{
+		MaxConnsPerHost:     0,
+		MaxIdleConns:        0,
+		MaxIdleConnsPerHost: 0,
 		TLSClientConfig: &tls.Config{
 			ServerName: certificates.FakeDnsName,
 			RootCAs:    certPool,
@@ -182,7 +185,9 @@ func (srv *gateClient) addToPile(profile *spec.SessionDataProfile) {
 }
 
 func (srv *gateClient) clearPile() {
+	srv.pileMutex.Lock()
 	srv.pile.Clear()
+	srv.pileMutex.Unlock()
 }
 
 func (srv *gateClient) loadGuardian() *spec.GuardianSpec {
