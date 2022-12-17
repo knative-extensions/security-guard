@@ -65,10 +65,7 @@ func (pile *QueryPile) Merge(otherPile *QueryPile) {
 }
 
 func (pile *QueryPile) Clear() {
-	pile.Kv = new(KeyValPile)
-	if pile.Kv != nil {
-		pile.Kv.Clear()
-	}
+	pile.Kv = nil
 }
 
 //////////////////// QueryConfig ////////////////

@@ -17,6 +17,8 @@ limitations under the License.
 package main
 
 import (
+	"sync"
+
 	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
 	guardKubeMgr "knative.dev/security-guard/pkg/guard-kubemgr"
 	pi "knative.dev/security-guard/pkg/pluginterfaces"
@@ -29,13 +31,16 @@ type serviceRecord struct {
 	ns           string               // namespace of the deployed service
 	sid          string               // name of the deployed service
 	cmFlag       bool                 // indicate if the deployed service uses a ConfigMap (or CRD)
-	guardianSpec *spec.GuardianSpec   // a copy of the cached deployed service Guardian
-	pile         spec.SessionDataPile // the deployed service Pile
+	guardianSpec *spec.GuardianSpec   // a copy of the cached deployed service Guardian (RO - no mutext needed)
+	pile         spec.SessionDataPile // the deployed service Pile (RW - protected with pileMutex)
+	pileMutex    sync.Mutex           // protect access to cache map, namespaces map, record piles
+
 }
 
 // service cache maintaining a cached record per deployed service
 type services struct {
 	kmgr       guardKubeMgr.KubeMgrInterface // KubeMgr to access KuebApi during cache misses
+	mutex      sync.Mutex                    // protect access to cache map, namespaces map, record piles
 	cache      map[string]*serviceRecord     // the cache
 	namespaces map[string]bool               // list of namespaces to watch for changes in ConfigMaps and CRDs
 	tickerKeys []string                      // list of cache keys to periodically process during a tick()
@@ -64,12 +69,13 @@ func (s *services) start() {
 }
 
 // Periodical background work to ensure small piles eventually are stored using KubeApi
-// uses a single KubeMgr.Set() per tick(), a tick is 5 seconds by default
-// For 1000 deployed active but slow services, it may take an hour and a half to store the config in KubeAPI()
 func (s *services) tick() {
-	if len(s.cache) == 0 {
-		return
-	}
+	// Tick should not include any asynchronous work
+	// Move all asynchronous work (e.g. KubeApi work) to go routines
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	// make sure we have work to do
 	if len(s.tickerKeys) == 0 {
 		s.tickerKeys = make([]string, len(s.cache))
 		i := 0
@@ -78,11 +84,13 @@ func (s *services) tick() {
 			i++
 		}
 	}
-	i := 0
+
 	maxIterations := len(s.tickerKeys)
 	if maxIterations > 100 {
 		maxIterations = 100
 	}
+
+	i := 0
 	for ; i < maxIterations; i++ {
 		// try to learnPile the first of maxIterations records
 		if record, exists := s.cache[s.tickerKeys[i]]; exists {
@@ -93,6 +101,7 @@ func (s *services) tick() {
 			}
 		}
 	}
+
 	// remove the keys we processed from the key slice
 	s.tickerKeys = s.tickerKeys[i:]
 }
@@ -100,29 +109,49 @@ func (s *services) tick() {
 // delete from cache
 func (s *services) delete(ns string, sid string, cmFlag bool) {
 	service := serviceKey(ns, sid, cmFlag)
+	s.mutex.Lock()
 	delete(s.cache, service)
+	s.mutex.Unlock()
 	pi.Log.Debugf("deleteSession %s", service)
 }
 
 // get from cache or from KubeApi (or get a default Guardian)
+// if new namespace, start watching this namespace for changes in guardians
 func (s *services) get(ns string, sid string, cmFlag bool) *serviceRecord {
+	var knownNamespace bool = true
+
 	service := serviceKey(ns, sid, cmFlag)
+
+	s.mutex.Lock()
+	// check if known Namespace
+	_, knownNamespace = s.namespaces[ns]
+	if !knownNamespace {
+		s.namespaces[ns] = true
+	}
 	// try to get from cache
 	record := s.cache[service]
+	s.mutex.Unlock()
+
+	// watch any unknown namespace
+	if !knownNamespace {
+		go s.kmgr.Watch(ns, cmFlag, s.update)
+	}
+
 	if record == nil {
 		// not cached, get from kubeApi or create a default and add to cache
-		s.set(ns, sid, cmFlag, s.kmgr.GetGuardian(ns, sid, cmFlag, true))
-		record = s.cache[service]
+		record = s.set(ns, sid, cmFlag, s.kmgr.GetGuardian(ns, sid, cmFlag, true))
 	}
-	// record is never nil
+	// record is never nil here
+
 	return record
 }
 
 // set to cache
 // caller ensures that guardianSpec is never nil
-func (s *services) set(ns string, sid string, cmFlag bool, guardianSpec *spec.GuardianSpec) {
+func (s *services) set(ns string, sid string, cmFlag bool, guardianSpec *spec.GuardianSpec) *serviceRecord {
 	service := serviceKey(ns, sid, cmFlag)
 
+	s.mutex.Lock()
 	record, exists := s.cache[service]
 	if !exists {
 		record = new(serviceRecord)
@@ -132,12 +161,11 @@ func (s *services) set(ns string, sid string, cmFlag bool, guardianSpec *spec.Gu
 		record.cmFlag = cmFlag
 		s.cache[service] = record
 	}
+	s.mutex.Unlock()
+
 	record.guardianSpec = guardianSpec
-	if _, ok := s.namespaces[ns]; !ok {
-		s.namespaces[ns] = true
-		go s.kmgr.Watch(ns, cmFlag, s.update)
-	}
 	pi.Log.Debugf("cache record for %s.%s", ns, sid)
+	return record
 }
 
 // update cache
@@ -152,7 +180,9 @@ func (s *services) update(ns string, sid string, cmFlag bool, guardianSpec *spec
 
 // update the record pile by merging a new pile
 func (s *services) merge(record *serviceRecord, pile *spec.SessionDataPile) {
+	record.pileMutex.Lock()
 	record.pile.Merge(pile)
+	record.pileMutex.Unlock()
 	if record.pile.Count > maxPileCount {
 		s.learnPile(record)
 	}
@@ -167,9 +197,11 @@ func (s *services) learnPile(record *serviceRecord) bool {
 	}
 	config := new(spec.SessionDataConfig)
 
-	// TBD move to periodical under Ticker
+	record.pileMutex.Lock()
 	config.Learn(&record.pile)
 	record.pile.Clear()
+	record.pileMutex.Unlock()
+
 	if record.guardianSpec.Learned != nil {
 		config.Fuse(record.guardianSpec.Learned)
 	}
@@ -179,10 +211,15 @@ func (s *services) learnPile(record *serviceRecord) bool {
 	record.guardianSpec.Learned.Active = true
 
 	// update the kubeApi record
+	go s.persist(record)
+
+	return true
+}
+
+func (s *services) persist(record *serviceRecord) {
 	if err := s.kmgr.Set(record.ns, record.sid, record.cmFlag, record.guardianSpec); err != nil {
 		pi.Log.Infof("Failed to update KubeApi with new config %s.%s: %v", record.ns, record.sid, err)
-		return true
+	} else {
+		pi.Log.Debugf("Update KubeApi with new config %s.%s", record.ns, record.sid)
 	}
-	pi.Log.Debugf("Update KubeApi with new config %s.%s", record.ns, record.sid)
-	return true
 }

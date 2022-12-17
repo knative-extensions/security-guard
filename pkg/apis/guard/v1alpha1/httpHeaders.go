@@ -65,10 +65,7 @@ func (pile *HeadersPile) Merge(otherPile *HeadersPile) {
 }
 
 func (pile *HeadersPile) Clear() {
-	pile.Kv = new(KeyValPile)
-	if pile.Kv != nil {
-		pile.Kv.Clear()
-	}
+	pile.Kv = nil
 }
 
 //////////////////// HeadersConfig ////////////////
