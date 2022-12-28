@@ -22,7 +22,10 @@ import (
 	pi "knative.dev/security-guard/pkg/pluginterfaces"
 )
 
-var maxPileCount = uint32(1000)
+const (
+	pileMergeLimit  = uint32(1000)
+	numSamplesLimit = uint32(1000000)
+)
 
 // A cached record kept by guard-service for each deployed service
 type serviceRecord struct {
@@ -153,7 +156,7 @@ func (s *services) update(ns string, sid string, cmFlag bool, guardianSpec *spec
 // update the record pile by merging a new pile
 func (s *services) merge(record *serviceRecord, pile *spec.SessionDataPile) {
 	record.pile.Merge(pile)
-	if record.pile.Count > maxPileCount {
+	if record.pile.Count > pileMergeLimit {
 		s.learnPile(record)
 	}
 }
@@ -175,6 +178,10 @@ func (s *services) learnPile(record *serviceRecord) bool {
 	}
 
 	// update the cached record
+	record.guardianSpec.NumSamples += record.pile.Count
+	if record.guardianSpec.NumSamples > numSamplesLimit {
+		record.guardianSpec.NumSamples = numSamplesLimit
+	}
 	record.guardianSpec.Learned = config
 	record.guardianSpec.Learned.Active = true
 
