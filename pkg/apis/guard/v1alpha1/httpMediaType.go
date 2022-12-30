@@ -103,12 +103,3 @@ func (config *MediaTypeConfig) Learn(pile *MediaTypePile) {
 	config.TypeTokens.Learn(&pile.TypeTokens)
 	config.Params.Learn(&pile.Params)
 }
-
-func (config *MediaTypeConfig) fuseI(otherValConfig ValueConfig) {
-	config.Fuse(otherValConfig.(*MediaTypeConfig))
-}
-
-func (config *MediaTypeConfig) Fuse(otherConfig *MediaTypeConfig) {
-	config.TypeTokens.Fuse(&otherConfig.TypeTokens)
-	config.Params.Fuse(&otherConfig.Params)
-}

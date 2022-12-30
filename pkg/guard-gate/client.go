@@ -39,6 +39,8 @@ type httpClientInterface interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
+const pileLimit = 1000
+
 type httpClient struct {
 	client           http.Client
 	token            string
@@ -168,6 +170,12 @@ func (srv *gateClient) reportPile() {
 
 func (srv *gateClient) addToPile(profile *spec.SessionDataProfile) {
 	srv.pile.Add(profile)
+
+	// review after pileMutex is merged
+	if srv.pile.Count > pileLimit {
+		srv.reportPile()
+	}
+
 	pi.Log.Debugf("Learn - add to pile! pileCount %d", srv.pile.Count)
 }
 

@@ -95,11 +95,3 @@ func (config *QueryConfig) learnI(valPile ValuePile) {
 func (config *QueryConfig) Learn(pile *QueryPile) {
 	config.Kv.Learn(pile.Kv)
 }
-
-func (config *QueryConfig) fuseI(otherValConfig ValueConfig) {
-	config.Fuse(otherValConfig.(*QueryConfig))
-}
-
-func (config *QueryConfig) Fuse(otherConfig *QueryConfig) {
-	config.Kv.Fuse(&otherConfig.Kv)
-}

@@ -168,22 +168,18 @@ func (s *services) learnPile(record *serviceRecord) bool {
 	if record.pile.Count == 0 {
 		return false
 	}
-	config := new(spec.SessionDataConfig)
-
-	// TBD move to periodical under Ticker
-	config.Learn(&record.pile)
-	record.pile.Clear()
-	if record.guardianSpec.Learned != nil {
-		config.Fuse(record.guardianSpec.Learned)
+	if record.guardianSpec.Learned == nil {
+		record.guardianSpec.Learned = new(spec.SessionDataConfig)
 	}
 
-	// update the cached record
+	// TBD move to periodical under Ticker
+
+	record.guardianSpec.Learned.Learn(&record.pile)
 	record.guardianSpec.NumSamples += record.pile.Count
 	if record.guardianSpec.NumSamples > numSamplesLimit {
 		record.guardianSpec.NumSamples = numSamplesLimit
 	}
-	record.guardianSpec.Learned = config
-	record.guardianSpec.Learned.Active = true
+	record.pile.Clear()
 
 	// update the kubeApi record
 	if err := s.kmgr.Set(record.ns, record.sid, record.cmFlag, record.guardianSpec); err != nil {

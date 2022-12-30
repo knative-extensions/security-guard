@@ -134,14 +134,5 @@ func (config *AsciiFlagsConfig) learnI(valPile ValuePile) {
 
 // pile is RO and unchanged - never uses pile internal objects
 func (config *AsciiFlagsConfig) Learn(pile AsciiFlagsPile) {
-	*config = AsciiFlagsConfig(pile)
-}
-
-func (config *AsciiFlagsConfig) fuseI(otherValConfig ValueConfig) {
-	config.Fuse(*otherValConfig.(*AsciiFlagsConfig))
-}
-
-// otherConfig is RO and unchanged - never uses otherConfig internal objects
-func (config *AsciiFlagsConfig) Fuse(otherConfig AsciiFlagsConfig) {
-	*config |= otherConfig
+	*config |= AsciiFlagsConfig(pile)
 }
