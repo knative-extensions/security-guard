@@ -109,3 +109,12 @@ func (config *EnvelopConfig) Learn(pile *EnvelopPile) {
 	config.CompletionTime.Learn(pile.CompletionTime)
 	config.ResponseTime.Learn(pile.ResponseTime)
 }
+
+func (config *EnvelopConfig) fuseI(otherValConfig ValueConfig) {
+	config.Fuse(otherValConfig.(*EnvelopConfig))
+}
+
+func (config *EnvelopConfig) Fuse(otherConfig *EnvelopConfig) {
+	config.CompletionTime.Fuse(otherConfig.CompletionTime)
+	config.ResponseTime.Fuse(otherConfig.ResponseTime)
+}
