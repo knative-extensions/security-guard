@@ -127,7 +127,9 @@ spec:
           otherVals: null
           vals: {}
       url:
-        segments: 0
+        segments: 
+        - max: 0
+          min: 0
         val:
           digits: 0
           flags: 0

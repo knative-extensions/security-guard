@@ -71,22 +71,26 @@ func (gs gateState) start() {
 
 // loadConfig is called periodically to load updated configuration from a Guardian
 func (gs *gateState) loadConfig() {
-	pi.Log.Infof("Loading Guardian")
 	// loadGuardian never returns nil!
 	g := gs.srv.loadGuardian()
 
 	if gs.ctrl = g.Control; gs.ctrl == nil {
+		pi.Log.Infof("Loading Guardian  - without Control")
 		gs.ctrl = new(spec.Ctrl)
 	}
 
 	if gs.ctrl.Auto {
+		pi.Log.Infof("Loading Guardian  - Learned")
 		gs.criteria = g.Learned
 	} else {
+		pi.Log.Infof("Loading Guardian  - Configured")
 		gs.criteria = g.Configured
 	}
 	if gs.criteria == nil {
+		pi.Log.Infof("Loading Guardian  - without criteria")
 		gs.criteria = new(spec.SessionDataConfig)
 	}
+	pi.Log.Infof("Loading Guardian  - Active %t", gs.criteria.Active)
 }
 
 // flushPile is called periodically to send the pile to the guard-service
