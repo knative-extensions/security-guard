@@ -97,12 +97,12 @@ spec:
               unicodeFlags: []
               unicodes: 0
             X-Request-Id:
-              digits: 30
+              digits: 50
               flags: 2048
-              letters: 30
+              letters: 50
               nonreadables: 0
               schars: 4
-              sequences: 40
+              sequences: 80
               spaces: 0
               unicodeFlags: []
               unicodes: 0
