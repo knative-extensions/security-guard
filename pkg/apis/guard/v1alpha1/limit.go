@@ -90,7 +90,7 @@ func (config *LimitConfig) Decide(profile LimitProfile) *Decision {
 	if uint8(profile) <= uint8(*config) { // found ok interval
 		return nil
 	}
-	DecideInner(&current, 1, "Counter out of Range: %d", profile)
+	DecideInner(&current, 1, "Limit out of Range: %d", profile)
 	return current
 }
 
