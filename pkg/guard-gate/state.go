@@ -80,17 +80,15 @@ func (gs *gateState) loadConfig() {
 	}
 
 	if gs.ctrl.Auto {
-		pi.Log.Infof("Loading Guardian  - Learned")
 		gs.criteria = g.Learned
 	} else {
-		pi.Log.Infof("Loading Guardian  - Configured")
 		gs.criteria = g.Configured
 	}
 	if gs.criteria == nil {
 		pi.Log.Infof("Loading Guardian  - without criteria")
 		gs.criteria = new(spec.SessionDataConfig)
 	}
-	pi.Log.Infof("Loading Guardian  - Active %t", gs.criteria.Active)
+	pi.Log.Infof("Loading Guardian  - Active %t Auto %t", gs.criteria.Active, gs.ctrl.Auto)
 }
 
 // flushPile is called periodically to send the pile to the guard-service
