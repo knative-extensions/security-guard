@@ -65,10 +65,7 @@ func (pile *QueryPile) Merge(otherPile *QueryPile) {
 }
 
 func (pile *QueryPile) Clear() {
-	pile.Kv = new(KeyValPile)
-	if pile.Kv != nil {
-		pile.Kv.Clear()
-	}
+	pile.Kv = nil
 }
 
 //////////////////// QueryConfig ////////////////
@@ -102,4 +99,8 @@ func (config *QueryConfig) fuseI(otherValConfig ValueConfig) {
 
 func (config *QueryConfig) Fuse(otherConfig *QueryConfig) {
 	config.Kv.Fuse(&otherConfig.Kv)
+}
+
+func (config *QueryConfig) Prepare() {
+	config.Kv.Prepare()
 }
