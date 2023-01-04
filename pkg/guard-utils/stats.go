@@ -18,20 +18,28 @@ package guardutils
 
 import (
 	"fmt"
+	"sync"
 )
 
 type Stat struct {
 	statistics map[string]uint32
+	mutex      *sync.Mutex
 }
 
 func (s *Stat) Init() {
+	s.mutex = new(sync.Mutex)
 	s.statistics = make(map[string]uint32, 8)
 }
 
 func (s *Stat) Add(key string) {
+	s.mutex.Lock()
 	s.statistics[key]++
+	s.mutex.Unlock()
 }
 
 func (s *Stat) Log() string {
-	return fmt.Sprintf("%v", s.statistics)
+	s.mutex.Lock()
+	str := fmt.Sprintf("%v", s.statistics)
+	s.mutex.Unlock()
+	return str
 }
