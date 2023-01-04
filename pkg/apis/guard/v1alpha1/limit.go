@@ -124,3 +124,6 @@ func (config *LimitConfig) fuseI(otherValConfig ValueConfig) {
 func (config *LimitConfig) Fuse(otherConfig *LimitConfig) {
 
 }
+
+func (config *LimitConfig) Prepare() {
+}
