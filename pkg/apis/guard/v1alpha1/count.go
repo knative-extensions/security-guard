@@ -129,3 +129,6 @@ func (config *CountConfig) Learn(pile CountPile) {
 		(*config)[0].Max = max
 	}
 }
+
+func (config *CountConfig) Prepare() {
+}

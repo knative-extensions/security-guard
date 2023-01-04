@@ -103,3 +103,8 @@ func (config *MediaTypeConfig) Learn(pile *MediaTypePile) {
 	config.TypeTokens.Learn(&pile.TypeTokens)
 	config.Params.Learn(&pile.Params)
 }
+
+func (config *MediaTypeConfig) Prepare() {
+	config.TypeTokens.Prepare()
+	config.Params.Prepare()
+}

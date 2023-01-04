@@ -116,3 +116,9 @@ func (config *RespConfig) Learn(pile *RespPile) {
 	config.MediaType.Learn(&pile.MediaType)
 	config.ContentLength.Learn(pile.ContentLength)
 }
+
+func (config *RespConfig) Prepare() {
+	config.Headers.Prepare()
+	config.MediaType.Prepare()
+	config.ContentLength.Prepare()
+}

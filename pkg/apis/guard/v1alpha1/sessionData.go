@@ -148,3 +148,12 @@ func (config *SessionDataConfig) Learn(pile *SessionDataPile) {
 	config.Envelop.Learn(&pile.Envelop)
 	config.Pod.Learn(&pile.Pod)
 }
+
+func (config *SessionDataConfig) Prepare() {
+	config.Req.Prepare()
+	config.Resp.Prepare()
+	config.ReqBody.Prepare()
+	config.RespBody.Prepare()
+	config.Envelop.Prepare()
+	config.Pod.Prepare()
+}

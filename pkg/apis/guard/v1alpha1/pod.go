@@ -238,3 +238,12 @@ func (config *PodConfig) Learn(pile *PodPile) {
 	config.Udp6Peers.Learn(&pile.Udp6Peers)
 	config.Udplite6Peers.Learn(&pile.Udplite6Peers)
 }
+
+func (config *PodConfig) Prepare() {
+	config.Tcp4Peers.Prepare()
+	config.Udp4Peers.Prepare()
+	config.Udplite4Peers.Prepare()
+	config.Tcp6Peers.Prepare()
+	config.Udp6Peers.Prepare()
+	config.Udplite6Peers.Prepare()
+}

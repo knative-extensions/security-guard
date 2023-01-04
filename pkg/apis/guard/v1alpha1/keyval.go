@@ -189,3 +189,16 @@ func (config *KeyValConfig) Learn(pile *KeyValPile) {
 		svc.Learn(v)
 	}
 }
+
+func (config *KeyValConfig) Prepare() {
+	for _, v := range config.Vals {
+		v.Prepare()
+	}
+
+	if config.OtherKeynames != nil {
+		config.OtherKeynames.Prepare()
+	}
+	if config.OtherVals != nil {
+		config.OtherVals.Prepare()
+	}
+}

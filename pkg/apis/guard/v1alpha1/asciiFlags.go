@@ -136,3 +136,6 @@ func (config *AsciiFlagsConfig) learnI(valPile ValuePile) {
 func (config *AsciiFlagsConfig) Learn(pile AsciiFlagsPile) {
 	*config |= AsciiFlagsConfig(pile)
 }
+
+func (config *AsciiFlagsConfig) Prepare() {
+}

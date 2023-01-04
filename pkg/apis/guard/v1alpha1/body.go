@@ -149,3 +149,12 @@ func (config *BodyConfig) Learn(pile *BodyPile) {
 		config.Unstructured.Learn(pile.Unstructured)
 	}
 }
+
+func (config *BodyConfig) Prepare() {
+	if config.Structured != nil {
+		config.Structured.Prepare()
+	}
+	if config.Unstructured != nil {
+		config.Unstructured.Prepare()
+	}
+}

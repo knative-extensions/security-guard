@@ -22,6 +22,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"io"
+	"sync"
 
 	"net/http"
 	"os"
@@ -87,6 +88,7 @@ type gateClient struct {
 	useCm           bool
 	httpClient      httpClientInterface
 	pile            spec.SessionDataPile
+	pileMutex       sync.Mutex
 	kubeMgr         guardKubeMgr.KubeMgrInterface
 }
 
@@ -112,6 +114,9 @@ func (srv *gateClient) initHttpClient(certPool *x509.CertPool) {
 	client := new(httpClient)
 	pi.Log.Infof("initHttpClient using ServerName %s\n", certificates.FakeDnsName)
 	client.client.Transport = &http.Transport{
+		MaxConnsPerHost:     0,
+		MaxIdleConns:        0,
+		MaxIdleConnsPerHost: 0,
 		TLSClientConfig: &tls.Config{
 			ServerName: certificates.FakeDnsName,
 			RootCAs:    certPool,
@@ -129,7 +134,11 @@ func (srv *gateClient) reportPile() {
 
 	srv.httpClient.ReadToken(guardKubeMgr.ServiceAudience)
 
+	// protect pile internals read/write
+	srv.pileMutex.Lock()
 	postBody, marshalErr := json.Marshal(srv.pile)
+	srv.pileMutex.Unlock()
+
 	if marshalErr != nil {
 		// should never happen
 		pi.Log.Infof("Error during marshal: %v", marshalErr)
@@ -169,9 +178,11 @@ func (srv *gateClient) reportPile() {
 }
 
 func (srv *gateClient) addToPile(profile *spec.SessionDataProfile) {
+	// protect pile internals read/write
+	srv.pileMutex.Lock()
 	srv.pile.Add(profile)
+	srv.pileMutex.Unlock()
 
-	// review after pileMutex is merged
 	if srv.pile.Count > pileLimit {
 		srv.reportPile()
 	}
@@ -180,7 +191,9 @@ func (srv *gateClient) addToPile(profile *spec.SessionDataProfile) {
 }
 
 func (srv *gateClient) clearPile() {
+	srv.pileMutex.Lock()
 	srv.pile.Clear()
+	srv.pileMutex.Unlock()
 }
 
 func (srv *gateClient) loadGuardian() *spec.GuardianSpec {

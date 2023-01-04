@@ -65,10 +65,7 @@ func (pile *HeadersPile) Merge(otherPile *HeadersPile) {
 }
 
 func (pile *HeadersPile) Clear() {
-	pile.Kv = new(KeyValPile)
-	if pile.Kv != nil {
-		pile.Kv.Clear()
-	}
+	pile.Kv = nil
 }
 
 //////////////////// HeadersConfig ////////////////
@@ -94,4 +91,8 @@ func (config *HeadersConfig) learnI(valPile ValuePile) {
 
 func (config *HeadersConfig) Learn(pile *HeadersPile) {
 	config.Kv.Learn(pile.Kv)
+}
+
+func (config *HeadersConfig) Prepare() {
+	config.Kv.Prepare()
 }

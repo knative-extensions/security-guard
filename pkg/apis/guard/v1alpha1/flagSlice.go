@@ -103,3 +103,6 @@ func (config *FlagSliceConfig) learnI(valPile ValuePile) {
 func (config *FlagSliceConfig) Learn(pile FlagSlicePile) {
 	*config = mergeFlagSlices(*config, pile)
 }
+
+func (config *FlagSliceConfig) Prepare() {
+}

@@ -251,3 +251,6 @@ LoopPileIPs:
 		}
 	}
 }
+
+func (config *IpSetConfig) Prepare() {
+}

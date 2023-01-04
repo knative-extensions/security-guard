@@ -109,3 +109,8 @@ func (config *EnvelopConfig) Learn(pile *EnvelopPile) {
 	config.CompletionTime.Learn(pile.CompletionTime)
 	config.ResponseTime.Learn(pile.ResponseTime)
 }
+
+func (config *EnvelopConfig) Prepare() {
+	config.CompletionTime.Prepare()
+	config.ResponseTime.Prepare()
+}

@@ -179,3 +179,15 @@ func (config *ReqConfig) Learn(pile *ReqPile) {
 	config.Qs.Learn(&pile.Qs)
 	config.Url.Learn(&pile.Url)
 }
+
+func (config *ReqConfig) Prepare() {
+	config.ClientIp.Prepare()
+	config.HopIp.Prepare()
+	config.Method.Prepare()
+	config.Proto.Prepare()
+	config.MediaType.Prepare()
+	config.ContentLength.Prepare()
+	config.Headers.Prepare()
+	config.Qs.Prepare()
+	config.Url.Prepare()
+}
