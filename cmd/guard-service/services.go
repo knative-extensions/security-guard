@@ -111,8 +111,8 @@ func (s *services) tick() {
 func (s *services) delete(ns string, sid string, cmFlag bool) {
 	service := serviceKey(ns, sid, cmFlag)
 	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	delete(s.cache, service)
-	s.mutex.Unlock()
 	pi.Log.Debugf("deleteSession %s", service)
 }
 
