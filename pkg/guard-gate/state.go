@@ -93,7 +93,7 @@ func (gs *gateState) loadConfig() {
 		pi.Log.Infof("Loading Guardian  - without criteria")
 		criteria = new(spec.SessionDataConfig)
 	}
-	gs.criteria.Prepare()
+	criteria.Prepare()
 	gs.criteria = criteria
 	pi.Log.Infof("Loading Guardian  - Active %t Auto %t", gs.criteria.Active, gs.ctrl.Auto)
 }
