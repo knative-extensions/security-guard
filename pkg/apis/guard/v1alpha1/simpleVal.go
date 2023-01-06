@@ -105,13 +105,13 @@ const ( // sequence types
 
 // Exposes ValueProfile interface
 type SimpleValProfile struct {
-	Digits       CountProfile
-	Letters      CountProfile
-	Spaces       CountProfile
-	SpecialChars CountProfile
-	NonReadables CountProfile
-	Unicodes     CountProfile
-	Sequences    CountProfile
+	Digits       LimitProfile
+	Letters      LimitProfile
+	Spaces       LimitProfile
+	SpecialChars LimitProfile
+	NonReadables LimitProfile
+	Unicodes     LimitProfile
+	Sequences    LimitProfile
 	Flags        AsciiFlagsProfile
 	UnicodeFlags FlagSliceProfile
 }
@@ -202,38 +202,14 @@ func (profile *SimpleValProfile) Profile(str string) {
 			seqPrevType = seqType
 		}
 	}
-	if totalCounter > 0xFF {
-		totalCounter = 0xFF
-		if digitCounter > 0xFF {
-			digitCounter = 0xFF
-		}
-		if letterCounter > 0xFF {
-			letterCounter = 0xFF
-		}
-		if specialCharCounter > 0xFF {
-			specialCharCounter = 0xFF
-		}
-		if unicodeCounter > 0xFF {
-			unicodeCounter = 0xFF
-		}
-		if spaceCounter > 0xFF {
-			spaceCounter = 0xFF
-		}
-		if nonReadableCounter > 0xFF {
-			nonReadableCounter = 0xFF
-		}
-		if sequenceCounter > 0xFF {
-			sequenceCounter = 0xFF
-		}
-	}
 
-	profile.Spaces.Profile(uint8(spaceCounter))
-	profile.Unicodes.Profile(uint8(unicodeCounter))
-	profile.NonReadables.Profile(uint8(nonReadableCounter))
-	profile.Digits.Profile(uint8(digitCounter))
-	profile.Letters.Profile(uint8(letterCounter))
-	profile.SpecialChars.Profile(uint8(specialCharCounter))
-	profile.Sequences.Profile(uint8(sequenceCounter))
+	profile.Spaces.Profile(uint(spaceCounter))
+	profile.Unicodes.Profile(uint(unicodeCounter))
+	profile.NonReadables.Profile(uint(nonReadableCounter))
+	profile.Digits.Profile(uint(digitCounter))
+	profile.Letters.Profile(uint(letterCounter))
+	profile.SpecialChars.Profile(uint(specialCharCounter))
+	profile.Sequences.Profile(uint(sequenceCounter))
 
 	profile.Flags.Profile(flags)
 	profile.UnicodeFlags.Profile(unicodeFlags)
@@ -243,13 +219,13 @@ func (profile *SimpleValProfile) Profile(str string) {
 
 // Exposes ValuePile interface
 type SimpleValPile struct {
-	Digits       CountPile
-	Letters      CountPile
-	Spaces       CountPile
-	SpecialChars CountPile
-	NonReadables CountPile
-	Unicodes     CountPile
-	Sequences    CountPile
+	Digits       LimitPile
+	Letters      LimitPile
+	Spaces       LimitPile
+	SpecialChars LimitPile
+	NonReadables LimitPile
+	Unicodes     LimitPile
+	Sequences    LimitPile
 	Flags        AsciiFlagsPile
 	UnicodeFlags FlagSlicePile
 }
@@ -302,13 +278,13 @@ func (pile *SimpleValPile) Clear() {
 
 // Exposes ValueConfig interface
 type SimpleValConfig struct {
-	Digits       CountConfig      `json:"digits"`
-	Letters      CountConfig      `json:"letters"`
-	Spaces       CountConfig      `json:"spaces"`
-	SpecialChars CountConfig      `json:"schars"`
-	NonReadables CountConfig      `json:"nonreadables"`
-	Unicodes     CountConfig      `json:"unicodes"`
-	Sequences    CountConfig      `json:"sequences"`
+	Digits       LimitConfig      `json:"digits"`
+	Letters      LimitConfig      `json:"letters"`
+	Spaces       LimitConfig      `json:"spaces"`
+	SpecialChars LimitConfig      `json:"schars"`
+	NonReadables LimitConfig      `json:"nonreadables"`
+	Unicodes     LimitConfig      `json:"unicodes"`
+	Sequences    LimitConfig      `json:"sequences"`
 	Flags        AsciiFlagsConfig `json:"flags"`
 	UnicodeFlags FlagSliceConfig  `json:"unicodeFlags"`
 }
