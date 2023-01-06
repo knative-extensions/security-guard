@@ -33,13 +33,13 @@ func (s *Stat) Init() {
 
 func (s *Stat) Add(key string) {
 	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	s.statistics[key]++
-	s.mutex.Unlock()
 }
 
 func (s *Stat) Log() string {
 	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	str := fmt.Sprintf("%v", s.statistics)
-	s.mutex.Unlock()
 	return str
 }

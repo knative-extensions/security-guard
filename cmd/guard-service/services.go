@@ -75,7 +75,6 @@ func (s *services) tick() {
 	// Tick should not include any asynchronous work
 	// Move all asynchronous work (e.g. KubeApi work) to go routines
 	s.mutex.Lock()
-	defer s.mutex.Unlock()
 
 	if len(s.tickerKeys) == 0 {
 		// Assign more work to be done now and in future ticks
@@ -93,20 +92,29 @@ func (s *services) tick() {
 		maxIterations = 100
 	}
 
-	// try to learn one record
+	// find a record to learn
 	i := 0
+	var record *serviceRecord
 	for ; i < maxIterations; i++ {
-		if record, exists := s.cache[s.tickerKeys[i]]; exists {
-			// we still have this record, lets learn it
-			if s.learnPile(record) {
-				// we learned one record
-				i++
+		r, exists := s.cache[s.tickerKeys[i]]
+		if exists {
+			if r.pile.Count != 0 {
+				record = r
 				break
 			}
 		}
 	}
+	s.mutex.Unlock()
+	// Must unlock s.mutex before s.learnPile
+
+	if record != nil {
+		// lets learn it
+		s.learnPile(record)
+	}
 
 	// remove the keys we processed from the key slice
+	// during  the next tick we should try the next one
+	i++
 	s.tickerKeys = s.tickerKeys[i:]
 }
 
@@ -135,6 +143,7 @@ func (s *services) get(ns string, sid string, cmFlag bool) *serviceRecord {
 	// try to get from cache
 	record := s.cache[service]
 	s.mutex.Unlock()
+	// Must unlock s.mutex before s.kmgr.Watch, s.kmgr.GetGuardian, s.set
 
 	// watch any unknown namespace
 	if !knownNamespace {
@@ -156,6 +165,7 @@ func (s *services) set(ns string, sid string, cmFlag bool, guardianSpec *spec.Gu
 	service := serviceKey(ns, sid, cmFlag)
 
 	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	record, exists := s.cache[service]
 	if !exists {
 		record = new(serviceRecord)
@@ -165,7 +175,6 @@ func (s *services) set(ns string, sid string, cmFlag bool, guardianSpec *spec.Gu
 		record.cmFlag = cmFlag
 		s.cache[service] = record
 	}
-	s.mutex.Unlock()
 
 	record.guardianSpec = guardianSpec
 	pi.Log.Debugf("cache record for %s.%s", ns, sid)
@@ -187,6 +196,8 @@ func (s *services) merge(record *serviceRecord, pile *spec.SessionDataPile) {
 	record.pileMutex.Lock()
 	record.pile.Merge(pile)
 	record.pileMutex.Unlock()
+
+	// must unlock pileMutex before s.learnPile
 	if record.pile.Count > pileMergeLimit {
 		s.learnPile(record)
 	}
@@ -195,33 +206,23 @@ func (s *services) merge(record *serviceRecord, pile *spec.SessionDataPile) {
 // update the record guardianSpec by learning a new config and fusing with the record existing config
 // update KubeAPI as well.
 // return true if we try to learn and access kubeApi, false if count is zero and we have nothing to do
-func (s *services) learnPile(record *serviceRecord) bool {
-	if record.pile.Count == 0 {
-		return false
-	}
-
+func (s *services) learnPile(record *serviceRecord) {
 	if record.guardianSpec.Learned == nil {
 		record.guardianSpec.Learned = new(spec.SessionDataConfig)
 	}
 
 	record.pileMutex.Lock()
 	record.guardianSpec.Learned.Learn(&record.pile)
-	record.pile.Clear()
-	record.pileMutex.Unlock()
-
-	// TBD move to periodical under Ticker
-
-	record.guardianSpec.Learned.Learn(&record.pile)
 	record.guardianSpec.NumSamples += record.pile.Count
 	if record.guardianSpec.NumSamples > numSamplesLimit {
 		record.guardianSpec.NumSamples = numSamplesLimit
 	}
 	record.pile.Clear()
+	record.pileMutex.Unlock()
+	// Must unlock record.pileMutex before s.persist
 
 	// update the kubeApi record
 	go s.persist(record)
-
-	return true
 }
 
 func (s *services) persist(record *serviceRecord) {
