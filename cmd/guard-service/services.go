@@ -93,13 +93,16 @@ func (s *services) tick() {
 	}
 
 	// find a record to learn
-	i := 0
+	i := 0 // i is the index of the record to learn
 	var record *serviceRecord
 	for ; i < maxIterations; i++ {
 		r, exists := s.cache[s.tickerKeys[i]]
 		if exists {
 			if r.pile.Count != 0 {
+				// we will learn this record!
 				record = r
+				// (during the next tick we should try the next one)
+				i++
 				break
 			}
 		}
@@ -113,8 +116,6 @@ func (s *services) tick() {
 	}
 
 	// remove the keys we processed from the key slice
-	// during  the next tick we should try the next one
-	i++
 	s.tickerKeys = s.tickerKeys[i:]
 }
 
@@ -196,8 +197,8 @@ func (s *services) merge(record *serviceRecord, pile *spec.SessionDataPile) {
 	record.pileMutex.Lock()
 	record.pile.Merge(pile)
 	record.pileMutex.Unlock()
+	// Must unlock pileMutex before s.learnPile
 
-	// must unlock pileMutex before s.learnPile
 	if record.pile.Count > pileMergeLimit {
 		s.learnPile(record)
 	}
