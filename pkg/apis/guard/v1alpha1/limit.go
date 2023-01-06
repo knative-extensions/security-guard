@@ -117,13 +117,5 @@ func (config *LimitConfig) Learn(pile LimitPile) {
 	}
 }
 
-func (config *LimitConfig) fuseI(otherValConfig ValueConfig) {
-	config.Fuse(otherValConfig.(*LimitConfig))
-}
-
-func (config *LimitConfig) Fuse(otherConfig *LimitConfig) {
-
-}
-
 func (config *LimitConfig) Prepare() {
 }

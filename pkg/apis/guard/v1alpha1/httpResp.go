@@ -117,16 +117,6 @@ func (config *RespConfig) Learn(pile *RespPile) {
 	config.ContentLength.Learn(pile.ContentLength)
 }
 
-func (config *RespConfig) fuseI(otherValConfig ValueConfig) {
-	config.Fuse(otherValConfig.(*RespConfig))
-}
-
-func (config *RespConfig) Fuse(otherConfig *RespConfig) {
-	config.Headers.Fuse(&otherConfig.Headers)
-	config.MediaType.Fuse(&otherConfig.MediaType)
-	config.ContentLength.Fuse(otherConfig.ContentLength)
-}
-
 func (config *RespConfig) Prepare() {
 	config.Headers.Prepare()
 	config.MediaType.Prepare()

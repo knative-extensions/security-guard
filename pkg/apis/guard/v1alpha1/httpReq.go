@@ -180,22 +180,6 @@ func (config *ReqConfig) Learn(pile *ReqPile) {
 	config.Url.Learn(&pile.Url)
 }
 
-func (config *ReqConfig) fuseI(otherValConfig ValueConfig) {
-	config.Fuse(otherValConfig.(*ReqConfig))
-}
-
-func (config *ReqConfig) Fuse(otherConfig *ReqConfig) {
-	config.ClientIp.Fuse(&otherConfig.ClientIp)
-	config.HopIp.Fuse(&otherConfig.HopIp)
-	config.Method.Fuse(&otherConfig.Method)
-	config.Proto.Fuse(&otherConfig.Proto)
-	config.MediaType.Fuse(&otherConfig.MediaType)
-	config.ContentLength.Fuse(otherConfig.ContentLength)
-	config.Headers.Fuse(&otherConfig.Headers)
-	config.Qs.Fuse(&otherConfig.Qs)
-	config.Url.Fuse(&otherConfig.Url)
-}
-
 func (config *ReqConfig) Prepare() {
 	config.ClientIp.Prepare()
 	config.HopIp.Prepare()

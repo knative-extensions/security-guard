@@ -40,6 +40,8 @@ type httpClientInterface interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
+const pileLimit = 1000
+
 type httpClient struct {
 	client           http.Client
 	token            string
@@ -136,6 +138,7 @@ func (srv *gateClient) reportPile() {
 	srv.pileMutex.Lock()
 	postBody, marshalErr := json.Marshal(srv.pile)
 	srv.pileMutex.Unlock()
+	// Must unlock srv.pileMutex before http.NewRequest
 
 	if marshalErr != nil {
 		// should never happen
@@ -180,14 +183,19 @@ func (srv *gateClient) addToPile(profile *spec.SessionDataProfile) {
 	srv.pileMutex.Lock()
 	srv.pile.Add(profile)
 	srv.pileMutex.Unlock()
+	// Must unlock srv.pileMutex before srv.reportPile
+
+	if srv.pile.Count > pileLimit {
+		srv.reportPile()
+	}
 
 	pi.Log.Debugf("Learn - add to pile! pileCount %d", srv.pile.Count)
 }
 
 func (srv *gateClient) clearPile() {
 	srv.pileMutex.Lock()
+	defer srv.pileMutex.Unlock()
 	srv.pile.Clear()
-	srv.pileMutex.Unlock()
 }
 
 func (srv *gateClient) loadGuardian() *spec.GuardianSpec {

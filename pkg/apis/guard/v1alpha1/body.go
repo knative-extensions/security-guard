@@ -150,26 +150,6 @@ func (config *BodyConfig) Learn(pile *BodyPile) {
 	}
 }
 
-func (config *BodyConfig) fuseI(otherValConfig ValueConfig) {
-	config.Fuse(otherValConfig.(*BodyConfig))
-}
-
-// otherConfig is RO and unchanged - never uses otherConfig internal objects
-func (config *BodyConfig) Fuse(otherConfig *BodyConfig) {
-	if otherConfig.Structured != nil {
-		if config.Structured == nil {
-			config.Structured = new(StructuredConfig)
-		}
-		config.Structured.Fuse(otherConfig.Structured)
-	}
-	if otherConfig.Unstructured != nil {
-		if config.Unstructured == nil {
-			config.Unstructured = new(SimpleValConfig)
-		}
-		config.Unstructured.Fuse(otherConfig.Unstructured)
-	}
-}
-
 func (config *BodyConfig) Prepare() {
 	if config.Structured != nil {
 		config.Structured.Prepare()

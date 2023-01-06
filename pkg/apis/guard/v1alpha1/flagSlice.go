@@ -101,17 +101,7 @@ func (config *FlagSliceConfig) learnI(valPile ValuePile) {
 
 // otherPile is RO and unchanged - never uses otherPile internal objects
 func (config *FlagSliceConfig) Learn(pile FlagSlicePile) {
-	*config = make(FlagSliceConfig, len(pile))
-	copy(*config, pile)
-}
-
-func (config *FlagSliceConfig) fuseI(otherValConfig ValueConfig) {
-	config.Fuse(*otherValConfig.(*FlagSliceConfig))
-}
-
-// otherConfig is RO and unchanged - never uses otherConfig internal objects
-func (config *FlagSliceConfig) Fuse(otherConfig FlagSliceConfig) {
-	*config = mergeFlagSlices(*config, otherConfig)
+	*config = mergeFlagSlices(*config, pile)
 }
 
 func (config *FlagSliceConfig) Prepare() {

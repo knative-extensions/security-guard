@@ -287,7 +287,6 @@ type SimpleValConfig struct {
 	Sequences    LimitConfig      `json:"sequences"`
 	Flags        AsciiFlagsConfig `json:"flags"`
 	UnicodeFlags FlagSliceConfig  `json:"unicodeFlags"`
-	//Mandatory    bool           `json:"mandatory"`
 }
 
 func (config *SimpleValConfig) learnI(valPile ValuePile) {
@@ -303,22 +302,6 @@ func (config *SimpleValConfig) Learn(pile *SimpleValPile) {
 	config.Sequences.Learn(pile.Sequences)
 	config.Flags.Learn(pile.Flags)
 	config.UnicodeFlags.Learn(pile.UnicodeFlags)
-}
-
-func (config *SimpleValConfig) fuseI(otherValConfig ValueConfig) {
-	config.Fuse(otherValConfig.(*SimpleValConfig))
-}
-
-func (config *SimpleValConfig) Fuse(otherConfig *SimpleValConfig) {
-	config.Digits.Fuse(&otherConfig.Digits)
-	config.Letters.Fuse(&otherConfig.Letters)
-	config.Spaces.Fuse(&otherConfig.Spaces)
-	config.SpecialChars.Fuse(&otherConfig.SpecialChars)
-	config.NonReadables.Fuse(&otherConfig.NonReadables)
-	config.Unicodes.Fuse(&otherConfig.Unicodes)
-	config.Sequences.Fuse(&otherConfig.Sequences)
-	config.Flags.Fuse(otherConfig.Flags)
-	config.UnicodeFlags.Fuse(otherConfig.UnicodeFlags)
 }
 
 func (config *SimpleValConfig) decideI(valProfile ValueProfile) *Decision {
