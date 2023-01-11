@@ -18,13 +18,14 @@
 # Unset the ROOT_CA and token audiences
 
 echo "Get the current config-deployment configmap"
-kubectl get cm config-deployment -n knative-serving -o json | jq 'del(.data, .binaryData | ."queue-sidecar-token-audiences", ."queue-sidecar-rootca" )' > config-deployment.json
+CURRENT="$(mktemp)"
+kubectl get cm config-deployment -n knative-serving -o json | jq 'del(.data, .binaryData | ."queue-sidecar-token-audiences", ."queue-sidecar-rootca" )' > $CURRENT
 
 echo "Apply the joined config-deployment configmap"
-kubectl apply -f config-deployment.json -n knative-serving
+kubectl apply -f $CURRENT -n knative-serving
 
 echo "cleanup"
-rm config-deployment.json
+rm $CURRENT
 
 echo "Results:"
 kubectl get cm config-deployment -n knative-serving -o json|jq '.data'

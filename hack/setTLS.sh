@@ -18,25 +18,30 @@
 # Set the ROOT_CA and token audiences
 
 echo "Copy the certificate to file"
-kubectl get secret -n knative-serving knative-serving-certs -o json| jq -r '.data."ca-cert.pem"' | base64 -d >  queue-sidecar-rootca
+ROOTCA="$(mktemp)"
+kubectl get secret -n knative-serving knative-serving-certs -o json| jq -r '.data."ca-cert.pem"' | base64 -d >  $ROOTCA
 
 echo "Create a temporary config-deployment configmap with the certificate"
-kubectl create cm config-deployment --from-file queue-sidecar-rootca -o json --dry-run=client> temp.json
+TEMP="$(mktemp)"
+kubectl create cm config-deployment --from-file $ROOTCA -o json --dry-run=client> $TEMP
 
 echo "Get the current config-deployment configmap"
-kubectl get cm config-deployment -n knative-serving -o json | jq 'del(.data, .binaryData | ."queue-sidecar-token-audiences", ."queue-sidecar-rootca" )' > config-deployment.json
+CURRENT="$(mktemp)"
+kubectl get cm config-deployment -n knative-serving -o json | jq 'del(.data, .binaryData | ."queue-sidecar-token-audiences", ."queue-sidecar-rootca" )' > $CURRENT
 
 echo "Add queue-sidecar-token-audiences"
-jq '.data |= . + { "queue-sidecar-token-audiences": "guard-service"}'  config-deployment.json > audiences.json
+AUDIENCES="$(mktemp)"
+jq '.data |= . + { "queue-sidecar-token-audiences": "guard-service"}'  $CURRENT > $AUDIENCES
 
 echo "Join the two config-deployment configmaps into one"
-jq -s '.[0] * .[1]' audiences.json temp.json > joined.json
+MERGED="$(mktemp)"
+jq -s '.[0] * .[1]' $AUDIENCES $TEMP > $MERGED
 
 echo "Apply the joined config-deployment configmap"
-kubectl apply -f joined.json -n knative-serving
+kubectl apply -f $MERGED -n knative-serving
 
 echo "cleanup"
-rm joined.json audiences.json queue-sidecar-rootca temp.json config-deployment.json
+rm $MERGED $AUDIENCES $ROOTCA $TEMP $CURRENT
 
 echo "Results:"
 kubectl get cm config-deployment -n knative-serving -o json|jq '.data'
