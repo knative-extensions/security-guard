@@ -18,13 +18,15 @@
 # Set the ROOT_CA and token audiences
 
 echo "Copy the certificate to file"
-kubectl get secret -n knative-serving knative-serving-certs -o json| jq -r '.data."ca-cert.pem"' | base64 -d >  queue-sidecar-rootca
+ROOTCA="$(mktemp)"
+FILENAME=`basename $ROOTCA`
+kubectl get secret -n knative-serving knative-serving-certs -o json| jq -r '.data."ca-cert.pem"' | base64 -d >  $ROOTCA
 
 echo "Create a temporary config-deployment configmap with the certificate"
-CERT=`kubectl create cm config-deployment --from-file queue-sidecar-rootca -o json --dry-run=client |jq .data.\"queue-sidecar-rootca\"`
+CERT=`kubectl create cm config-deployment --from-file $ROOTCA -o json --dry-run=client |jq .data.\"$FILENAME\"`
 
 echo "cleanup"
-rm queue-sidecar-rootca
+rm $ROOTCA
 
 kubectl apply --filename - <<EOF
 apiVersion: v1
