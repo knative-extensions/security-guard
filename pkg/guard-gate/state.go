@@ -63,13 +63,14 @@ func (gs *gateState) init(cancelFunc context.CancelFunc, monitorPod bool, guardS
 	}
 }
 
-func (gs gateState) start() {
+func (gs gateState) start() (tokenActive bool) {
 	// Skip during simulations
 	if len(gs.srv.ns) > 0 {
 		// initializtion that cant be tested due to use of KubeAMgr
 		gs.srv.initKubeMgr()
 	}
-	gs.srv.initHttpClient(gs.certPool)
+	tokenActive = gs.srv.initHttpClient(gs.certPool)
+	return
 }
 
 // loadConfig is called periodically to load updated configuration from a Guardian

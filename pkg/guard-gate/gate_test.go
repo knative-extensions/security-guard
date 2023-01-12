@@ -68,7 +68,7 @@ func initTickerTest() (context.Context, context.CancelFunc, *plug) {
 
 	pi.RegisterPlug(p)
 
-	ctx, cancelFunction := p.preInit(context.Background(), c, "svcName", "myns", defaultLog)
+	ctx, cancelFunction, _ := p.preInit(context.Background(), c, "svcName", "myns", defaultLog)
 	p.gateState = fakeGateState()
 	p.gateState.loadConfig()
 	p.gateState.stat.Init()
@@ -179,7 +179,7 @@ func Test_plug_Initialize(t *testing.T) {
 			p.reportPileTicker = utils.NewTicker(utils.MinimumInterval)
 
 			pi.RegisterPlug(p)
-			ctx, cancelFunction := p.preInit(context.Background(), tt.c, "svcName", "myns", defaultLog)
+			ctx, cancelFunction, _ := p.preInit(context.Background(), tt.c, "svcName", "myns", defaultLog)
 			if ctx == context.Background() {
 				t.Error("extected a derived ctx")
 			}
