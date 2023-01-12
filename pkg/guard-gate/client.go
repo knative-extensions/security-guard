@@ -71,7 +71,7 @@ func (hc *httpClient) ReadToken(audience string) {
 	b, err := os.ReadFile(path.Join("/var/run/secrets/tokens", audience))
 
 	if err != nil {
-		pi.Log.Infof("Token %s is missing - working without token", audience)
+		pi.Log.Debugf("Token %s is missing - working without token", audience)
 		hc.missingToken = true
 		return
 	}
@@ -112,7 +112,6 @@ func (srv *gateClient) initKubeMgr() {
 
 func (srv *gateClient) initHttpClient(certPool *x509.CertPool) {
 	client := new(httpClient)
-	pi.Log.Infof("initHttpClient using ServerName %s\n", certificates.FakeDnsName)
 	client.client.Transport = &http.Transport{
 		MaxConnsPerHost:     0,
 		MaxIdleConns:        0,
@@ -158,7 +157,7 @@ func (srv *gateClient) reportPile() {
 		query.Add("cm", "true")
 	}
 	req.URL.RawQuery = query.Encode()
-	pi.Log.Infof("Reporting a pile with pileCount %d records to guard-service", srv.pile.Count)
+	pi.Log.Debugf("Reporting a pile with pileCount %d records to guard-service", srv.pile.Count)
 
 	res, postErr := srv.httpClient.Do(req)
 	if postErr != nil {

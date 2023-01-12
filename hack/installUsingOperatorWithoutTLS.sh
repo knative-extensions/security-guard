@@ -1,3 +1,4 @@
+echo "Remove TLS and Tokens from  guard-service"
 kubectl apply --filename - <<EOF
 apiVersion: v1
 kind: Namespace
