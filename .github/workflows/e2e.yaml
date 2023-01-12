@@ -81,7 +81,7 @@ jobs:
 
     - name: install test service1
       run: |
-        kubectl apply -f ./test/e2e/deploy/httptestCrd.yaml
+        kubectl apply -f ./test/e2e/deploy/httptest1Crd.yaml
         kn service create httptest1 \
            --image gcr.io/knative-samples/helloworld-go \
            --env "TARGET=Secured World" \
@@ -100,7 +100,7 @@ jobs:
     
     - name: install test service2
       run: |
-        kubectl apply -f ./test/e2e/deploy/httptestCrd.yaml
+        kubectl apply -f ./test/e2e/deploy/httptest2Crd.yaml
         kn service create httptest2 \
            --image gcr.io/knative-samples/helloworld-go \
            --env "TARGET=Secured World" \
