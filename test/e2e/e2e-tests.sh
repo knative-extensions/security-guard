@@ -8,7 +8,7 @@ kubectl logs deployment/guard-service -n knative-serving
 response=`kubectl logs deployment/${HTTPTEST}-00001-deployment queue-proxy|grep INFO | grep -i "alert"|tail -1`
 
 echo "response: $response"
-if [ "$response" != "" ]; then
+if [ ! -z ${response} ]; then
    exit 1
 fi
 
