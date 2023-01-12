@@ -23,16 +23,6 @@ kubectl patch deployment guard-service -n knative-serving -p '{"spec":{"template
 echo "Remove TLS and Tokens from config-deployment configmap"
 kubectl patch cm config-deployment -n knative-serving -p '{"data":{"queue-sidecar-token-audiences": "", "queue-sidecar-rootca": ""}}'
 
-#echo "Get the current config-deployment configmap"
-#CURRENT="$(mktemp)"
-#kubectl get cm config-deployment -n knative-serving -o json | jq 'del(.data, .binaryData | ."queue-sidecar-token-audiences", ."queue-sidecar-rootca" )' > $CURRENT
-
-#echo "Apply the joined config-deployment configmap"
-#kubectl apply -f $CURRENT -n knative-serving
-
-#echo "cleanup"
-#rm $CURRENT
-
 echo "Results:"
 kubectl get cm config-deployment -n knative-serving -o json|jq '.data'
 kubectl get deployment guard-service -n knative-serving -o json|jq .spec.template.spec.containers[0].env
