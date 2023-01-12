@@ -14,9 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-# Set the ROOT_CA and token audiences
-
 echo "Copy the certificate to file"
 ROOTCA="$(mktemp)"
 FILENAME=`basename $ROOTCA`
@@ -28,6 +25,7 @@ CERT=`kubectl create cm config-deployment --from-file $ROOTCA -o json --dry-run=
 echo "cleanup"
 rm $ROOTCA
 
+echo "Apply new Knative Operator configuration"
 kubectl apply --filename - <<EOF
 apiVersion: v1
 kind: Namespace
