@@ -79,10 +79,10 @@ jobs:
         kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.8.3/serving-default-domain.yaml
         kubectl wait --timeout 300s --for=condition=complete job/default-domain -n knative-serving
 
-    - name: install test service
+    - name: install test service1
       run: |
-        kubectl apply -f ./test/e2e/deploy/httptestCrd.yaml
-        kn service create httptest \
+        kubectl apply -f ./test/e2e/deploy/httptest1Crd.yaml
+        kn service create httptest1 \
            --image gcr.io/knative-samples/helloworld-go \
            --env "TARGET=Secured World" \
            --annotation features.knative.dev/queueproxy-podinfo=enabled \
@@ -90,9 +90,32 @@ jobs:
         URL=`kn service list|head -2|tail -1|awk '{print $2}'`   
         echo "SERVICE_URL=$URL" >> $GITHUB_ENV
 
-    - name: Run e2e Tests
+    - name: Run e2e Tests "httptest1"
       run: |
-        ./test/e2e/e2e-tests.sh $SERVICE_URL
+        ./test/e2e/e2e-tests.sh $SERVICE_URL "httptest1"
+
+    - name: Activate TLS
+      run: |
+        ./hack/setTLS.sh
+    
+    - name: Cleanup httptest1
+      run: |
+        kn service delete httptest1
+      
+    - name: install test service2
+      run: |
+        kubectl apply -f ./test/e2e/deploy/httptest2Crd.yaml
+        kn service create httptest2 \
+           --image gcr.io/knative-samples/helloworld-go \
+           --env "TARGET=Secured World" \
+           --annotation features.knative.dev/queueproxy-podinfo=enabled \
+           --annotation qpoption.knative.dev/guard-activate=enable
+        URL=`kn service list|head -2|tail -1|awk '{print $2}'`   
+        echo "SERVICE_URL=$URL" >> $GITHUB_ENV
+
+    - name: Run e2e Tests With TLS
+      run: |
+        ./test/e2e/e2e-tests.sh $SERVICE_URL "httptest2"
 
     - uses: chainguard-dev/actions/kind-diag@main
       # Only upload logs on failure.

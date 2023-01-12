@@ -1,21 +1,20 @@
 
 URL=$1
+HTTPTEST=$2
 echo "connecting to $URL"
 curl $URL
-kubectl logs deployment/httptest-00001-deployment queue-proxy
+kubectl logs deployment/${HTTPTEST}-00001-deployment queue-proxy
 kubectl logs deployment/guard-service -n knative-serving
-response=`kubectl logs deployment/httptest-00001-deployment queue-proxy|grep -i "alert"|tail -1`
-responseEnd="${response#*Alert}"
-alert=${responseEnd%%\"*}
+response=`kubectl logs deployment/${HTTPTEST}-00001-deployment queue-proxy|grep INFO | grep -i "alert"|tail -1`
 
-echo "Alert Value: $alert"
-if [ "$alert" != "!" ]; then
+echo "response: $response"
+if [ ! -z ${response} ]; then
    exit 1
 fi
 
 curl "$URL?a=2"
-kubectl logs deployment/httptest-00001-deployment queue-proxy
-response=`kubectl logs deployment/httptest-00001-deployment queue-proxy|grep "ALERT!"|tail -1`
+kubectl logs deployment/${HTTPTEST}-00001-deployment queue-proxy
+response=`kubectl logs deployment/${HTTPTEST}-00001-deployment queue-proxy|grep INFO |grep "ALERT!"|tail -1`
 responseEnd="${response#*ALERT}"
 alert=${responseEnd%%\"*}
 
@@ -26,8 +25,8 @@ fi
 
 
 curl $URL -H "a:2"
-kubectl logs deployment/httptest-00001-deployment queue-proxy
-response=`kubectl logs deployment/httptest-00001-deployment queue-proxy|grep "ALERT!"|tail -1`
+kubectl logs deployment/${HTTPTEST}-00001-deployment queue-proxy
+response=`kubectl logs deployment/${HTTPTEST}-00001-deployment queue-proxy|grep INFO |grep "ALERT!"|tail -1`
 responseEnd="${response#*ALERT}"
 alert=${responseEnd%%\"*}
 
