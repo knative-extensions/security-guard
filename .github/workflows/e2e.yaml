@@ -92,7 +92,7 @@ jobs:
 
     - name: Run e2e Tests "httptest1"
       run: |
-        ./test/e2e/e2e-tests.sh $SERVICE_URL
+        ./test/e2e/e2e-tests.sh $SERVICE_URL "httptest1"
 
     - name: Activate TLS
       run: |
