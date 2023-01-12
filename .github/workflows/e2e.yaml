@@ -94,6 +94,14 @@ jobs:
       run: |
         ./test/e2e/e2e-tests.sh $SERVICE_URL
 
+    - name: Activate TLS
+      run: |
+        ./hack/setTLS.sh
+    
+    - name: Run e2e Tests With TLS
+      run: |
+        ./test/e2e/e2e-tests.sh $SERVICE_URL
+
     - uses: chainguard-dev/actions/kind-diag@main
       # Only upload logs on failure.
       if: ${{ failure() }}
