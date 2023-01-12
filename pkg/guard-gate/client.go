@@ -36,7 +36,7 @@ import (
 )
 
 type httpClientInterface interface {
-	ReadToken(audience string)
+	ReadToken(audience string) bool
 	Do(req *http.Request) (*http.Response, error)
 }
 
@@ -58,7 +58,7 @@ func (hc *httpClient) Do(req *http.Request) (*http.Response, error) {
 	return hc.client.Do(req)
 }
 
-func (hc *httpClient) ReadToken(audience string) {
+func (hc *httpClient) ReadToken(audience string) (tokenActive bool) {
 	// If not yet tokenRefreshTime, skip reading
 	now := time.Now()
 	if hc.tokenRefreshTime.After(now) {
@@ -77,8 +77,10 @@ func (hc *httpClient) ReadToken(audience string) {
 	}
 	hc.token = string(b)
 	hc.missingToken = false
+	tokenActive = true
 
 	pi.Log.Debugf("Refreshing client token - next refresh at %s", hc.tokenRefreshTime.String())
+	return
 }
 
 type gateClient struct {
@@ -110,7 +112,7 @@ func (srv *gateClient) initKubeMgr() {
 	srv.kubeMgr.InitConfigs()
 }
 
-func (srv *gateClient) initHttpClient(certPool *x509.CertPool) {
+func (srv *gateClient) initHttpClient(certPool *x509.CertPool) (tokenActive bool) {
 	client := new(httpClient)
 	client.client.Transport = &http.Transport{
 		MaxConnsPerHost:     0,
@@ -122,7 +124,8 @@ func (srv *gateClient) initHttpClient(certPool *x509.CertPool) {
 		},
 	}
 	srv.httpClient = client
-	srv.httpClient.ReadToken(guardKubeMgr.ServiceAudience)
+	tokenActive = srv.httpClient.ReadToken(guardKubeMgr.ServiceAudience)
+	return
 }
 
 func (srv *gateClient) reportPile() {

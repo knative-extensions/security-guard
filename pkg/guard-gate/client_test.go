@@ -91,8 +91,8 @@ func fakeClient(statusCode int, response string) (*gateClient, *fakeHttpClient) 
 	srv.kubeMgr = &fakeKmgr{}
 	return srv, client
 }
-func (hc *fakeHttpClient) ReadToken(audience string) {
-
+func (hc *fakeHttpClient) ReadToken(audience string) bool {
+	return false
 }
 
 func (hc *fakeHttpClient) Do(req *http.Request) (*http.Response, error) {
