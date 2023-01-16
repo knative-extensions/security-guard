@@ -133,7 +133,7 @@ func (s *session) sessionEventLoop(ctx context.Context) {
 			s.screenEnvelop()
 			s.screenPod()
 			if s.gateState.shouldBlock() && (s.hasAlert() || s.gateState.hasAlert()) {
-				pi.Log.Debugf("*** Cancel *** during sessionTicker")
+				pi.Log.Debugf("Request processing canceled during sessionTicker")
 				s.cancel()
 				return
 			}

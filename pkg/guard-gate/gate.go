@@ -78,6 +78,7 @@ func (p *plug) ApproveRequest(req *http.Request) (*http.Request, error) {
 
 	if p.gateState.shouldBlock() && (s.hasAlert() || p.gateState.hasAlert()) {
 		p.gateState.addStat("BlockOnRequest")
+		pi.Log.Debugf("Request blocked")
 		cancelFunction()
 		return nil, errSecurity
 	}
@@ -108,7 +109,7 @@ func (p *plug) ApproveResponse(req *http.Request, resp *http.Response) (*http.Re
 	s.screenEnvelop()
 	if p.gateState.shouldBlock() && (s.hasAlert() || p.gateState.hasAlert()) {
 		p.gateState.addStat("BlockOnResponse")
-		pi.Log.Debugf("*** Cancel *** during ApproveResponse")
+		pi.Log.Debugf("Response blocked")
 		s.cancel()
 		return nil, errSecurity
 	}

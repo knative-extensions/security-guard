@@ -134,8 +134,8 @@ func (gs *gateState) profileAndDecidePod() {
 			gs.alert = decision.String("Pod  -> ")
 			gs.logAlert()
 			if gs.shouldBlock() {
-				// terminate the reverse proxy
-				pi.Log.Infof("Terminating since Pod is now blocking all requests")
+				// Terminate the reverse proxy since all requests will block from now on
+				pi.Log.Infof("Terminating")
 				gs.cancelFunc()
 			}
 		}
