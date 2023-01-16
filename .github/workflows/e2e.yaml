@@ -69,7 +69,7 @@ jobs:
 
     - name: Wait for Ready
       run: |
-        echo Waiting for Pods to become ready.git 
+        echo Waiting for Pods to become ready.
         kubectl wait pod --timeout 300s --for=condition=Ready -n knative-serving -l "app.kubernetes.io/name=knative-serving"
         kubectl wait pod --timeout 300s --for=condition=Ready -n knative-serving -l "app=guard-service"
         # For debugging.
@@ -116,7 +116,7 @@ jobs:
 
     - name: Wait for Ready2
       run: |
-        echo Waiting for Pods to become ready.git 
+        echo Waiting for Pods to become ready.
         kubectl wait pod --timeout 300s --for=condition=Ready -n knative-serving -l "app.kubernetes.io/name=knative-serving"
         kubectl wait pod --timeout 300s --for=condition=Ready -n knative-serving -l "app=guard-service"
         # For debugging.
