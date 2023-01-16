@@ -107,8 +107,9 @@ func (p *plug) ApproveResponse(req *http.Request, resp *http.Response) (*http.Re
 	s.screenResponseBody(resp)
 	s.screenEnvelop()
 	if p.gateState.shouldBlock() && (s.hasAlert() || p.gateState.hasAlert()) {
-		s.cancel()
 		p.gateState.addStat("BlockOnResponse")
+		pi.Log.Debugf("*** Cancel *** during ApproveResponse")
+		s.cancel()
 		return nil, errSecurity
 	}
 
