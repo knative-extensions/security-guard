@@ -115,10 +115,17 @@ func IpNetFromProc(protocol string) (ips []net.IP) {
 		return
 	}
 
+	ipMap := make(map[string]bool)
 	ips = make([]net.IP, 0)
+
 	ip, data := nextRemoteIp(data)
 	for data != nil {
-		ips = append(ips, ip)
+		ipStr := ip.String()
+		if _, ok := ipMap[ipStr]; !ok {
+			// New IP address
+			ipMap[ipStr] = true
+			ips = append(ips, ip)
+		}
 		ip, data = nextRemoteIp(data)
 	}
 	return ips
