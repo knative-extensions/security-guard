@@ -69,7 +69,7 @@ jobs:
 
     - name: Wait for Ready
       run: |
-        echo Waiting for Pods to become ready.
+        echo Waiting for Pods to become ready.git 
         kubectl wait pod --timeout 300s --for=condition=Ready -n knative-serving -l "app.kubernetes.io/name=knative-serving"
         kubectl wait pod --timeout 300s --for=condition=Ready -n knative-serving -l "app=guard-service"
         # For debugging.
@@ -113,6 +113,14 @@ jobs:
            --annotation qpoption.knative.dev/guard-activate=enable
         URL=`kn service list|head -2|tail -1|awk '{print $2}'`   
         echo "SERVICE_URL=$URL" >> $GITHUB_ENV
+
+    - name: Wait for Ready2
+      run: |
+        echo Waiting for Pods to become ready.git 
+        kubectl wait pod --timeout 300s --for=condition=Ready -n knative-serving -l "app.kubernetes.io/name=knative-serving"
+        kubectl wait pod --timeout 300s --for=condition=Ready -n knative-serving -l "app=guard-service"
+        # For debugging.
+        kubectl get pods --all-namespaces
 
     - name: Run e2e Tests With TLS
       run: |
