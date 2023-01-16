@@ -96,7 +96,7 @@ func (s *session) sessionEventLoop(ctx context.Context) {
 
 		// Should we alert?
 		if s.gateState.hasAlert() {
-			logAlert("Pod has an alert")
+			s.gateState.logAlert()
 			s.gateState.addStat("BlockOnPod")
 			return
 		}
@@ -133,8 +133,8 @@ func (s *session) sessionEventLoop(ctx context.Context) {
 			s.screenEnvelop()
 			s.screenPod()
 			if s.gateState.shouldBlock() && (s.hasAlert() || s.gateState.hasAlert()) {
+				pi.Log.Debugf("Request processing canceled during sessionTicker")
 				s.cancel()
-				pi.Log.Debugf("Session Canceled")
 				return
 			}
 			pi.Log.Debugf("Session Tick")

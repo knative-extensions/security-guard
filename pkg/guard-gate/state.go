@@ -40,6 +40,7 @@ type gateState struct {
 	pod        spec.PodProfile         // pod profile
 	srv        *gateClient             // maintainer of the pile, include client to the guard-service & kubeApi
 	certPool   *x509.CertPool          // rootCAs
+	prevAlert  string                  // previous gate alert
 }
 
 func (gs *gateState) init(cancelFunc context.CancelFunc, monitorPod bool, guardServiceUrl string, sid string, ns string, useCm bool) {
@@ -96,7 +97,7 @@ func (gs *gateState) loadConfig() {
 	}
 	criteria.Prepare()
 	gs.criteria = criteria
-	pi.Log.Infof("Loading Guardian  - Active %t Auto %t", gs.criteria.Active, gs.ctrl.Auto)
+	pi.Log.Infof("Loading Guardian  - Active %t Auto %t Block %t", gs.criteria.Active, gs.ctrl.Auto, gs.ctrl.Block)
 }
 
 // flushPile is called periodically to send the pile to the guard-service
@@ -131,12 +132,22 @@ func (gs *gateState) profileAndDecidePod() {
 		if decision != nil {
 			gs.addStat("PodAlert")
 			gs.alert = decision.String("Pod  -> ")
-
-			logAlert(gs.alert)
-			// terminate the reverse proxy
-			gs.cancelFunc()
+			gs.logAlert()
+			if gs.shouldBlock() {
+				// Terminate the reverse proxy since all requests will block from now on
+				pi.Log.Infof("Terminating")
+				gs.cancelFunc()
+			}
 		}
 	}
+}
+
+func (gs *gateState) logAlert() {
+	if gs.prevAlert == gs.alert {
+		return
+	}
+	gs.prevAlert = gs.alert
+	logAlert(gs.alert)
 }
 
 // if pod is monitored, copy its profile to the session profile
