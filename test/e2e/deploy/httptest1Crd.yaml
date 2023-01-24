@@ -1,19 +1,15 @@
 apiVersion: guard.security.knative.dev/v1alpha1
 kind: Guardian
 metadata:
-  creationTimestamp: "2022-12-11T13:40:47Z"
-  generation: 1
   name: httptest1
   namespace: default
-  resourceVersion: "40851122"
-  uid: 3b3a4231-a2b2-4bf8-bbbd-64714b7119e9
 spec:
   control:
     alert: true
     auto: true
     block: false
-    force: true
-    learn: true
+    force: false
+    learn: false
   learned:
     active: true
     envelop:
