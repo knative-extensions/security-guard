@@ -87,7 +87,7 @@ jobs:
            --env "TARGET=Secured World" \
            --annotation features.knative.dev/queueproxy-podinfo=enabled \
            --annotation qpoption.knative.dev/guard-activate=enable
-        URL=`kn service list|head -2|tail -1|awk '{print $2}'`   
+        URL=`kn service list|grep httptest1|awk '{print $2}'`   
         echo "SERVICE_URL=$URL" >> $GITHUB_ENV
 
     - name: Run e2e Tests "httptest1"
@@ -97,10 +97,6 @@ jobs:
     - name: Activate TLS
       run: |
         ./hack/setTLS.sh
-    
-    - name: Cleanup httptest1
-      run: |
-        kn service delete httptest1
       
     - name: install test service2
       run: |
@@ -110,7 +106,7 @@ jobs:
            --env "TARGET=Secured World" \
            --annotation features.knative.dev/queueproxy-podinfo=enabled \
            --annotation qpoption.knative.dev/guard-activate=enable
-        URL=`kn service list|head -2|tail -1|awk '{print $2}'`   
+        URL=`kn service list|grep httptest2|awk '{print $2}'`   
         echo "SERVICE_URL=$URL" >> $GITHUB_ENV
 
     - name: Run e2e Tests With TLS

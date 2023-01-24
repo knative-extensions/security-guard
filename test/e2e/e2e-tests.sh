@@ -1,14 +1,17 @@
 
 URL=$1
 HTTPTEST=$2
+
 echo "connecting to $URL"
 curl $URL
 kubectl logs deployment/${HTTPTEST}-00001-deployment queue-proxy
 kubectl logs deployment/guard-service -n knative-serving
 response=`kubectl logs deployment/${HTTPTEST}-00001-deployment queue-proxy|grep INFO | grep -i "alert"|tail -1`
 
-echo "response: $response"
-if [ ! -z ${response} ]; then
+if [ -z "${response}" ]; then
+  echo ">> No alert - as expected"
+else
+   echo ">> Expected no alert but received: $response"
    exit 1
 fi
 
@@ -18,8 +21,11 @@ response=`kubectl logs deployment/${HTTPTEST}-00001-deployment queue-proxy|grep 
 responseEnd="${response#*ALERT}"
 alert=${responseEnd%%\"*}
 
-echo "Alert Value: $alert"
-if [ "$alert" != "! HttpRequest -> [QueryString:[KeyVal:[Key a is not known,],],]" ]; then
+
+if [[ "$alert" == "! HttpRequest -> [QueryString:[KeyVal:[Key a is not known,],],]"* ]];then
+   echo ">> Alert as expected for $URL?a=2"
+else
+   echo ">> Alert value is not as expected: $alert"
    exit 1
 fi
 
@@ -30,10 +36,13 @@ response=`kubectl logs deployment/${HTTPTEST}-00001-deployment queue-proxy|grep 
 responseEnd="${response#*ALERT}"
 alert=${responseEnd%%\"*}
 
-echo "Alert Value: $alert"
-if [ "$alert" != "! HttpRequest -> [Headers:[KeyVal:[Key A is not known,],],]" ]; then
+
+if [[ "$alert" == "! HttpRequest -> [Headers:[KeyVal:[Key A is not known,],],]"* ]];then
+   echo ">> Alert as expected for $URL -H \"a:2\""
+else
+   echo ">> Alert value is not as expected: $alert"
    exit 1
 fi
 
-echo "Done!"
+echo ">> Done! Test OK!"
 exit 0
