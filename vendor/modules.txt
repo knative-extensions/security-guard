@@ -7,9 +7,6 @@ contrib.go.opencensus.io/exporter/prometheus
 # contrib.go.opencensus.io/exporter/zipkin v0.1.2
 ## explicit
 contrib.go.opencensus.io/exporter/zipkin
-# github.com/IBM/go-security-plugs v1.3.20
-## explicit; go 1.17
-github.com/IBM/go-security-plugs/iodup
 # github.com/beorn7/perks v1.0.1
 ## explicit; go 1.11
 github.com/beorn7/perks/quantile
