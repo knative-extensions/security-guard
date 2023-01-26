@@ -3,7 +3,9 @@ module knative.dev/security-guard
 go 1.18
 
 require (
+	github.com/IBM/go-security-plugs v1.3.20
 	github.com/emicklei/go-restful v2.9.5+incompatible
+	github.com/evanphx/json-patch/v5 v5.6.0
 	github.com/golang-jwt/jwt/v4 v4.3.0
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/kelseyhightower/envconfig v1.4.0
@@ -30,7 +32,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/emicklei/go-restful/v3 v3.8.0 // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
-	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/go-kit/log v0.1.0 // indirect
 	github.com/go-logfmt/logfmt v0.5.0 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
