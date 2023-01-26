@@ -3,7 +3,6 @@ module knative.dev/security-guard
 go 1.18
 
 require (
-	github.com/IBM/go-security-plugs v1.3.20
 	github.com/emicklei/go-restful v2.16.0+incompatible
 	github.com/evanphx/json-patch/v5 v5.6.0
 	github.com/golang-jwt/jwt/v4 v4.4.3

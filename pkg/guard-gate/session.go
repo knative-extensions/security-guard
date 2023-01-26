@@ -30,7 +30,7 @@ import (
 	utils "knative.dev/security-guard/pkg/guard-utils"
 	pi "knative.dev/security-guard/pkg/pluginterfaces"
 
-	"github.com/IBM/go-security-plugs/iodup"
+	"knative.dev/security-guard/pkg/iodup"
 )
 
 const sessionKey = "GuardSession"
