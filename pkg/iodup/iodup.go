@@ -213,19 +213,3 @@ func (out *Out) closeChannel() {
 	}()
 	close(out.bufChan)
 }
-
-/*   closing teh src is not a great idea
-func (iof *Iodup) closeSrc() error {
-	// There seem to be no standart convension about closing
-	// Some may require it..
-	// Others may always allow it..
-	// Yet there are those who whould panic if closing when already closed..
-	//defer func() {
-	//	if recovered := recover(); recovered != nil {
-	//		fmt.Printf("(iof *iodup) recovering from panic during iof.src.Close() %v\n", recovered)
-	//	}
-	//}()
-	//iof.src.Close()
-	return nil
-}
-*/
