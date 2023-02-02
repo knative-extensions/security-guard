@@ -20,6 +20,7 @@ package v1alpha1
 
 // Exposes ValueProfile interface
 type BodyProfile struct {
+	Faults       SetProfile
 	Unstructured *SimpleValProfile  `json:"unstructured"`
 	Structured   *StructuredProfile `json:"structured"`
 }
@@ -31,6 +32,10 @@ func (profile *BodyProfile) profileI(args ...interface{}) {
 	default:
 		profile.ProfileStructured(v)
 	}
+}
+
+func (profile *BodyProfile) ProfileFaults(fault string) {
+	profile.Faults.ProfileString(fault)
 }
 
 func (profile *BodyProfile) ProfileUnstructured(str string) {
@@ -49,6 +54,7 @@ func (profile *BodyProfile) ProfileStructured(data interface{}) {
 
 // Exposes ValuePile interface
 type BodyPile struct {
+	Faults       SetPile         `json:"faults"`
 	Unstructured *SimpleValPile  `json:"unstructured"`
 	Structured   *StructuredPile `json:"structured"`
 }
@@ -59,6 +65,7 @@ func (pile *BodyPile) addI(valProfile ValueProfile) {
 
 // profile is RO and unchanged - never uses profile internal objects
 func (pile *BodyPile) Add(profile *BodyProfile) {
+	pile.Faults.Add(&profile.Faults)
 	if profile.Structured != nil {
 		if pile.Structured == nil {
 			pile.Structured = new(StructuredPile)
@@ -84,6 +91,7 @@ func (pile *BodyPile) mergeI(otherValPile ValuePile) {
 
 // otherPile is RO and unchanged - never uses otherPile internal objects
 func (pile *BodyPile) Merge(otherPile *BodyPile) {
+	pile.Faults.Merge(&otherPile.Faults)
 	if otherPile.Structured != nil {
 		if pile.Structured == nil {
 			pile.Structured = new(StructuredPile)
@@ -102,6 +110,7 @@ func (pile *BodyPile) Merge(otherPile *BodyPile) {
 
 // Exposes ValueConfig interface
 type BodyConfig struct {
+	Faults       SetConfig         `json:"faults"`
 	Unstructured *SimpleValConfig  `json:"unstructured"`
 	Structured   *StructuredConfig `json:"structured"`
 }
@@ -113,6 +122,7 @@ func (config *BodyConfig) decideI(valProfile ValueProfile) *Decision {
 func (config *BodyConfig) Decide(profile *BodyProfile) *Decision {
 	var current *Decision
 
+	DecideChild(&current, config.Faults.Decide(&profile.Faults), "Body Faults")
 	if profile.Structured != nil {
 		if config.Structured != nil {
 			DecideChild(&current, config.Structured.Decide(profile.Structured), "Body")
@@ -136,6 +146,7 @@ func (config *BodyConfig) learnI(valPile ValuePile) {
 
 // pile is RO and unchanged - never uses pile internal objects
 func (config *BodyConfig) Learn(pile *BodyPile) {
+	config.Faults.Learn(&pile.Faults)
 	if pile.Structured != nil {
 		if config.Structured == nil {
 			config.Structured = new(StructuredConfig)
@@ -151,6 +162,7 @@ func (config *BodyConfig) Learn(pile *BodyPile) {
 }
 
 func (config *BodyConfig) Prepare() {
+	config.Faults.Prepare()
 	if config.Structured != nil {
 		config.Structured.Prepare()
 	}

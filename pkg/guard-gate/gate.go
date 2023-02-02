@@ -159,6 +159,7 @@ func (p *plug) preInit(ctxIn context.Context, c map[string]string, sid string, n
 	// Defaults used without config when used as a qpoption
 	useCm := false
 	monitorPod := true
+	analyzeBody := false
 
 	guardServiceUrl := "http://guard-service.knative-serving"
 	if rootCA := os.Getenv("ROOT_CA"); rootCA != "" {
@@ -179,6 +180,11 @@ func (p *plug) preInit(ctxIn context.Context, c map[string]string, sid string, n
 		if v, ok = c["monitor-pod"]; ok && !strings.EqualFold(v, "true") {
 			monitorPod = false
 		}
+
+		if v, ok = c["analyze-body"]; ok && strings.EqualFold(v, "true") {
+			analyzeBody = true
+		}
+
 		loadInterval = c["guardian-load-interval"]
 		pileInterval = c["report-pile-interval"]
 		monitorInterval = c["pod-monitor-interval"]
@@ -202,6 +208,7 @@ func (p *plug) preInit(ctxIn context.Context, c map[string]string, sid string, n
 	}
 
 	p.gateState = new(gateState)
+	p.gateState.analyzeBody = analyzeBody
 	p.gateState.init(cancelFunction, monitorPod, guardServiceUrl, sid, ns, useCm)
 	return
 }

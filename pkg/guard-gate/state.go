@@ -31,16 +31,17 @@ func logAlert(alert string) {
 }
 
 type gateState struct {
-	cancelFunc context.CancelFunc      // cancel the entire reverse proxy
-	ctrl       *spec.Ctrl              // gate Ctrl
-	criteria   *spec.SessionDataConfig // gate Criteria
-	stat       utils.Stat              // gate stats
-	alert      string                  // gate alert
-	monitorPod bool                    // should gate profile the pod?
-	pod        spec.PodProfile         // pod profile
-	srv        *gateClient             // maintainer of the pile, include client to the guard-service & kubeApi
-	certPool   *x509.CertPool          // rootCAs
-	prevAlert  string                  // previous gate alert
+	analyzeBody bool
+	cancelFunc  context.CancelFunc      // cancel the entire reverse proxy
+	ctrl        *spec.Ctrl              // gate Ctrl
+	criteria    *spec.SessionDataConfig // gate Criteria
+	stat        utils.Stat              // gate stats
+	alert       string                  // gate alert
+	monitorPod  bool                    // should gate profile the pod?
+	pod         spec.PodProfile         // pod profile
+	srv         *gateClient             // maintainer of the pile, include client to the guard-service & kubeApi
+	certPool    *x509.CertPool          // rootCAs
+	prevAlert   string                  // previous gate alert
 }
 
 func (gs *gateState) init(cancelFunc context.CancelFunc, monitorPod bool, guardServiceUrl string, sid string, ns string, useCm bool) {
