@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
 	utils "knative.dev/security-guard/pkg/guard-utils"
 	pi "knative.dev/security-guard/pkg/pluginterfaces"
 )
@@ -290,7 +291,7 @@ func Test_plug_ApproveResponse(t *testing.T) {
 			t.Errorf("ApproveResponse error %v! ", err2)
 		}
 
-		p.gateState.alert = "x"
+		p.gateState.decision = &spec.Decision{}
 		p.gateState.ctrl.Block = true
 
 		_, err3 := p.ApproveResponse(req1, resp)
@@ -320,7 +321,7 @@ func Test_plug_ApproveRequest(t *testing.T) {
 		_, cancelFunction1 := context.WithCancel(req1.Context())
 		cancelFunction1()
 
-		p.gateState.alert = "x"
+		p.gateState.decision = &spec.Decision{}
 		p.gateState.ctrl.Block = true
 
 		req2, err2 := p.ApproveRequest(req)

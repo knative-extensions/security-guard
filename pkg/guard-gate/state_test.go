@@ -35,7 +35,7 @@ func fakeGateCancel() {
 
 func fakeGateState() *gateState {
 	gs := new(gateState)
-	gs.init(fakeGateCancel, false, "myurl", "mysid", "myns", true)
+	gs.init(fakeGateCancel, false, "myurl", "mypodname", "mysid", "myns", true)
 	srv, _ := fakeClient(http.StatusOK, "Problem in request")
 	gs.srv = srv
 	return gs
@@ -43,6 +43,8 @@ func fakeGateState() *gateState {
 
 func Test_gateState_loadConfig(t *testing.T) {
 	t.Run("simple", func(t *testing.T) {
+		var decision *spec.Decision
+
 		gs := fakeGateState()
 
 		gs.loadConfig()
@@ -92,12 +94,13 @@ func Test_gateState_loadConfig(t *testing.T) {
 		ep := new(spec.EnvelopProfile)
 		now := time.Now()
 		ep.Profile(now, now, now)
-		if ret := gs.decideEnvelop(ep); ret != "" {
+		decision = nil
+		if gs.decideEnvelop(&decision, ep); decision != nil {
 			t.Error("expected no alert")
 		}
+		decision = nil
 		ep.Profile(time.Unix(1, 1), time.Unix(3, 3), time.Unix(5, 5))
-		gs.decideEnvelop(ep)
-		if ret := gs.decideEnvelop(ep); ret == "" {
+		if gs.decideEnvelop(&decision, ep); decision == nil {
 			t.Error("expected alert")
 		}
 
@@ -107,11 +110,13 @@ func Test_gateState_loadConfig(t *testing.T) {
 		cip := net.ParseIP("1.2.3.4")
 		req.Profile(r, cip)
 		gs.criteria.Active = false
-		if ret := gs.decideReq(req); ret != "" {
+		decision = nil
+		if gs.decideReq(&decision, req); decision != nil {
 			t.Error("expected no alert")
 		}
 		gs.criteria.Active = true
-		if ret := gs.decideReq(req); ret == "" {
+		decision = nil
+		if gs.decideReq(&decision, req); decision == nil {
 			t.Error("expected alert")
 		}
 
@@ -121,11 +126,13 @@ func Test_gateState_loadConfig(t *testing.T) {
 
 		resp.Profile(rs)
 		gs.criteria.Active = false
-		if ret := gs.decideResp(resp); ret != "" {
+		decision = nil
+		if gs.decideResp(&decision, resp); decision != nil {
 			t.Error("expected no alert")
 		}
 		gs.criteria.Active = true
-		if ret := gs.decideResp(resp); ret == "" {
+		decision = nil
+		if gs.decideResp(&decision, resp); decision == nil {
 			t.Error("expected alert")
 		}
 
@@ -133,17 +140,21 @@ func Test_gateState_loadConfig(t *testing.T) {
 		body := new(spec.BodyProfile)
 		body.ProfileUnstructured("x")
 		gs.criteria.Active = false
-		if ret := gs.decideReqBody(body); ret != "" {
+		decision = nil
+		if gs.decideReqBody(&decision, body); decision != nil {
 			t.Error("expected no alert")
 		}
-		if ret := gs.decideRespBody(body); ret != "" {
+		decision = nil
+		if gs.decideRespBody(&decision, body); decision != nil {
 			t.Error("expected no alert")
 		}
 		gs.criteria.Active = true
-		if ret := gs.decideReqBody(body); ret == "" {
+		decision = nil
+		if gs.decideReqBody(&decision, body); decision == nil {
 			t.Error("expected alert")
 		}
-		if ret := gs.decideRespBody(body); ret == "" {
+		decision = nil
+		if gs.decideRespBody(&decision, body); decision == nil {
 			t.Error("expected alert")
 		}
 
@@ -189,7 +200,7 @@ func Test_gateState_init(t *testing.T) {
 			os.Setenv("ROOT_CA", tt.cert)
 			gs := new(gateState)
 			// certPool, _ := x509.SystemCertPool()
-			gs.init(fakeGateCancel, false, "myurl", "mysid", "myns", true)
+			gs.init(fakeGateCancel, false, "myurl", "mypodname", "mysid", "myns", true)
 			// TBD will be added when we move to go 1.19
 			// if !certPool.Equal(gs.certPool) && !tt.newCA {
 			// 	 t.Errorf("expected no new cert to be added")

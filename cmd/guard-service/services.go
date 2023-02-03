@@ -37,6 +37,7 @@ type serviceRecord struct {
 	guardianSpec *spec.GuardianSpec   // a copy of the cached deployed service Guardian (RO - no mutext needed)
 	pile         spec.SessionDataPile // the deployed service Pile (RW - protected with pileMutex)
 	pileMutex    sync.Mutex           // protect access to the pile
+	alerts       uint                 // num of alerts
 }
 
 // service cache maintaining a cached record per deployed service

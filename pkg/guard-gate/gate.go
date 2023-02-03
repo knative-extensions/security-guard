@@ -207,9 +207,14 @@ func (p *plug) preInit(ctxIn context.Context, c map[string]string, sid string, n
 		panic("Ileal serviceName - ns.{Namespace} is reserved")
 	}
 
+	podname := "unknown"
+	data, err := os.ReadFile("/etc/hosts")
+	if err == nil {
+		podname = string(data)
+	}
 	p.gateState = new(gateState)
 	p.gateState.analyzeBody = analyzeBody
-	p.gateState.init(cancelFunction, monitorPod, guardServiceUrl, sid, ns, useCm)
+	p.gateState.init(cancelFunction, monitorPod, guardServiceUrl, podname, sid, ns, useCm)
 	return
 }
 

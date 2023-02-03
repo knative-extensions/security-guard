@@ -197,6 +197,34 @@ func (l *learner) processPile(w http.ResponseWriter, req *http.Request) {
 	w.Write([]byte{})
 }
 
+func (l *learner) processAlert(w http.ResponseWriter, req *http.Request) {
+	record, err := l.baseHandler(w, req)
+	if err != nil {
+		return
+	}
+	if req.Method != "POST" || req.URL.Path != "/alert" {
+		http.Error(w, "404 not found.", http.StatusNotFound)
+		return
+	}
+
+	if req.ContentLength == 0 || req.Body == nil {
+		http.Error(w, "400 not found.", http.StatusBadRequest)
+		return
+	}
+
+	var alert spec.Alert
+	err = json.NewDecoder(req.Body).Decode(&alert)
+	if err != nil {
+		pi.Log.Infof("processAlert error: %v", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	record.alerts++
+	pi.Log.Debugf("%s:%s:%s (%02d:%02d:%02d) alert %s -> %s", alert.Namespace, alert.Sid, alert.Podname, alert.Time.Hour(), alert.Time.Minute(), alert.Time.Second(), alert.Level, alert.Decision.String(""))
+
+	w.Write([]byte("OK"))
+}
+
 func (l *learner) mainEventLoop(quit chan string) {
 	for {
 		select {
@@ -227,6 +255,7 @@ func preMain(minimumInterval time.Duration) (*learner, *http.ServeMux, string, c
 	mux := http.NewServeMux()
 	mux.HandleFunc("/config", l.fetchConfig)
 	mux.HandleFunc("/pile", l.processPile)
+	mux.HandleFunc("/alert", l.processAlert)
 
 	target := ":8888"
 

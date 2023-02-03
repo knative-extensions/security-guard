@@ -85,6 +85,7 @@ func (hc *httpClient) ReadToken(audience string) (tokenActive bool) {
 
 type gateClient struct {
 	guardServiceUrl string
+	podname         string
 	sid             string
 	ns              string
 	useCm           bool
@@ -94,10 +95,11 @@ type gateClient struct {
 	kubeMgr         guardKubeMgr.KubeMgrInterface
 }
 
-func NewGateClient(guardServiceUrl string, sid string, ns string, useCm bool) *gateClient {
+func NewGateClient(guardServiceUrl string, podname string, sid string, ns string, useCm bool) *gateClient {
 	srv := new(gateClient)
 	srv.kubeMgr = guardKubeMgr.NewKubeMgr()
 	srv.guardServiceUrl = guardServiceUrl
+	srv.podname = podname
 	srv.sid = sid
 	srv.ns = ns
 	srv.useCm = useCm
@@ -126,6 +128,56 @@ func (srv *gateClient) initHttpClient(certPool *x509.CertPool) (tokenActive bool
 	srv.httpClient = client
 	tokenActive = srv.httpClient.ReadToken(guardKubeMgr.ServiceAudience)
 	return
+}
+
+func (srv *gateClient) reportAlert(decision *spec.Decision) {
+	srv.httpClient.ReadToken(guardKubeMgr.ServiceAudience)
+
+	alert := spec.Alert{
+		Namespace: srv.ns,
+		Sid:       srv.sid,
+		Podname:   srv.podname,
+		Time:      time.Now(),
+		Decision:  decision,
+	}
+	postBody, marshalErr := json.Marshal(alert)
+
+	if marshalErr != nil {
+		// should never happen
+		pi.Log.Infof("Error during marshal: %v", marshalErr)
+		return
+	}
+	reqBody := bytes.NewBuffer(postBody)
+	req, err := http.NewRequest(http.MethodPost, srv.guardServiceUrl+"/alert", reqBody)
+	if err != nil {
+		pi.Log.Infof("Http.NewRequest error %v", err)
+		return
+	}
+	query := req.URL.Query()
+	query.Add("sid", srv.sid)
+	query.Add("ns", srv.ns)
+	if srv.useCm {
+		query.Add("cm", "true")
+	}
+	req.URL.RawQuery = query.Encode()
+	pi.Log.Debugf("Reporting an alert!")
+
+	res, postErr := srv.httpClient.Do(req)
+	if postErr != nil {
+		pi.Log.Infof("httpClient.Do error %v", postErr)
+		return
+	}
+	if res.Body != nil {
+		defer res.Body.Close()
+		body, readErr := io.ReadAll(res.Body)
+		if readErr != nil {
+			pi.Log.Infof("Response error %v", readErr)
+			return
+		}
+		if len(body) != 0 {
+			pi.Log.Debugf("guard-service response is %s", string(body))
+		}
+	}
 }
 
 func (srv *gateClient) reportPile() {
