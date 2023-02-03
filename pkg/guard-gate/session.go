@@ -19,7 +19,6 @@ package guardgate
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"mime"
 	"net"
@@ -103,7 +102,7 @@ func (s *session) logAlert() {
 	}
 	logAlert(s.decision.String("Session ->"))
 	s.gateState.addStat("SessionLevelAlert")
-	s.gateState.srv.reportAlert(s.decision)
+	s.gateState.srv.addAlert(s.decision, "Session")
 }
 
 func (s *session) sessionEventLoop(ctx context.Context) {
@@ -298,7 +297,7 @@ func (s *session) screenRequestBody(req *http.Request) {
 	}
 	req.Body = dup.Output[1]
 	s.gateState.decideReqBody(&s.decision, &s.profile.ReqBody)
-
+}
 
 func (s *session) screenEnvelop() {
 	now := time.Now()

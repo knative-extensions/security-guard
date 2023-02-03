@@ -21,6 +21,7 @@ import (
 	"errors"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -56,6 +57,7 @@ type plug struct {
 func (p *plug) Shutdown() {
 	pi.Log.Debugf("%s: Shutdown", p.name)
 	p.gateState.flushPile()
+	//p.gateState.srv.reportAlerts()
 }
 
 func (p *plug) PlugName() string {
@@ -126,6 +128,7 @@ func (p *plug) guardMainEventLoop(ctx context.Context) {
 		p.reportPileTicker.Stop()
 		p.podMonitorTicker.Stop()
 		p.gateState.flushPile()
+		//p.gateState.srv.reportAlerts()
 		pi.Log.Infof("%s: Done with the following statistics: %s", plugName, p.gateState.stat.Log())
 	}()
 
@@ -137,11 +140,12 @@ func (p *plug) guardMainEventLoop(ctx context.Context) {
 
 		// Periodically get an updated Guardian
 		case <-p.guardianLoadTicker.Ch():
-			p.gateState.loadConfig()
+			p.gateState.sync(true)
 
 		// Periodically send pile to the guard-service
 		case <-p.reportPileTicker.Ch():
 			p.gateState.flushPile()
+			//p.gateState.srv.reportAlerts()
 
 		// Periodically profile of the pod
 		case <-p.podMonitorTicker.Ch():
@@ -198,8 +202,19 @@ func (p *plug) preInit(ctxIn context.Context, c map[string]string, sid string, n
 	p.reportPileTicker.Parse(pileInterval, reportPileIntervalDefault)
 	p.podMonitorTicker.Parse(monitorInterval, podMonitorIntervalDefault)
 
-	pi.Log.Debugf("guard-gate configuration: sid=%s, ns=%s, useCm=%t, guardUrl=%s, p.monitorPod=%t, guardian-load-interval %v, report-pile-interval %v, pod-monitor-interval %v",
-		sid, ns, useCm, guardServiceUrl, monitorPod, loadInterval, pileInterval, monitorInterval)
+	podname := "unknown"
+	if v, ok = c["podname"]; ok {
+		podname = v
+	} else {
+		data, err := os.ReadFile("/etc/hostname")
+		if err == nil {
+			str := regexp.MustCompile(`[^a-zA-Z0-9\-]+`).ReplaceAllString(string(data), "")
+			podname = str
+		}
+	}
+
+	pi.Log.Debugf("guard-gate configuration: podname=%s, sid=%s, ns=%s, useCm=%t, guardUrl=%s, p.monitorPod=%t, guardian-load-interval %v, report-pile-interval %v, pod-monitor-interval %v",
+		podname, sid, ns, useCm, guardServiceUrl, monitorPod, loadInterval, pileInterval, monitorInterval)
 
 	// serviceName should never be "ns.{namespace}" as this is a reserved name
 	if strings.HasPrefix(sid, "ns.") {
@@ -207,11 +222,6 @@ func (p *plug) preInit(ctxIn context.Context, c map[string]string, sid string, n
 		panic("Ileal serviceName - ns.{Namespace} is reserved")
 	}
 
-	podname := "unknown"
-	data, err := os.ReadFile("/etc/hosts")
-	if err == nil {
-		podname = string(data)
-	}
 	p.gateState = new(gateState)
 	p.gateState.analyzeBody = analyzeBody
 	p.gateState.init(cancelFunction, monitorPod, guardServiceUrl, podname, sid, ns, useCm)
@@ -226,7 +236,7 @@ func (p *plug) Init(ctx context.Context, c map[string]string, sid string, ns str
 
 	pi.Log.Infof("guard-gate: TLS %t, Token %t", tlsActive, tokenActive)
 
-	p.gateState.loadConfig()
+	p.gateState.srv.syncAndLoad(true)
 	p.gateState.profileAndDecidePod()
 
 	//goroutine for Guard instance

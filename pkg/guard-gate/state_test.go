@@ -47,7 +47,7 @@ func Test_gateState_loadConfig(t *testing.T) {
 
 		gs := fakeGateState()
 
-		gs.loadConfig()
+		gs.sync(true)
 		if gs.criteria == nil || gs.ctrl == nil {
 			t.Error("nil after load")
 		}

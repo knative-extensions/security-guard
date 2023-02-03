@@ -35,14 +35,41 @@ type Decision struct {
 	Result   int                  `json:"result"`
 }
 
-// Level is "Session" or "Gate"
+// Level is "Session" or "Pod"
 type Alert struct {
-	Namespace string    `json:"ns"`
-	Sid       string    `json:"sid"`
-	Podname   string    `json:"pod"`
-	Level     string    `json:"level"`
-	Time      time.Time `json:"time"`
-	Decision  *Decision `json:"decision"`
+	str      string
+	Decision *Decision `json:"decision"`
+	Time     time.Time `json:"time"`
+	Level    string    `json:"level"`
+	Count    uint      `json:"count"`
+}
+
+type SyncMessageReq struct {
+	Pile   *SessionDataPile `json:"pile"`
+	Alerts []Alert          `json:"alerts"`
+}
+
+type SyncMessageResp struct {
+	Guardian *GuardianSpec `json:"guardian"`
+}
+
+func AddAlert(alerts []Alert, decision *Decision, level string) []Alert {
+	str := decision.SortedString(level)
+	for i, alert := range alerts {
+		if alert.str == str {
+			alerts[i].Count++
+			return alerts
+		}
+	}
+
+	alert := Alert{
+		str:      str,
+		Decision: decision,
+		Time:     time.Now(),
+		Level:    level,
+		Count:    1,
+	}
+	return append(alerts, alert)
 }
 
 func DecideInner(current **Decision, result int, format string, a ...any) {

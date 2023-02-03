@@ -118,9 +118,7 @@ func (k *KubeMgr) getPodData(podname string, ns string, labels []string) (sid st
 	return
 }
 
-func (k *KubeMgr) TokenData(token string, labels []string) (sid string, ns string, err error) {
-	var podname string
-
+func (k *KubeMgr) TokenData(token string, labels []string) (podname string, sid string, ns string, err error) {
 	// stage 1 - first validate the jwt using kubeAPI
 	err = k.validateToken(token)
 	if err != nil {

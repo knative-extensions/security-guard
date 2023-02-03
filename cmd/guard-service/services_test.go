@@ -46,8 +46,8 @@ func (f *fakeKmgr) GetGuardian(ns string, sid string, cm bool, autoActivate bool
 func (f *fakeKmgr) Watch(ns string, cmFlag bool, set func(ns string, sid string, cmFlag bool, g *spec.GuardianSpec)) {
 }
 
-func (f *fakeKmgr) TokenData(token string, labels []string) (sid string, ns string, err error) {
-	return "mysid", "myns", nil
+func (f *fakeKmgr) TokenData(token string, labels []string) (podname string, sid string, ns string, err error) {
+	return "mypod", "mysid", "myns", nil
 }
 
 func Test_serviceKey(t *testing.T) {

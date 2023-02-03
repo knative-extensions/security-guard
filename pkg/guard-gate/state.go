@@ -77,9 +77,9 @@ func (gs gateState) start() (tokenActive bool) {
 }
 
 // loadConfig is called periodically to load updated configuration from a Guardian
-func (gs *gateState) loadConfig() {
+func (gs *gateState) sync(force bool) {
 	// loadGuardian never returns nil!
-	g := gs.srv.loadGuardian()
+	g := gs.srv.syncAndLoad(force)
 
 	if gs.ctrl = g.Control; gs.ctrl == nil {
 		pi.Log.Infof("Loading Guardian  - without Control")
@@ -104,12 +104,15 @@ func (gs *gateState) loadConfig() {
 
 // flushPile is called periodically to send the pile to the guard-service
 func (gs *gateState) flushPile() {
-	gs.srv.reportPile()
+	gs.sync(false)
 }
 
 // addProfile is called every time we have a new profile ready to be added to a pile
 func (gs *gateState) addProfile(profile *spec.SessionDataProfile) {
-	gs.srv.addToPile(profile)
+
+	if gs.srv.addToPile(profile) > PILE_LIMIT {
+		gs.profileAndDecidePod()
+	}
 }
 
 // Methods to profile and decide base don pod data.
@@ -154,7 +157,7 @@ func (gs *gateState) logAlert() {
 	gs.prevAlert = alert
 	logAlert(alert)
 	gs.addStat("PodAlert")
-	gs.srv.reportAlert(gs.decision)
+	gs.srv.addAlert(gs.decision, "Pod")
 }
 
 // if pod is monitored, copy its profile to the session profile
@@ -227,7 +230,7 @@ func (gs *gateState) addStat(key string) {
 
 // are we blocking request on alerts?
 func (gs *gateState) shouldBlock() bool {
-	return gs.ctrl.Block
+	return (gs.ctrl != nil) && gs.ctrl.Block
 }
 
 // do we have a gate level alert?
@@ -239,5 +242,5 @@ func (gs *gateState) hasAlert() bool {
 func (gs *gateState) shouldLearn(sessionAlert bool) bool {
 	// dio we have an alert?
 	alert := (gs.alert != "") || !sessionAlert
-	return gs.ctrl.Learn && (!alert || gs.ctrl.Force)
+	return (gs.ctrl != nil) && gs.ctrl.Learn && (!alert || gs.ctrl.Force)
 }

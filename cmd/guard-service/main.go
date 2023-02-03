@@ -52,14 +52,14 @@ type learner struct {
 
 var env config
 
-func (l *learner) authenticate(req *http.Request) (sid string, ns string, err error) {
+func (l *learner) authenticate(req *http.Request) (podname string, sid string, ns string, err error) {
 	token := req.Header.Get("Authorization")
 	if !strings.HasPrefix(token, "Bearer ") {
 		err = fmt.Errorf("missing token")
 		return
 	}
 	token = token[7:]
-	sid, ns, err = l.services.kmgr.TokenData(token, env.GuardServiceLabels)
+	podname, sid, ns, err = l.services.kmgr.TokenData(token, env.GuardServiceLabels)
 	if err != nil {
 		err = fmt.Errorf("cant verify token %w", err)
 		return
@@ -109,7 +109,7 @@ func (l *learner) queryData(query url.Values) (cmFlag bool, sid string, ns strin
 	return
 }
 
-func (l *learner) baseHandler(w http.ResponseWriter, req *http.Request) (record *serviceRecord, err error) {
+func (l *learner) baseHandler(w http.ResponseWriter, req *http.Request) (record *serviceRecord, podname string, err error) {
 	var sid, ns, querySid, queryNs string
 	var cmFlag bool
 
@@ -122,7 +122,7 @@ func (l *learner) baseHandler(w http.ResponseWriter, req *http.Request) (record 
 	pi.Log.Debugf("queryData ns %s, sid %s cmFlag %t", queryNs, querySid, cmFlag)
 
 	if env.GuardServiceAuth {
-		sid, ns, err = l.authenticate(req)
+		podname, sid, ns, err = l.authenticate(req)
 		if err != nil {
 			pi.Log.Infof("baseHandler authenticate failed with %v", err)
 			http.Error(w, err.Error(), http.StatusUnauthorized)
@@ -148,7 +148,7 @@ func (l *learner) baseHandler(w http.ResponseWriter, req *http.Request) (record 
 }
 
 func (l *learner) fetchConfig(w http.ResponseWriter, req *http.Request) {
-	record, err := l.baseHandler(w, req)
+	record, _, err := l.baseHandler(w, req)
 	if err != nil {
 		return
 	}
@@ -169,7 +169,7 @@ func (l *learner) fetchConfig(w http.ResponseWriter, req *http.Request) {
 }
 
 func (l *learner) processPile(w http.ResponseWriter, req *http.Request) {
-	record, err := l.baseHandler(w, req)
+	record, _, err := l.baseHandler(w, req)
 	if err != nil {
 		return
 	}
@@ -198,7 +198,7 @@ func (l *learner) processPile(w http.ResponseWriter, req *http.Request) {
 }
 
 func (l *learner) processAlert(w http.ResponseWriter, req *http.Request) {
-	record, err := l.baseHandler(w, req)
+	record, podname, err := l.baseHandler(w, req)
 	if err != nil {
 		return
 	}
@@ -212,17 +212,64 @@ func (l *learner) processAlert(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	var alert spec.Alert
-	err = json.NewDecoder(req.Body).Decode(&alert)
+	var alerts []spec.Alert
+	err = json.NewDecoder(req.Body).Decode(&alerts)
 	if err != nil {
 		pi.Log.Infof("processAlert error: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	record.alerts++
-	pi.Log.Debugf("%s:%s:%s (%02d:%02d:%02d) alert %s -> %s", alert.Namespace, alert.Sid, alert.Podname, alert.Time.Hour(), alert.Time.Minute(), alert.Time.Second(), alert.Level, alert.Decision.String(""))
+	pi.Log.Debugf("%s:%s:%s sent alerts:", record.ns, record.sid, podname)
+	for _, alert := range alerts {
+		record.alerts++
+		pi.Log.Debugf("---- %d alerts since %02d:%02d:%02d %s -> %s", alert.Count, alert.Time.Hour(), alert.Time.Minute(), alert.Time.Second(), alert.Level, alert.Decision.String(""))
+	}
 
 	w.Write([]byte("OK"))
+}
+
+func (l *learner) processSync(w http.ResponseWriter, req *http.Request) {
+	var syncReq spec.SyncMessageReq
+	var syncResp spec.SyncMessageResp
+
+	record, podname, err := l.baseHandler(w, req)
+	if err != nil {
+		return
+	}
+	if req.Method != "POST" || req.URL.Path != "/sync" {
+		http.Error(w, "404 not found.", http.StatusNotFound)
+		return
+	}
+
+	if req.ContentLength == 0 || req.Body == nil {
+		http.Error(w, "400 not found.", http.StatusBadRequest)
+		return
+	}
+
+	err = json.NewDecoder(req.Body).Decode(&syncReq)
+	if err != nil {
+		pi.Log.Infof("processSync error: %v", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	l.services.merge(record, syncReq.Pile)
+
+	pi.Log.Debugf("%s:%s:%s sent alerts:", record.ns, record.sid, podname)
+	for _, alert := range syncReq.Alerts {
+		record.alerts++
+		pi.Log.Debugf("---- %d alerts since %02d:%02d:%02d %s -> %s", alert.Count, alert.Time.Hour(), alert.Time.Minute(), alert.Time.Second(), alert.Level, alert.Decision.String(""))
+	}
+
+	syncResp.Guardian = record.guardianSpec
+	buf, err := json.Marshal(syncResp)
+	if err != nil {
+		// should never happen
+		pi.Log.Infof("Servicing processSync error while JSON Marshal %v", err)
+		http.Error(w, "Failed to marshal data", http.StatusInternalServerError)
+		return
+	}
+	pi.Log.Debugf("Servicing processSync success")
+	w.Write(buf)
 }
 
 func (l *learner) mainEventLoop(quit chan string) {
@@ -256,6 +303,7 @@ func preMain(minimumInterval time.Duration) (*learner, *http.ServeMux, string, c
 	mux.HandleFunc("/config", l.fetchConfig)
 	mux.HandleFunc("/pile", l.processPile)
 	mux.HandleFunc("/alert", l.processAlert)
+	mux.HandleFunc("/sync", l.processSync)
 
 	target := ":8888"
 
