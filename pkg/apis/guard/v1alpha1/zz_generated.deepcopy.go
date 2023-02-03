@@ -35,7 +35,6 @@ func (in *Alert) DeepCopyInto(out *Alert) {
 		*out = new(Decision)
 		(*in).DeepCopyInto(*out)
 	}
-	in.Time.DeepCopyInto(&out.Time)
 	return
 }
 
