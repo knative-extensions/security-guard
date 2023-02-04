@@ -197,37 +197,6 @@ func (l *learner) processPile(w http.ResponseWriter, req *http.Request) {
 	w.Write([]byte{})
 }
 
-func (l *learner) processAlert(w http.ResponseWriter, req *http.Request) {
-	record, podname, err := l.baseHandler(w, req)
-	if err != nil {
-		return
-	}
-	if req.Method != "POST" || req.URL.Path != "/alert" {
-		http.Error(w, "404 not found.", http.StatusNotFound)
-		return
-	}
-
-	if req.ContentLength == 0 || req.Body == nil {
-		http.Error(w, "400 not found.", http.StatusBadRequest)
-		return
-	}
-
-	var alerts []spec.Alert
-	err = json.NewDecoder(req.Body).Decode(&alerts)
-	if err != nil {
-		pi.Log.Infof("processAlert error: %v", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	pi.Log.Debugf("%s:%s:%s sent alerts:", record.ns, record.sid, podname)
-	for _, alert := range alerts {
-		record.alerts++
-		pi.Log.Debugf("---- %d alerts since %02d:%02d:%02d %s -> %s", alert.Count, alert.Time.Hour(), alert.Time.Minute(), alert.Time.Second(), alert.Level, alert.Decision.String(""))
-	}
-
-	w.Write([]byte("OK"))
-}
-
 func (l *learner) processSync(w http.ResponseWriter, req *http.Request) {
 	var syncReq spec.SyncMessageReq
 	var syncResp spec.SyncMessageResp
@@ -257,7 +226,8 @@ func (l *learner) processSync(w http.ResponseWriter, req *http.Request) {
 	pi.Log.Debugf("%s:%s:%s sent alerts:", record.ns, record.sid, podname)
 	for _, alert := range syncReq.Alerts {
 		record.alerts++
-		pi.Log.Debugf("---- %d alerts since %02d:%02d:%02d %s -> %s", alert.Count, alert.Time.Hour(), alert.Time.Minute(), alert.Time.Second(), alert.Level, alert.Decision.String(""))
+		time := time.Unix(alert.Time, 0)
+		pi.Log.Debugf("---- %d alerts since %02d:%02d:%02d %s -> %s", alert.Count, time.Hour(), time.Minute(), time.Second(), alert.Level, alert.Decision.String(""))
 	}
 
 	syncResp.Guardian = record.guardianSpec
@@ -302,7 +272,6 @@ func preMain(minimumInterval time.Duration) (*learner, *http.ServeMux, string, c
 	mux := http.NewServeMux()
 	mux.HandleFunc("/config", l.fetchConfig)
 	mux.HandleFunc("/pile", l.processPile)
-	mux.HandleFunc("/alert", l.processAlert)
 	mux.HandleFunc("/sync", l.processSync)
 
 	target := ":8888"

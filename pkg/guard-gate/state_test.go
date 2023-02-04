@@ -17,6 +17,7 @@ limitations under the License.
 package guardgate
 
 import (
+	"encoding/json"
 	"net"
 	"net/http"
 	"os"
@@ -36,7 +37,8 @@ func fakeGateCancel() {
 func fakeGateState() *gateState {
 	gs := new(gateState)
 	gs.init(fakeGateCancel, false, "myurl", "mypodname", "mysid", "myns", true)
-	srv, _ := fakeClient(http.StatusOK, "Problem in request")
+	bytes, _ := json.Marshal(spec.Guardian{})
+	srv, _ := fakeClient(http.StatusOK, string(bytes))
 	gs.srv = srv
 	return gs
 }
@@ -47,7 +49,7 @@ func Test_gateState_loadConfig(t *testing.T) {
 
 		gs := fakeGateState()
 
-		gs.sync(true)
+		gs.sync()
 		if gs.criteria == nil || gs.ctrl == nil {
 			t.Error("nil after load")
 		}
@@ -158,7 +160,7 @@ func Test_gateState_loadConfig(t *testing.T) {
 			t.Error("expected alert")
 		}
 
-		gs.flushPile()
+		gs.sync()
 		if gs.srv.pile.Count != 0 {
 			t.Error("expected pile too have 1")
 		}
@@ -167,9 +169,9 @@ func Test_gateState_loadConfig(t *testing.T) {
 		if gs.srv.pile.Count != 1 {
 			t.Error("expected pile too have 1")
 		}
-		gs.flushPile()
+		gs.sync()
 		if gs.srv.pile.Count != 0 {
-			t.Error("expected pile too have 1")
+			t.Error("expected pile too have 0")
 		}
 	})
 

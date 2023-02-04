@@ -134,73 +134,9 @@ func (srv *gateClient) initHttpClient(certPool *x509.CertPool) (tokenActive bool
 	return
 }
 
-/*
-	func (srv *gateClient) clearAlerts() {
-		srv.alerts = nil
-	}
-
-	func (srv *gateClient) reportAlerts() {
-		if len(srv.alerts) == 0 {
-			return
-		}
-
-		srv.httpClient.ReadToken(guardKubeMgr.ServiceAudience)
-
-		alertsMessage := srv.alerts
-		postBody, marshalErr := json.Marshal(alertsMessage)
-
-		if marshalErr != nil {
-			// should never happen
-			pi.Log.Infof("Error during marshal: %v", marshalErr)
-			return
-		}
-		reqBody := bytes.NewBuffer(postBody)
-		req, err := http.NewRequest(http.MethodPost, srv.guardServiceUrl+"/alert", reqBody)
-		if err != nil {
-			pi.Log.Infof("Http.NewRequest error %v", err)
-			return
-		}
-		query := req.URL.Query()
-		query.Add("sid", srv.sid)
-		query.Add("ns", srv.ns)
-		if srv.useCm {
-			query.Add("cm", "true")
-		}
-		req.URL.RawQuery = query.Encode()
-		pi.Log.Debugf("Reporting an alert!")
-
-		res, postErr := srv.httpClient.Do(req)
-		if postErr != nil {
-			pi.Log.Infof("httpClient.Do error %v", postErr)
-			return
-		}
-		if res.Body != nil {
-			defer res.Body.Close()
-			body, readErr := io.ReadAll(res.Body)
-			if readErr != nil {
-				pi.Log.Infof("Response error %v", readErr)
-				return
-			}
-			if len(body) != 0 {
-				if string(body) == "OK" {
-					srv.clearAlerts()
-					pi.Log.Debugf("guard-service accepted alerts!")
-					return
-				}
-			}
-			pi.Log.Infof("guard-service did not accept alerts - response is %s", string(body))
-			return
-		}
-		pi.Log.Infof("guard-service did not accept alerts - no response given")
-	}
-*/
-func (srv *gateClient) sync(force bool) *spec.GuardianSpec {
+func (srv *gateClient) syncWithService() *spec.GuardianSpec {
 	var syncReq spec.SyncMessageReq
 	var syncResp spec.SyncMessageResp
-
-	if !force && len(srv.alerts) == 0 && srv.pile.Count == 0 {
-		return nil
-	}
 
 	srv.httpClient.ReadToken(guardKubeMgr.ServiceAudience)
 
@@ -240,6 +176,11 @@ func (srv *gateClient) sync(force bool) *spec.GuardianSpec {
 		pi.Log.Infof("httpClient.Do error %v", postErr)
 		return nil
 	}
+	if res.StatusCode != http.StatusOK {
+		pi.Log.Infof("guard-service did not respond with 200 OK")
+		return nil
+	}
+
 	if res.Body == nil {
 		pi.Log.Infof("guard-service did not accept sync - no response given")
 		return nil
@@ -276,59 +217,6 @@ func (srv *gateClient) addAlert(decision *spec.Decision, level string) {
 	}
 }
 
-/*
-	func (srv *gateClient) reportPile() {
-		if srv.pile.Count == 0 {
-			return
-		}
-		defer srv.clearPile()
-
-		srv.httpClient.ReadToken(guardKubeMgr.ServiceAudience)
-
-		// protect pile internals read/write
-		srv.pileMutex.Lock()
-		postBody, marshalErr := json.Marshal(srv.pile)
-		srv.pileMutex.Unlock()
-		// Must unlock srv.pileMutex before http.NewRequest
-
-		if marshalErr != nil {
-			// should never happen
-			pi.Log.Infof("Error during marshal: %v", marshalErr)
-			return
-		}
-		reqBody := bytes.NewBuffer(postBody)
-		req, err := http.NewRequest(http.MethodPost, srv.guardServiceUrl+"/pile", reqBody)
-		if err != nil {
-			pi.Log.Infof("Http.NewRequest error %v", err)
-			return
-		}
-		query := req.URL.Query()
-		query.Add("sid", srv.sid)
-		query.Add("ns", srv.ns)
-		if srv.useCm {
-			query.Add("cm", "true")
-		}
-		req.URL.RawQuery = query.Encode()
-		pi.Log.Debugf("Reporting a pile with pileCount %d records to guard-service", srv.pile.Count)
-
-		res, postErr := srv.httpClient.Do(req)
-		if postErr != nil {
-			pi.Log.Infof("httpClient.Do error %v", postErr)
-			return
-		}
-		if res.Body != nil {
-			defer res.Body.Close()
-			body, readErr := io.ReadAll(res.Body)
-			if readErr != nil {
-				pi.Log.Infof("Response error %v", readErr)
-				return
-			}
-			if len(body) != 0 {
-				pi.Log.Infof("guard-service response is %s", string(body))
-			}
-		}
-	}
-*/
 func (srv *gateClient) addToPile(profile *spec.SessionDataProfile) uint32 {
 	if srv.pile.Count < 2*PILE_LIMIT {
 		// protect pile internals read/write
@@ -341,64 +229,11 @@ func (srv *gateClient) addToPile(profile *spec.SessionDataProfile) uint32 {
 	return srv.pile.Count
 }
 
-/*
-	func (srv *gateClient) clearPile() {
-		srv.pileMutex.Lock()
-		defer srv.pileMutex.Unlock()
-		srv.pile.Clear()
-	}
-*/
-func (srv *gateClient) syncAndLoad(force bool) *spec.GuardianSpec {
-	wsGate := srv.sync(force)
+func (srv *gateClient) syncWithServiceAndKubeApi() *spec.GuardianSpec {
+	wsGate := srv.syncWithService()
 	if wsGate == nil {
 		// never return nil!
 		wsGate = srv.kubeMgr.GetGuardian(srv.ns, srv.sid, srv.useCm, true)
 	}
 	return wsGate
 }
-
-/*
-func (srv *gateClient) loadGuardianFromService() *spec.GuardianSpec {
-	srv.httpClient.ReadToken(guardKubeMgr.ServiceAudience)
-
-	req, err := http.NewRequest(http.MethodGet, srv.guardServiceUrl+"/config", nil)
-	if err != nil {
-		pi.Log.Infof("loadGuardianFromService Http.NewRequest error %v", err)
-		return nil
-	}
-	query := req.URL.Query()
-	query.Add("sid", srv.sid)
-	query.Add("ns", srv.ns)
-	if srv.useCm {
-		query.Add("cm", "true")
-	}
-	req.URL.RawQuery = query.Encode()
-
-	res, err := srv.httpClient.Do(req)
-
-	if err != nil {
-		pi.Log.Infof("loadGuardianFromService httpClient.Do error %v", err)
-		return nil
-	}
-
-	defer res.Body.Close()
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		pi.Log.Infof("loadGuardianFromService Response error %v", err)
-		return nil
-	}
-	if len(body) == 0 {
-		pi.Log.Infof("loadGuardianFromService Response empty")
-		return nil
-	}
-	pi.Log.Debugf("loadGuardianFromService: accepted guardian from guard-service")
-
-	g := new(spec.GuardianSpec)
-	jsonErr := json.Unmarshal(body, g)
-	if jsonErr != nil {
-		pi.Log.Infof("loadGuardianFromService GuardianSpec: unmarshel error %v", jsonErr)
-		return nil
-	}
-	return g
-}
-*/

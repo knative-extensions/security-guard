@@ -65,7 +65,7 @@ func (f *fakeKmgr) Set(ns string, sid string, isCm bool, guardianSpec *spec.Guar
 }
 
 func (f *fakeKmgr) GetGuardian(ns string, sid string, cm bool, autoActivate bool) *spec.GuardianSpec {
-	return new(spec.GuardianSpec)
+	return &spec.GuardianSpec{Control: &spec.Ctrl{}}
 }
 
 func (f *fakeKmgr) Watch(ns string, cmFlag bool, set func(ns string, sid string, cmFlag bool, g *spec.GuardianSpec)) {
@@ -107,66 +107,92 @@ func (hc *fakeHttpClient) Do(req *http.Request) (*http.Response, error) {
 	return &http.Response{StatusCode: hc.statusCode, Body: r}, hc.err
 }
 
-func Test_guardClient_reportPile(t *testing.T) {
+func Test_guardClient_sync_pile(t *testing.T) {
 	t.Run("simple", func(t *testing.T) {
 		srv, client := fakeClient(http.StatusOK, "Problem in request")
+		var decision *spec.Decision
+		spec.DecideInner(&decision, 7, "xxx")
 
-		srv.sync(false)
-		if client.count != 0 {
-			t.Error("Expected no request")
-		}
-
+		srv.addAlert(decision, "Session")
+		srv.addAlert(decision, "Pod")
 		srv.addToPile(new(spec.SessionDataProfile))
 		srv.addToPile(new(spec.SessionDataProfile))
-		srv.sync(false)
+		srv.syncWithService()
 		if client.count != 1 {
-			t.Error("Expected no request")
+			t.Error("Expected request")
+		}
+		if srv.pile.Count != 2 {
+			t.Errorf("Expected 2 in pile received %d", srv.pile.Count)
+		}
+		if len(srv.alerts) != 2 {
+			t.Errorf("Expected 2 in alert received %d", len(srv.alerts))
 		}
 
-		srv.addToPile(new(spec.SessionDataProfile))
-		srv.addToPile(new(spec.SessionDataProfile))
-
-		client = &fakeHttpClient{statusCode: http.StatusBadRequest, json: []byte("Problem in request")}
+		resp := new(spec.SyncMessageResp)
+		resp.Guardian = new(spec.GuardianSpec)
+		bytes, _ := json.Marshal(resp)
+		client = &fakeHttpClient{statusCode: http.StatusBadRequest, json: bytes}
 		srv.httpClient = client
-		srv.sync(false)
+
+		srv.syncWithService()
 		if client.count != 1 {
 			t.Error("Expected request")
+		}
+		if srv.pile.Count != 2 {
+			t.Errorf("Expected 2 in pile received %d", srv.pile.Count)
+		}
+		if len(srv.alerts) != 2 {
+			t.Errorf("Expected 2 in alert received %d", len(srv.alerts))
 		}
 
-		srv.pile.Count = 1
-		srv.httpClient = &fakeHttpClient{statusCode: http.StatusBadRequest, json: []byte("Problem in request"), err: errors.New("Wow")}
-		srv.sync(false)
+		srv.httpClient = &fakeHttpClient{statusCode: http.StatusOK, json: bytes, err: errors.New("Wow")}
+		srv.syncWithService()
 		if client.count != 1 {
 			t.Error("Expected request")
 		}
-		srv.pile.Count = 1
-		client = &fakeHttpClient{fail: true}
-		srv.httpClient = client
-		srv.sync(false)
+		if srv.pile.Count != 2 {
+			t.Errorf("Expected 2 in pile received %d", srv.pile.Count)
+		}
+		if len(srv.alerts) != 2 {
+			t.Errorf("Expected 2 in alert received %d", len(srv.alerts))
+		}
+
+		srv.httpClient = &fakeHttpClient{fail: true}
+		srv.syncWithService()
 		if client.count != 1 {
 			t.Error("Expected request")
+		}
+		if srv.pile.Count != 2 {
+			t.Errorf("Expected 2 in pile received %d", srv.pile.Count)
+		}
+		if len(srv.alerts) != 2 {
+			t.Errorf("Expected 2 in alert received %d", len(srv.alerts))
+		}
+		srv.httpClient = &fakeHttpClient{statusCode: http.StatusOK, json: bytes}
+		srv.syncWithService()
+		if client.count != 1 {
+			t.Error("Expected request")
+		}
+		if srv.pile.Count != 0 {
+			t.Errorf("Expected 0 in pile received %d", srv.pile.Count)
+		}
+		if srv.alerts != nil {
+			t.Errorf("Expected nil in alerts received %v", srv.alerts)
 		}
 	})
 
 }
 
-func Test_guardClient_loadGuardian(t *testing.T) {
+func Test_guardClient_sync_loadGuardian(t *testing.T) {
 
 	t.Run("simple", func(t *testing.T) {
-		srv, _ := fakeClient(0, "")
+		resp := new(spec.SyncMessageResp)
+		resp.Guardian = new(spec.GuardianSpec)
+		bytes, _ := json.Marshal(resp)
+		srv, _ := fakeClient(200, string(bytes))
 		g := new(spec.GuardianSpec)
 
-		if got := srv.sync(true); !reflect.DeepEqual(got, g) {
-			t.Errorf("guardClient.loadGuardian() = %v, want %v", got, g)
-		}
-
-		j, _ := json.Marshal(new(spec.GuardianSpec))
-		srv.httpClient = &fakeHttpClient{statusCode: http.StatusOK, json: j}
-		srv.pile.Clear()
-		srv.kubeMgr = &fakeKmgr{}
-		g = new(spec.GuardianSpec)
-
-		if got := srv.sync(true); !reflect.DeepEqual(got, g) {
+		if got := srv.syncWithService(); !reflect.DeepEqual(got, g) {
 			t.Errorf("guardClient.loadGuardian() = %v, want %v", got, g)
 		}
 	})

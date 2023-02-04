@@ -53,7 +53,7 @@ func testInit(c map[string]string) *plug {
 	pi.RegisterPlug(p)
 	p.preInit(context.Background(), c, "svcName", "myns", defaultLog)
 	p.gateState = fakeGateState()
-	p.gateState.srv.syncAndLoad(true)
+	p.gateState.sync()
 	return p
 }
 
@@ -71,7 +71,7 @@ func initTickerTest() (context.Context, context.CancelFunc, *plug) {
 
 	ctx, cancelFunction, _ := p.preInit(context.Background(), c, "svcName", "myns", defaultLog)
 	p.gateState = fakeGateState()
-	p.gateState.sync(true)
+	p.gateState.sync()
 	p.gateState.stat.Init()
 	return ctx, cancelFunction, p
 }
@@ -83,10 +83,10 @@ func cancelLater(cancel context.CancelFunc) {
 }
 
 func Test_plug_guardMainEventLoop_1(t *testing.T) {
-	t.Run("guardianLoadTicker", func(t *testing.T) {
+	t.Run("syncTicker", func(t *testing.T) {
 		ctx, cancelFunction, p := initTickerTest()
-		p.guardianLoadTicker = utils.NewTicker(100000)
-		p.guardianLoadTicker.Parse("", 300000)
+		p.syncTicker = utils.NewTicker(100000)
+		p.syncTicker.Parse("", 300000)
 		// lets rely on timeout
 		go cancelLater(cancelFunction)
 		p.guardMainEventLoop(ctx)
@@ -108,19 +108,7 @@ func Test_plug_guardMainEventLoop_2(t *testing.T) {
 		}
 	})
 }
-func Test_plug_guardMainEventLoop_3(t *testing.T) {
-	t.Run("reportPileTicker", func(t *testing.T) {
-		ctx, cancelFunction, p := initTickerTest()
-		p.reportPileTicker = utils.NewTicker(100000)
-		p.reportPileTicker.Parse("", 300000)
-		// lets rely on timeout
-		go cancelLater(cancelFunction)
-		p.guardMainEventLoop(ctx)
-		if ret := p.gateState.stat.Log(); ret != "map[]" {
-			t.Errorf("expected stat %s received %s", "map[]", ret)
-		}
-	})
-}
+
 func Test_plug_guardMainEventLoop_4(t *testing.T) {
 	t.Run("reportPileTicker", func(t *testing.T) {
 		ctx, cancelFunction, p := initTickerTest()
@@ -176,8 +164,7 @@ func Test_plug_Initialize(t *testing.T) {
 			p.version = plugVersion
 			p.name = plugName
 			p.podMonitorTicker = utils.NewTicker(utils.MinimumInterval)
-			p.guardianLoadTicker = utils.NewTicker(utils.MinimumInterval)
-			p.reportPileTicker = utils.NewTicker(utils.MinimumInterval)
+			p.syncTicker = utils.NewTicker(utils.MinimumInterval)
 
 			pi.RegisterPlug(p)
 			ctx, cancelFunction, _ := p.preInit(context.Background(), tt.c, "svcName", "myns", defaultLog)

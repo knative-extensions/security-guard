@@ -76,11 +76,13 @@ func (gs gateState) start() (tokenActive bool) {
 	return
 }
 
-// loadConfig is called periodically to load updated configuration from a Guardian
-func (gs *gateState) sync(force bool) {
-	// loadGuardian never returns nil!
-	g := gs.srv.syncAndLoad(force)
+// sync is called periodically to send pile and alerts and to load from the updated Guardian
+func (gs *gateState) sync() {
+	// send pile and alerts and get Guardian - never returns nil!
+	g := gs.srv.syncWithServiceAndKubeApi()
 
+	// load guardian
+	// Set the correct Control
 	if gs.ctrl = g.Control; gs.ctrl == nil {
 		pi.Log.Infof("Loading Guardian  - without Control")
 		gs.ctrl = new(spec.Ctrl)
@@ -100,11 +102,6 @@ func (gs *gateState) sync(force bool) {
 	criteria.Prepare()
 	gs.criteria = criteria
 	pi.Log.Infof("Loading Guardian  - Active %t Auto %t Block %t", gs.criteria.Active, gs.ctrl.Auto, gs.ctrl.Block)
-}
-
-// flushPile is called periodically to send the pile to the guard-service
-func (gs *gateState) flushPile() {
-	gs.sync(false)
 }
 
 // addProfile is called every time we have a new profile ready to be added to a pile

@@ -39,7 +39,7 @@ type Decision struct {
 type Alert struct {
 	str      string
 	Decision *Decision `json:"decision"`
-	Time     time.Time `json:"time"`
+	Time     int64     `json:"time"`
 	Level    string    `json:"level"`
 	Count    uint      `json:"count"`
 }
@@ -65,7 +65,7 @@ func AddAlert(alerts []Alert, decision *Decision, level string) []Alert {
 	alert := Alert{
 		str:      str,
 		Decision: decision,
-		Time:     time.Now(),
+		Time:     time.Now().Unix(),
 		Level:    level,
 		Count:    1,
 	}
