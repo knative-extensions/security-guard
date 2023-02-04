@@ -65,7 +65,9 @@ func (f *fakeKmgr) Set(ns string, sid string, isCm bool, guardianSpec *spec.Guar
 }
 
 func (f *fakeKmgr) GetGuardian(ns string, sid string, cm bool, autoActivate bool) *spec.GuardianSpec {
-	return &spec.GuardianSpec{Control: &spec.Ctrl{}}
+	g := new(spec.GuardianSpec)
+	g.SetToMaximalAutomation()
+	return g
 }
 
 func (f *fakeKmgr) Watch(ns string, cmFlag bool, set func(ns string, sid string, cmFlag bool, g *spec.GuardianSpec)) {

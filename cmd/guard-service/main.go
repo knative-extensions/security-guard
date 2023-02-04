@@ -43,14 +43,14 @@ type config struct {
 	GuardServiceAuth     bool     `split_words:"true" required:"false"`
 	GuardServiceLabels   []string `split_words:"true" required:"false"`
 	GuardServiceTls      bool     `split_words:"true" required:"false"`
+	GuardServicePort     uint     `split_words:"true" required:"false"`
 }
 
 type learner struct {
 	services        *services
 	pileLearnTicker *utils.Ticker
+	env             config
 }
-
-var env config
 
 func (l *learner) authenticate(req *http.Request) (podname string, sid string, ns string, err error) {
 	token := req.Header.Get("Authorization")
@@ -59,7 +59,7 @@ func (l *learner) authenticate(req *http.Request) (podname string, sid string, n
 		return
 	}
 	token = token[7:]
-	podname, sid, ns, err = l.services.kmgr.TokenData(token, env.GuardServiceLabels)
+	podname, sid, ns, err = l.services.kmgr.TokenData(token, l.env.GuardServiceLabels)
 	if err != nil {
 		err = fmt.Errorf("cant verify token %w", err)
 		return
@@ -72,22 +72,34 @@ func (l *learner) authenticate(req *http.Request) (podname string, sid string, n
 }
 
 // Common method used for parsing ns, sid, cmFlag from all requests
-func (l *learner) queryData(query url.Values) (cmFlag bool, sid string, ns string, err error) {
-	cmFlagSlice := query["cm"]
+func (l *learner) queryData(query url.Values) (cmFlag bool, pod string, sid string, ns string, err error) {
+
+	cmFlag, err = l.queryTlsData(query)
+	if err != nil {
+		return
+	}
+
 	sidSlice := query["sid"]
 	nsSlice := query["ns"]
+	podSlice := query["pod"]
 
-	if len(sidSlice) != 1 || len(nsSlice) != 1 || len(cmFlagSlice) > 1 {
-		err = fmt.Errorf("query has wrong cmflag/sid/ns length")
+	if len(sidSlice) != 1 || len(nsSlice) != 1 || len(podSlice) != 1 {
+		err = fmt.Errorf("query should have a single value for pod, sid and ns")
 		return
 	}
 
 	// extract and sanitize sid and ns
 	sid = utils.Sanitize(sidSlice[0])
 	ns = utils.Sanitize(nsSlice[0])
+	pod = utils.Sanitize(podSlice[0])
 
 	if sid == "ns-"+ns {
 		err = fmt.Errorf("query sid of a service with illegal name that starts with ns-")
+		return
+	}
+
+	if len(pod) < 1 {
+		err = fmt.Errorf("query missing pod")
 		return
 	}
 
@@ -101,6 +113,17 @@ func (l *learner) queryData(query url.Values) (cmFlag bool, sid string, ns strin
 		return
 	}
 
+	return
+}
+
+func (l *learner) queryTlsData(query url.Values) (cmFlag bool, err error) {
+	cmFlagSlice := query["cm"]
+
+	if len(cmFlagSlice) > 1 {
+		err = fmt.Errorf("query has more then one cmflag value")
+		return
+	}
+
 	// extract and sanitize cmFlag
 	if len(cmFlagSlice) > 0 {
 		cmFlag = (cmFlagSlice[0] == "true")
@@ -110,29 +133,30 @@ func (l *learner) queryData(query url.Values) (cmFlag bool, sid string, ns strin
 }
 
 func (l *learner) baseHandler(w http.ResponseWriter, req *http.Request) (record *serviceRecord, podname string, err error) {
-	var sid, ns, querySid, queryNs string
+	var sid, ns string
 	var cmFlag bool
 
-	cmFlag, querySid, queryNs, err = l.queryData(req.URL.Query())
-	if err != nil {
-		pi.Log.Infof("baseHandler queryData failed with %v", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	pi.Log.Debugf("queryData ns %s, sid %s cmFlag %t", queryNs, querySid, cmFlag)
+	if l.env.GuardServiceAuth {
+		cmFlag, err = l.queryTlsData(req.URL.Query())
+		if err != nil {
+			pi.Log.Infof("queryData failed with %v", err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 
-	if env.GuardServiceAuth {
 		podname, sid, ns, err = l.authenticate(req)
 		if err != nil {
-			pi.Log.Infof("baseHandler authenticate failed with %v", err)
+			pi.Log.Infof("authenticate failed with %v", err)
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
 		}
-		pi.Log.Debugf("Authorized ns %s, sid %s", ns, sid)
 	} else {
-		sid = querySid
-		ns = queryNs
-		pi.Log.Debugf("Authorization skipped ns %s, sid %s", ns, sid)
+		cmFlag, podname, sid, ns, err = l.queryData(req.URL.Query())
+		if err != nil {
+			pi.Log.Infof("queryData failed with %v", err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 	}
 
 	// get session record, create one if does not exist
@@ -140,61 +164,12 @@ func (l *learner) baseHandler(w http.ResponseWriter, req *http.Request) (record 
 	if record == nil {
 		// should never happen
 		err = fmt.Errorf("no record created")
-		pi.Log.Infof("internal error %v", err)
+		pi.Log.Infof("internal error %v for request ns %s, sid %s, pod %s, cmFlag %t", err, ns, sid, podname, cmFlag)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
-	pi.Log.Debugf("record found for ns %s, sid %s", ns, sid)
+	pi.Log.Debugf("Request record found ns %s, sid %s, pod %s, cmFlag %t", ns, sid, podname, cmFlag)
 	return
-}
-
-func (l *learner) fetchConfig(w http.ResponseWriter, req *http.Request) {
-	record, _, err := l.baseHandler(w, req)
-	if err != nil {
-		return
-	}
-
-	if req.Method != "GET" || req.URL.Path != "/config" {
-		http.Error(w, "404 not found.", http.StatusNotFound)
-	}
-
-	buf, err := json.Marshal(record.guardianSpec)
-	if err != nil {
-		// should never happen
-		pi.Log.Infof("Servicing fetchConfig error while JSON Marshal %v", err)
-		http.Error(w, "Failed to marshal data", http.StatusInternalServerError)
-		return
-	}
-	pi.Log.Debugf("Servicing fetchConfig success")
-	w.Write(buf)
-}
-
-func (l *learner) processPile(w http.ResponseWriter, req *http.Request) {
-	record, _, err := l.baseHandler(w, req)
-	if err != nil {
-		return
-	}
-	if req.Method != "POST" || req.URL.Path != "/pile" {
-		http.Error(w, "404 not found.", http.StatusNotFound)
-		return
-	}
-
-	if req.ContentLength == 0 || req.Body == nil {
-		http.Error(w, "400 not found.", http.StatusBadRequest)
-		return
-	}
-
-	var pile spec.SessionDataPile
-	err = json.NewDecoder(req.Body).Decode(&pile)
-	if err != nil {
-		pi.Log.Infof("processPile error: %v", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	l.services.merge(record, &pile)
-
-	pi.Log.Debugf("Successful merging pile")
-
-	w.Write([]byte{})
 }
 
 func (l *learner) processSync(w http.ResponseWriter, req *http.Request) {
@@ -221,15 +196,18 @@ func (l *learner) processSync(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	l.services.merge(record, syncReq.Pile)
-
-	pi.Log.Debugf("%s:%s:%s sent alerts:", record.ns, record.sid, podname)
-	for _, alert := range syncReq.Alerts {
-		record.alerts++
-		time := time.Unix(alert.Time, 0)
-		pi.Log.Debugf("---- %d alerts since %02d:%02d:%02d %s -> %s", alert.Count, time.Hour(), time.Minute(), time.Second(), alert.Level, alert.Decision.String(""))
+	if syncReq.Pile != nil {
+		l.services.merge(record, syncReq.Pile)
 	}
 
+	if syncReq.Alerts != nil {
+		pi.Log.Debugf("%s:%s:%s sent alerts:", record.ns, record.sid, podname)
+		for _, alert := range syncReq.Alerts {
+			record.alerts++
+			time := time.Unix(alert.Time, 0)
+			pi.Log.Debugf("---- %d alerts since %02d:%02d:%02d %s -> %s", alert.Count, time.Hour(), time.Minute(), time.Second(), alert.Level, alert.Decision.String(""))
+		}
+	}
 	syncResp.Guardian = record.guardianSpec
 	buf, err := json.Marshal(syncResp)
 	if err != nil {
@@ -254,60 +232,72 @@ func (l *learner) mainEventLoop(quit chan string) {
 	}
 }
 
-// Set network policies to ensure that only pods in your trust domain can use the service!
-func preMain(minimumInterval time.Duration) (*learner, *http.ServeMux, string, chan string) {
-	if err := envconfig.Process("", &env); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to process environment: %s\n", err.Error())
-		os.Exit(1)
-	}
-	utils.CreateLogger(env.GuardServiceLogLevel)
+// initialization of the lerner + prepare the web service
+func (l *learner) init(minimumInterval time.Duration) (srv *http.Server, quit chan string) {
+	utils.CreateLogger(l.env.GuardServiceLogLevel)
 
-	l := new(learner)
 	l.pileLearnTicker = utils.NewTicker(minimumInterval)
-	l.pileLearnTicker.Parse(env.GuardServiceInterval, serviceIntervalDefault)
+	err := l.pileLearnTicker.Parse(l.env.GuardServiceInterval, serviceIntervalDefault)
+	if err != nil {
+		pi.Log.Infof("Failed to set GuardServiceInterval - %s", err.Error())
+	}
 	l.pileLearnTicker.Start()
 
 	l.services = newServices()
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/config", l.fetchConfig)
-	mux.HandleFunc("/pile", l.processPile)
 	mux.HandleFunc("/sync", l.processSync)
 
 	target := ":8888"
+	if l.env.GuardServicePort > 0 {
+		target = fmt.Sprintf(":%d", l.env.GuardServicePort)
+	}
 
-	quit := make(chan string)
+	srv = &http.Server{
+		Addr:    target,
+		Handler: mux,
+	}
+
+	quit = make(chan string)
 
 	pi.Log.Infof("Starting guard-service on %s", target)
-	return l, mux, target, quit
+	if l.env.GuardServiceAuth {
+		pi.Log.Infof("Token turned on - clients identity is confirmed")
+	} else {
+		pi.Log.Infof("Token turned off - clients identity is not confirmed")
+	}
+	if l.env.GuardServiceTls {
+		pi.Log.Infof("TLS turned on")
+	} else {
+		pi.Log.Infof("TLS turned off")
+	}
+	return
 }
 
 func main() {
 	var err error
-	l, mux, target, quit := preMain(utils.MinimumInterval)
+	l := new(learner)
+	// affected by env
+	if err := envconfig.Process("", &l.env); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to process environment: %s\n", err.Error())
+		os.Exit(1)
+	}
+
+	// move all initialization which can be tested using unit tests to init
+	srv, quit := l.init(utils.MinimumInterval)
 
 	// cant be tested due to KubeMgr
 	l.services.start()
 	// start a mainLoop
 	go l.mainEventLoop(quit)
 
-	if env.GuardServiceAuth {
-		pi.Log.Infof("Token turned on - clients identity is confirmed")
-	} else {
-		pi.Log.Infof("Token turned off - clients identity is not confirmed")
-	}
-
-	if env.GuardServiceTls {
-		pi.Log.Infof("TLS turned on")
-		srv := &http.Server{
-			Addr:    target,
-			Handler: mux,
-			TLSConfig: &tls.Config{
-				MinVersion:               tls.VersionTLS12,
-				PreferServerCipherSuites: true,
-			},
+	// affected by file system
+	// starts a web service
+	if l.env.GuardServiceTls {
+		srv.TLSConfig = &tls.Config{
+			MinVersion:               tls.VersionTLS12,
+			PreferServerCipherSuites: true,
 		}
-
 		_, err = os.Stat("/secrets/public-cert.pem")
 		if err == nil {
 			err = srv.ListenAndServeTLS("/secrets/public-cert.pem", "/secrets/private-key.pem")
@@ -318,10 +308,9 @@ func main() {
 			}
 		}
 	} else {
-		pi.Log.Infof("TLS turned off")
-		err = http.ListenAndServe(target, mux)
+		err = srv.ListenAndServe()
 	}
 
-	pi.Log.Infof("Using target: %s - Failed to start %v", target, err)
+	pi.Log.Infof("Http service failed to start %v", err)
 	quit <- "ListenAndServe failed"
 }
