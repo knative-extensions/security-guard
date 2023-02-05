@@ -34,8 +34,10 @@ func Test_preMain(t *testing.T) {
 			name: "missing env",
 		},
 		{
-			name: "missing service_url",
-			env:  map[string]string{"SERVICE_NAME": "sid", "NAMESPACE": "ns"},
+			name:   "missing service_url",
+			env:    map[string]string{"SERVICE_NAME": "sid", "NAMESPACE": "ns"},
+			mux:    true,
+			target: ":22000",
 		},
 		{
 			name: "missing service_sid",
@@ -44,6 +46,10 @@ func Test_preMain(t *testing.T) {
 		{
 			name: "missing service_ns",
 			env:  map[string]string{"SERVICE_NAME": "sid", "SERVICE_URL": "http://127.0.0.1:80"},
+		},
+		{
+			name: "illegal service_sid",
+			env:  map[string]string{"SERVICE_NAME": "ns-myns", "NAMESPACE": "myns"},
 		},
 		{
 			name:   "envok",
@@ -80,11 +86,27 @@ func Test_preMain(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			var env config
 			for k, v := range tt.env {
-				os.Setenv(k, v)
+				switch k {
+				case "SERVICE_NAME":
+					env.ServiceName = v
+				case "NAMESPACE":
+					env.Namespace = v
+				case "SERVICE_URL":
+					env.ServiceUrl = v
+				case "GUARD_URL":
+					env.GuardUrl = v
+				case "MONITOR_POD":
+					env.MonitorPod = (v == "true")
+				case "USE_CRD":
+					env.UseCrd = (v == "true")
+				case "GUARD_PROXY_PORT":
+					env.GuardProxyPort = v
+				}
 			}
 			//guardGate, mux, target, plugConfig, sid, ns, log := preMain()
-			_, mux, target, _, _, _ := preMain()
+			_, mux, target, _, _, _ := preMain(&env)
 			if (mux != nil) != tt.mux {
 				t.Errorf("preMain() mux expected %t, received %t", tt.mux, mux != nil)
 			}

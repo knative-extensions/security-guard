@@ -236,7 +236,7 @@ func (gs *gateState) hasAlert() bool {
 
 // should we be learning?
 func (gs *gateState) shouldLearn(sessionAlert bool) bool {
-	// dio we have an alert?
+	// did we have an alert?
 	alert := (gs.alert != "") || !sessionAlert
 	return (gs.ctrl != nil) && gs.ctrl.Learn && (!alert || gs.ctrl.Force)
 }

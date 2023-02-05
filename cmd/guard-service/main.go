@@ -43,7 +43,6 @@ type config struct {
 	GuardServiceAuth     bool     `split_words:"true" required:"false"`
 	GuardServiceLabels   []string `split_words:"true" required:"false"`
 	GuardServiceTls      bool     `split_words:"true" required:"false"`
-	GuardServicePort     uint     `split_words:"true" required:"false"`
 }
 
 type learner struct {
@@ -249,9 +248,6 @@ func (l *learner) init(minimumInterval time.Duration) (srv *http.Server, quit ch
 	mux.HandleFunc("/sync", l.processSync)
 
 	target := ":8888"
-	if l.env.GuardServicePort > 0 {
-		target = fmt.Sprintf(":%d", l.env.GuardServicePort)
-	}
 
 	srv = &http.Server{
 		Addr:    target,

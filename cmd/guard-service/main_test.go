@@ -333,13 +333,12 @@ func TestTLS_SyncHandler_main(t *testing.T) {
 	}
 	l.env.GuardServiceAuth = true
 	l.env.GuardServiceTls = true
-	l.env.GuardServicePort = 555
 	l.env.GuardServiceInterval = "asdkasg"
 	l.env.GuardServiceLabels = []string{}
 
 	srv, _ := l.init(100000)
 
-	if srv.Addr != ":555" {
+	if srv.Addr != ":8888" {
 		t.Errorf("handler returned wrong default target code: got %s want %s", srv.Addr, ":555")
 	}
 }
