@@ -55,7 +55,6 @@ type plug struct {
 func (p *plug) Shutdown() {
 	pi.Log.Debugf("%s: Shutdown", p.name)
 	p.gateState.sync()
-	//p.gateState.srv.reportAlerts()
 }
 
 func (p *plug) PlugName() string {
@@ -143,8 +142,8 @@ func (p *plug) guardMainEventLoop(ctx context.Context) {
 		}
 	}
 }
-func (p *plug) preInit(ctxIn context.Context, c map[string]string, sid string, ns string, logger pi.Logger) (ctxOut context.Context, cancelFunction context.CancelFunc, tlsActive bool) {
-	var ok bool
+func (p *plug) preInit(ctxIn context.Context, c map[string]string, sid string, ns string, logger pi.Logger) (ctxOut context.Context, cancelFunction context.CancelFunc) {
+	var ok, tlsActive bool
 	var v string
 	var loadInterval, pileInterval, monitorInterval string
 
@@ -213,16 +212,15 @@ func (p *plug) preInit(ctxIn context.Context, c map[string]string, sid string, n
 	p.gateState = new(gateState)
 	p.gateState.analyzeBody = analyzeBody
 	p.gateState.init(cancelFunction, monitorPod, guardServiceUrl, podname, sid, ns, useCm)
+	pi.Log.Infof("guard-gate: TLS %t, Token %t", tlsActive, p.gateState.srv.tokenActive)
 	return
 }
 
 func (p *plug) Init(ctx context.Context, c map[string]string, sid string, ns string, logger pi.Logger) context.Context {
-	newCtx, _, tlsActive := p.preInit(ctx, c, sid, ns, logger)
+	newCtx, _ := p.preInit(ctx, c, sid, ns, logger)
 
 	// cant be tested as depend on KubeMgr
-	tokenActive := p.gateState.start()
-
-	pi.Log.Infof("guard-gate: TLS %t, Token %t", tlsActive, tokenActive)
+	p.gateState.start()
 
 	p.gateState.sync()
 	p.gateState.profileAndDecidePod()

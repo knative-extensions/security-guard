@@ -64,16 +64,15 @@ func (gs *gateState) init(cancelFunc context.CancelFunc, monitorPod bool, guardS
 			pi.Log.Infof("TLS: Failed to AppendCertsFromPEM from ROOT_CA")
 		}
 	}
+	gs.srv.initHttpClient(gs.certPool)
 }
 
-func (gs gateState) start() (tokenActive bool) {
+func (gs gateState) start() {
 	// Skip during simulations
 	if len(gs.srv.ns) > 0 {
 		// initializtion that cant be tested due to use of KubeAMgr
 		gs.srv.initKubeMgr()
 	}
-	tokenActive = gs.srv.initHttpClient(gs.certPool)
-	return
 }
 
 // sync is called periodically to send pile and alerts and to load from the updated Guardian

@@ -92,6 +92,7 @@ type gateClient struct {
 	sid             string
 	ns              string
 	useCm           bool
+	tokenActive     bool
 	httpClient      httpClientInterface
 	pile            spec.SessionDataPile
 	pileMutex       sync.Mutex
@@ -118,7 +119,7 @@ func (srv *gateClient) initKubeMgr() {
 	srv.kubeMgr.InitConfigs()
 }
 
-func (srv *gateClient) initHttpClient(certPool *x509.CertPool) (tokenActive bool) {
+func (srv *gateClient) initHttpClient(certPool *x509.CertPool) {
 	client := new(httpClient)
 	client.client.Transport = &http.Transport{
 		MaxConnsPerHost:     0,
@@ -130,8 +131,7 @@ func (srv *gateClient) initHttpClient(certPool *x509.CertPool) (tokenActive bool
 		},
 	}
 	srv.httpClient = client
-	tokenActive = srv.httpClient.ReadToken(guardKubeMgr.ServiceAudience)
-	return
+	srv.tokenActive = srv.httpClient.ReadToken(guardKubeMgr.ServiceAudience)
 }
 
 func (srv *gateClient) syncWithService() *spec.GuardianSpec {
@@ -162,9 +162,11 @@ func (srv *gateClient) syncWithService() *spec.GuardianSpec {
 		return nil
 	}
 	query := req.URL.Query()
-	query.Add("sid", srv.sid)
-	query.Add("ns", srv.ns)
-	query.Add("pod", srv.podname)
+	if !srv.tokenActive {
+		query.Add("sid", srv.sid)
+		query.Add("ns", srv.ns)
+		query.Add("pod", srv.podname)
+	}
 	if srv.useCm {
 		query.Add("cm", "true")
 	}
