@@ -19,7 +19,6 @@ package guardgate
 import (
 	"context"
 	"crypto/x509"
-	"fmt"
 	"os"
 
 	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
@@ -130,11 +129,7 @@ func (gs *gateState) profileAndDecidePod() {
 	// Therefore we terminate the reverse proxy
 	// Future - add more controls to decide what to do in this situation
 	if gs.criteria != nil && gs.criteria.Active {
-		fmt.Printf("gs.pod %v\n", gs.pod)
-		fmt.Printf("gs.criteria.Pod %v\n", gs.criteria.Pod)
-		fmt.Printf("gs.decision before %v\n", gs.decision)
 		spec.DecideChild(&gs.decision, gs.criteria.Pod.Decide(&gs.pod), "Pod")
-		fmt.Printf("gs.decision after %v\n", gs.decision)
 		if gs.decision != nil {
 			gs.logAlert()
 			if gs.shouldBlock() {

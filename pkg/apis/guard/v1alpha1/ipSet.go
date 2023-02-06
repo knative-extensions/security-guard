@@ -17,7 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"fmt"
 	"math/bits"
 	"net"
 )
@@ -214,17 +213,13 @@ LoopProfileIPs:
 		if ip.IsUnspecified() || ip.IsLoopback() || ip.IsPrivate() {
 			continue LoopProfileIPs
 		}
-		fmt.Printf("(config *IpSetConfig) Decide found IP %v\n", ip)
-
 		for _, subnet := range *config {
 			if (*net.IPNet)(&subnet).Contains(ip) {
 				continue LoopProfileIPs
 			}
 		}
-		fmt.Printf("(config *IpSetConfig) Adding IP %v\n", ip)
 		DecideInner(&current, 1, "IP %s not allowed", ip.String())
 	}
-	fmt.Printf("(config *IpSetConfig) return decision %v\n", current)
 	return current
 }
 
