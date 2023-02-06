@@ -70,14 +70,15 @@ func (l *learner) authenticate(req *http.Request) (podname string, sid string, n
 	return
 }
 
-// Common method used for parsing ns, sid, cmFlag from all requests
-func (l *learner) queryData(query url.Values) (cmFlag bool, pod string, sid string, ns string, err error) {
-
-	cmFlag, err = l.queryTlsData(query)
+// queryDataNoAuth handle queryString when NoAuth is used
+func (l *learner) queryDataNoAuth(query url.Values) (cmFlag bool, pod string, sid string, ns string, err error) {
+	// first we do the same as with Auth
+	cmFlag, err = l.queryDataAuth(query)
 	if err != nil {
 		return
 	}
 
+	// now get the remaining parameters for the NoAuth case
 	sidSlice := query["sid"]
 	nsSlice := query["ns"]
 	podSlice := query["pod"]
@@ -87,10 +88,10 @@ func (l *learner) queryData(query url.Values) (cmFlag bool, pod string, sid stri
 		return
 	}
 
-	// extract and sanitize sid and ns
+	// extract and sanitize pod, sid and ns
+	pod = utils.Sanitize(podSlice[0])
 	sid = utils.Sanitize(sidSlice[0])
 	ns = utils.Sanitize(nsSlice[0])
-	pod = utils.Sanitize(podSlice[0])
 
 	if sid == "ns-"+ns {
 		err = fmt.Errorf("query sid of a service with illegal name that starts with ns-")
@@ -115,7 +116,8 @@ func (l *learner) queryData(query url.Values) (cmFlag bool, pod string, sid stri
 	return
 }
 
-func (l *learner) queryTlsData(query url.Values) (cmFlag bool, err error) {
+// queryDataAuth handle queryString when Auth is used
+func (l *learner) queryDataAuth(query url.Values) (cmFlag bool, err error) {
 	cmFlagSlice := query["cm"]
 
 	if len(cmFlagSlice) > 1 {
@@ -136,7 +138,7 @@ func (l *learner) baseHandler(w http.ResponseWriter, req *http.Request) (record 
 	var cmFlag bool
 
 	if l.env.GuardServiceAuth {
-		cmFlag, err = l.queryTlsData(req.URL.Query())
+		cmFlag, err = l.queryDataAuth(req.URL.Query())
 		if err != nil {
 			pi.Log.Infof("queryData failed with %v", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -150,7 +152,7 @@ func (l *learner) baseHandler(w http.ResponseWriter, req *http.Request) (record 
 			return
 		}
 	} else {
-		cmFlag, podname, sid, ns, err = l.queryData(req.URL.Query())
+		cmFlag, podname, sid, ns, err = l.queryDataNoAuth(req.URL.Query())
 		if err != nil {
 			pi.Log.Infof("queryData failed with %v", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)

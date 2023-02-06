@@ -173,7 +173,7 @@ func Test_NOTLS_learner_baseHandler(t *testing.T) {
 				pileLearnTicker: ticker,
 			}
 			l.env.GuardServiceAuth = false
-			gotCmFlag, gotPod, gotSid, gotNs, gotErr := l.queryData(tt.query)
+			gotCmFlag, gotPod, gotSid, gotNs, gotErr := l.queryDataNoAuth(tt.query)
 			if tt.wantErr == (gotErr == nil) {
 				t.Errorf("learner.queryData() gotErr = %v, want %v", gotErr, tt.wantErr)
 			}
@@ -240,7 +240,7 @@ func Test_TLS_learner_baseHandler(t *testing.T) {
 				pileLearnTicker: ticker,
 			}
 			l.env.GuardServiceAuth = true
-			gotCmFlag, gotErr := l.queryTlsData(tt.query)
+			gotCmFlag, gotErr := l.queryDataAuth(tt.query)
 			if tt.wantErr == (gotErr == nil) {
 				t.Errorf("learner.queryData() gotErr = %v, want %v", gotErr, tt.wantErr)
 			}
