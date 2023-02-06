@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"encoding/binary"
+	"fmt"
 	"net"
 	"os"
 	"strconv"
@@ -230,6 +231,7 @@ func (config *PodConfig) Decide(profile *PodProfile) *Decision {
 	DecideChild(&current, config.Tcp6Peers.Decide(&profile.Tcp6Peers), "Tcp6Peers")
 	DecideChild(&current, config.Udp6Peers.Decide(&profile.Udp6Peers), "Udp6Peers")
 	DecideChild(&current, config.Udplite6Peers.Decide(&profile.Udplite6Peers), "Udplite6Peers")
+	fmt.Printf("(config *PodConfig) return decision %v\n", current)
 	return current
 }
 
