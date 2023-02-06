@@ -88,8 +88,6 @@ func Test_gateState_sync(t *testing.T) {
 		if gs.hasAlert() != false {
 			t.Errorf("expected false in hasAlert: %s", gs.alert)
 		}
-		t.Error("----")
-		return
 		if gs.shouldLearn(true) != true {
 			t.Error("expected true in shouldLearn")
 		}
