@@ -38,7 +38,7 @@ responseEnd="${response#*ALERT}"
 alert=${responseEnd%%\"*}
 
 
-if [[ "$alert" == "Session ->[HttpRequest:[Headers:[KeyVal:[Key A is not known,],],],]"* ]];then
+if [[ "$alert" == "! Session ->[HttpRequest:[Headers:[KeyVal:[Key A is not known,],],],]"* ]];then
    echo ">> Alert as expected for $URL -H \"a:2\""
 else
    echo ">> Alert value is not as expected: $alert"
