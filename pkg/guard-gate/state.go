@@ -152,8 +152,8 @@ func (gs *gateState) logAlert() {
 	}
 	gs.prevAlert = alert
 	logAlert(alert)
-	gs.addStat("PodAlert")
-	gs.srv.addAlert(gs.decision, "Pod")
+	gs.addStat("GateLevelAlert")
+	gs.srv.addAlert(gs.decision, "Gate")
 }
 
 // if pod is monitored, copy its profile to the session profile

@@ -35,7 +35,7 @@ type Decision struct {
 	Result   int                  `json:"result"`
 }
 
-// Level is "Session" or "Pod"
+// Level is "Session" or "Gate"
 type Alert struct {
 	str      string
 	Decision *Decision `json:"decision"`

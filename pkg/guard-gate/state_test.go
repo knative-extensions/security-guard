@@ -43,7 +43,7 @@ func fakeGateState() *gateState {
 	return gs
 }
 
-func Test_gateState_loadConfig(t *testing.T) {
+func Test_gateState_sync(t *testing.T) {
 	t.Run("simple", func(t *testing.T) {
 		var decision *spec.Decision
 
@@ -86,8 +86,10 @@ func Test_gateState_loadConfig(t *testing.T) {
 			t.Error("expected false in shouldBlock")
 		}
 		if gs.hasAlert() != false {
-			t.Error("expected false in hasAlert")
+			t.Errorf("expected false in hasAlert: %s", gs.alert)
 		}
+		t.Error("----")
+		return
 		if gs.shouldLearn(true) != true {
 			t.Error("expected true in shouldLearn")
 		}
