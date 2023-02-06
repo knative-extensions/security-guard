@@ -26,6 +26,7 @@ if [[ "$alert" == "! Session ->[HttpRequest:[QueryString:[KeyVal:[Key a is not k
    echo ">> Alert as expected for $URL?a=2"
 else
    echo ">> Alert value is not as expected: $alert"
+   echo ">>                       expected: Session ->[HttpRequest:[QueryString:[KeyVal:[Key a is not known,],],],]"
    exit 1
 fi
 
@@ -41,6 +42,7 @@ if [[ "$alert" == "Session ->[HttpRequest:[Headers:[KeyVal:[Key A is not known,]
    echo ">> Alert as expected for $URL -H \"a:2\""
 else
    echo ">> Alert value is not as expected: $alert"
+   echo ">>                       expected: Session ->[HttpRequest:[Headers:[KeyVal:[Key A is not known,],],],]"
    exit 1
 fi
 
