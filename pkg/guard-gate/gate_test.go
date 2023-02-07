@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
 	utils "knative.dev/security-guard/pkg/guard-utils"
 	pi "knative.dev/security-guard/pkg/pluginterfaces"
 )
@@ -52,7 +53,7 @@ func testInit(c map[string]string) *plug {
 	pi.RegisterPlug(p)
 	p.preInit(context.Background(), c, "svcName", "myns", defaultLog)
 	p.gateState = fakeGateState()
-	p.gateState.loadConfig()
+	p.gateState.sync()
 	return p
 }
 
@@ -68,9 +69,9 @@ func initTickerTest() (context.Context, context.CancelFunc, *plug) {
 
 	pi.RegisterPlug(p)
 
-	ctx, cancelFunction, _ := p.preInit(context.Background(), c, "svcName", "myns", defaultLog)
+	ctx, cancelFunction := p.preInit(context.Background(), c, "svcName", "myns", defaultLog)
 	p.gateState = fakeGateState()
-	p.gateState.loadConfig()
+	p.gateState.sync()
 	p.gateState.stat.Init()
 	return ctx, cancelFunction, p
 }
@@ -82,10 +83,10 @@ func cancelLater(cancel context.CancelFunc) {
 }
 
 func Test_plug_guardMainEventLoop_1(t *testing.T) {
-	t.Run("guardianLoadTicker", func(t *testing.T) {
+	t.Run("syncTicker", func(t *testing.T) {
 		ctx, cancelFunction, p := initTickerTest()
-		p.guardianLoadTicker = utils.NewTicker(100000)
-		p.guardianLoadTicker.Parse("", 300000)
+		p.syncTicker = utils.NewTicker(100000)
+		p.syncTicker.Parse("", 300000)
 		// lets rely on timeout
 		go cancelLater(cancelFunction)
 		p.guardMainEventLoop(ctx)
@@ -107,19 +108,7 @@ func Test_plug_guardMainEventLoop_2(t *testing.T) {
 		}
 	})
 }
-func Test_plug_guardMainEventLoop_3(t *testing.T) {
-	t.Run("reportPileTicker", func(t *testing.T) {
-		ctx, cancelFunction, p := initTickerTest()
-		p.reportPileTicker = utils.NewTicker(100000)
-		p.reportPileTicker.Parse("", 300000)
-		// lets rely on timeout
-		go cancelLater(cancelFunction)
-		p.guardMainEventLoop(ctx)
-		if ret := p.gateState.stat.Log(); ret != "map[]" {
-			t.Errorf("expected stat %s received %s", "map[]", ret)
-		}
-	})
-}
+
 func Test_plug_guardMainEventLoop_4(t *testing.T) {
 	t.Run("reportPileTicker", func(t *testing.T) {
 		ctx, cancelFunction, p := initTickerTest()
@@ -175,11 +164,10 @@ func Test_plug_Initialize(t *testing.T) {
 			p.version = plugVersion
 			p.name = plugName
 			p.podMonitorTicker = utils.NewTicker(utils.MinimumInterval)
-			p.guardianLoadTicker = utils.NewTicker(utils.MinimumInterval)
-			p.reportPileTicker = utils.NewTicker(utils.MinimumInterval)
+			p.syncTicker = utils.NewTicker(utils.MinimumInterval)
 
 			pi.RegisterPlug(p)
-			ctx, cancelFunction, _ := p.preInit(context.Background(), tt.c, "svcName", "myns", defaultLog)
+			ctx, cancelFunction := p.preInit(context.Background(), tt.c, "svcName", "myns", defaultLog)
 			if ctx == context.Background() {
 				t.Error("extected a derived ctx")
 			}
@@ -290,7 +278,7 @@ func Test_plug_ApproveResponse(t *testing.T) {
 			t.Errorf("ApproveResponse error %v! ", err2)
 		}
 
-		p.gateState.alert = "x"
+		p.gateState.decision = &spec.Decision{}
 		p.gateState.ctrl.Block = true
 
 		_, err3 := p.ApproveResponse(req1, resp)
@@ -320,7 +308,7 @@ func Test_plug_ApproveRequest(t *testing.T) {
 		_, cancelFunction1 := context.WithCancel(req1.Context())
 		cancelFunction1()
 
-		p.gateState.alert = "x"
+		p.gateState.decision = &spec.Decision{}
 		p.gateState.ctrl.Block = true
 
 		req2, err2 := p.ApproveRequest(req)

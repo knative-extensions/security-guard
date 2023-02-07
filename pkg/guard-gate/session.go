@@ -19,7 +19,6 @@ package guardgate
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"mime"
 	"net"
@@ -47,7 +46,7 @@ var maxBody int64 = int64(1048576)
 type session struct {
 	sessionTicker *utils.Ticker
 	gotResponse   bool
-	alert         string                  // session alert
+	decision      *spec.Decision          // session alert decision
 	reqTime       time.Time               // time when session was started
 	respTime      time.Time               // time when session response came
 	cancelFunc    context.CancelFunc      // cancel the session
@@ -90,11 +89,20 @@ func (s *session) addSessionToContext(ctxIn context.Context) context.Context {
 }
 
 func (s *session) hasAlert() bool {
-	return s.alert != ""
+	return s.decision != nil
 }
 
 func (s *session) cancel() {
 	s.cancelFunc()
+}
+
+func (s *session) logAlert() {
+	if s.decision == nil {
+		return
+	}
+	logAlert(s.decision.String("Session ->"))
+	s.gateState.addStat("SessionLevelAlert")
+	s.gateState.srv.addAlert(s.decision, "Session")
 }
 
 func (s *session) sessionEventLoop(ctx context.Context) {
@@ -110,13 +118,11 @@ func (s *session) sessionEventLoop(ctx context.Context) {
 
 		// Should we alert?
 		if s.gateState.hasAlert() {
-			s.gateState.logAlert()
 			s.gateState.addStat("BlockOnPod")
 			return
 		}
 		if s.hasAlert() {
-			logAlert(s.alert)
-			s.gateState.addStat("SessionLevelAlert")
+			s.logAlert()
 			return
 		}
 		// no alert
@@ -212,7 +218,7 @@ func (s *session) screenResponseBody(resp *http.Response) {
 		}
 	}
 	resp.Body = dup.Output[1]
-	s.alert += s.gateState.decideRespBody(&s.profile.RespBody)
+	s.gateState.decideRespBody(&s.decision, &s.profile.RespBody)
 }
 
 func (s *session) screenRequestBody(req *http.Request) {
@@ -290,8 +296,7 @@ func (s *session) screenRequestBody(req *http.Request) {
 		}
 	}
 	req.Body = dup.Output[1]
-
-	s.alert += s.gateState.decideReqBody(&s.profile.ReqBody)
+	s.gateState.decideReqBody(&s.decision, &s.profile.ReqBody)
 }
 
 func (s *session) screenEnvelop() {
@@ -303,7 +308,7 @@ func (s *session) screenEnvelop() {
 	}
 	s.profile.Envelop.Profile(s.reqTime, respTime, now)
 
-	s.alert += s.gateState.decideEnvelop(&s.profile.Envelop)
+	s.gateState.decideEnvelop(&s.decision, &s.profile.Envelop)
 }
 
 func (s *session) screenPod() {
@@ -314,7 +319,7 @@ func (s *session) screenRequest(req *http.Request) {
 	// Request client and server identities
 	cip, _, err := net.SplitHostPort(req.RemoteAddr)
 	if err != nil {
-		s.alert += fmt.Sprintf("illegal req.RemoteAddr %s", err.Error())
+		spec.DecideInner(&s.decision, 1, "illegal req.RemoteAddr %s", err.Error())
 		s.gateState.addStat("ReqCipFault")
 	}
 
@@ -322,12 +327,12 @@ func (s *session) screenRequest(req *http.Request) {
 	s.profile.Req.Profile(req, ip)
 	//s.profile.ReqBody.Profile(reqData)
 
-	s.alert += s.gateState.decideReq(&s.profile.Req)
+	s.gateState.decideReq(&s.decision, &s.profile.Req)
 }
 
 func (s *session) screenResponse(resp *http.Response) {
 	s.respTime = time.Now()
 	s.profile.Resp.Profile(resp)
 
-	s.alert += s.gateState.decideResp(&s.profile.Resp)
+	s.gateState.decideResp(&s.decision, &s.profile.Resp)
 }

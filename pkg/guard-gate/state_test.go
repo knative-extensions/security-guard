@@ -17,6 +17,7 @@ limitations under the License.
 package guardgate
 
 import (
+	"encoding/json"
 	"net"
 	"net/http"
 	"os"
@@ -35,17 +36,20 @@ func fakeGateCancel() {
 
 func fakeGateState() *gateState {
 	gs := new(gateState)
-	gs.init(fakeGateCancel, false, "myurl", "mysid", "myns", true)
-	srv, _ := fakeClient(http.StatusOK, "Problem in request")
+	gs.init(fakeGateCancel, false, "myurl", "mypodname", "mysid", "myns", true)
+	bytes, _ := json.Marshal(spec.Guardian{})
+	srv, _ := fakeClient(http.StatusOK, string(bytes))
 	gs.srv = srv
 	return gs
 }
 
-func Test_gateState_loadConfig(t *testing.T) {
+func Test_gateState_sync(t *testing.T) {
 	t.Run("simple", func(t *testing.T) {
+		var decision *spec.Decision
+
 		gs := fakeGateState()
 
-		gs.loadConfig()
+		gs.sync()
 		if gs.criteria == nil || gs.ctrl == nil {
 			t.Error("nil after load")
 		}
@@ -81,23 +85,21 @@ func Test_gateState_loadConfig(t *testing.T) {
 		if gs.shouldBlock() != false {
 			t.Error("expected false in shouldBlock")
 		}
-		if gs.hasAlert() != false {
-			t.Error("expected false in hasAlert")
-		}
-		if gs.shouldLearn(true) != false {
-			t.Error("expected false in shouldLearn")
+		if gs.shouldLearn(true) != true {
+			t.Error("expected true in shouldLearn")
 		}
 
 		// envelop
 		ep := new(spec.EnvelopProfile)
 		now := time.Now()
 		ep.Profile(now, now, now)
-		if ret := gs.decideEnvelop(ep); ret != "" {
+		decision = nil
+		if gs.decideEnvelop(&decision, ep); decision != nil {
 			t.Error("expected no alert")
 		}
+		decision = nil
 		ep.Profile(time.Unix(1, 1), time.Unix(3, 3), time.Unix(5, 5))
-		gs.decideEnvelop(ep)
-		if ret := gs.decideEnvelop(ep); ret == "" {
+		if gs.decideEnvelop(&decision, ep); decision == nil {
 			t.Error("expected alert")
 		}
 
@@ -107,11 +109,13 @@ func Test_gateState_loadConfig(t *testing.T) {
 		cip := net.ParseIP("1.2.3.4")
 		req.Profile(r, cip)
 		gs.criteria.Active = false
-		if ret := gs.decideReq(req); ret != "" {
+		decision = nil
+		if gs.decideReq(&decision, req); decision != nil {
 			t.Error("expected no alert")
 		}
 		gs.criteria.Active = true
-		if ret := gs.decideReq(req); ret == "" {
+		decision = nil
+		if gs.decideReq(&decision, req); decision == nil {
 			t.Error("expected alert")
 		}
 
@@ -121,11 +125,13 @@ func Test_gateState_loadConfig(t *testing.T) {
 
 		resp.Profile(rs)
 		gs.criteria.Active = false
-		if ret := gs.decideResp(resp); ret != "" {
+		decision = nil
+		if gs.decideResp(&decision, resp); decision != nil {
 			t.Error("expected no alert")
 		}
 		gs.criteria.Active = true
-		if ret := gs.decideResp(resp); ret == "" {
+		decision = nil
+		if gs.decideResp(&decision, resp); decision == nil {
 			t.Error("expected alert")
 		}
 
@@ -133,21 +139,25 @@ func Test_gateState_loadConfig(t *testing.T) {
 		body := new(spec.BodyProfile)
 		body.ProfileUnstructured("x")
 		gs.criteria.Active = false
-		if ret := gs.decideReqBody(body); ret != "" {
+		decision = nil
+		if gs.decideReqBody(&decision, body); decision != nil {
 			t.Error("expected no alert")
 		}
-		if ret := gs.decideRespBody(body); ret != "" {
+		decision = nil
+		if gs.decideRespBody(&decision, body); decision != nil {
 			t.Error("expected no alert")
 		}
 		gs.criteria.Active = true
-		if ret := gs.decideReqBody(body); ret == "" {
+		decision = nil
+		if gs.decideReqBody(&decision, body); decision == nil {
 			t.Error("expected alert")
 		}
-		if ret := gs.decideRespBody(body); ret == "" {
+		decision = nil
+		if gs.decideRespBody(&decision, body); decision == nil {
 			t.Error("expected alert")
 		}
 
-		gs.flushPile()
+		gs.sync()
 		if gs.srv.pile.Count != 0 {
 			t.Error("expected pile too have 1")
 		}
@@ -156,9 +166,9 @@ func Test_gateState_loadConfig(t *testing.T) {
 		if gs.srv.pile.Count != 1 {
 			t.Error("expected pile too have 1")
 		}
-		gs.flushPile()
+		gs.sync()
 		if gs.srv.pile.Count != 0 {
-			t.Error("expected pile too have 1")
+			t.Error("expected pile too have 0")
 		}
 	})
 
@@ -189,7 +199,7 @@ func Test_gateState_init(t *testing.T) {
 			os.Setenv("ROOT_CA", tt.cert)
 			gs := new(gateState)
 			// certPool, _ := x509.SystemCertPool()
-			gs.init(fakeGateCancel, false, "myurl", "mysid", "myns", true)
+			gs.init(fakeGateCancel, false, "myurl", "mypodname", "mysid", "myns", true)
 			// TBD will be added when we move to go 1.19
 			// if !certPool.Equal(gs.certPool) && !tt.newCA {
 			// 	 t.Errorf("expected no new cert to be added")

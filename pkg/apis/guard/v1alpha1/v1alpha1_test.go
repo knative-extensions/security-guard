@@ -117,7 +117,7 @@ func ValueTests_Test_WithMarshal(t *testing.T, profiles []ValueProfile, piles []
 		config.learnI(pile)
 
 		if d := config.decideI(profile); d != nil {
-			t.Errorf(d.String("config.Decide(profile) wrong decission:"))
+			t.Errorf(d.String("config.Decide(profile) wrong decision:"))
 		}
 
 		if bytes, err = json.Marshal(config); err != nil {
@@ -146,7 +146,7 @@ func ValueTests_SimpleTest(t *testing.T, profiles []ValueProfile, piles []ValueP
 		// test ConfigValue
 		config.learnI(pile)
 		if d := config.decideI(profiles[0]); d != nil {
-			t.Errorf("config.Decide(profile) wrong decission: %s", d.String(""))
+			t.Errorf("config.Decide(profile) wrong decision: %s", d.String(""))
 		}
 		if d := config.decideI(profiles[1]); d == nil {
 			t.Errorf("config.Decide(profile) expected a reject of %s after learning %s\n", args[1], args[0])
@@ -222,10 +222,10 @@ func ValueTests_TestAdd(t *testing.T, profiles []ValueProfile, piles []ValuePile
 		// test ConfigValue
 		configs[0].learnI(piles[0])
 		if d := configs[0].decideI(profiles[0]); d != nil {
-			t.Errorf("config.Decide(profile) wrong decission: %s", d.String(""))
+			t.Errorf("config.Decide(profile) wrong decision: %s", d.String(""))
 		}
 		if d := configs[0].decideI(profiles[1]); d != nil {
-			t.Errorf("config.Decide(profile) wrong decission: %s", d.String(""))
+			t.Errorf("config.Decide(profile) wrong decision: %s", d.String(""))
 		}
 	})
 }
@@ -246,10 +246,10 @@ func ValueTests_TestMerge(t *testing.T, profiles []ValueProfile, piles []ValuePi
 		// test ConfigValue
 		configs[0].learnI(piles[0])
 		if d := configs[0].decideI(profiles[0]); d != nil {
-			t.Errorf(d.String("config.Decide(profile) wrong decission: "))
+			t.Errorf(d.String("config.Decide(profile) wrong decision: "))
 		}
 		if d := configs[0].decideI(profiles[1]); d != nil {
-			t.Errorf(d.String("config.Decide(profile) wrong decission: "))
+			t.Errorf(d.String("config.Decide(profile) wrong decision: "))
 		}
 	})
 }
@@ -271,10 +271,10 @@ func ValueTests_TestFuse(t *testing.T, profiles []ValueProfile, piles []ValuePil
 		configs[0].learnI(piles[1])
 
 		if d := configs[0].decideI(profiles[0]); d != nil {
-			t.Errorf(d.String("config.Decide(profile) wrong decission: "))
+			t.Errorf(d.String("config.Decide(profile) wrong decision: "))
 		}
 		if d := configs[0].decideI(profiles[1]); d != nil {
-			t.Errorf(d.String("config.Decide(profile) wrong decission: "))
+			t.Errorf(d.String("config.Decide(profile) wrong decision: "))
 		}
 	})
 }
@@ -301,7 +301,7 @@ func TestDecideInner(t *testing.T) {
 			t.Error("Expected current to no longer be nil")
 			return
 		}
-		if current.result != 7 {
+		if current.Result != 7 {
 			t.Error("Expected current.result to be 7")
 			return
 		}
@@ -322,7 +322,7 @@ func TestDecideInner(t *testing.T) {
 			t.Error("Expected current to no longer be nil")
 			return
 		}
-		if current.result != 10 {
+		if current.Result != 10 {
 			t.Error("Expected current.result to be 10")
 			return
 		}
@@ -355,7 +355,7 @@ func TestDecideChild(t *testing.T) {
 		var current, child *Decision
 		var str, expected, alternative string
 
-		childDecision := Decision{result: 4}
+		childDecision := Decision{Result: 4}
 
 		DecideChild(&current, &childDecision, "X")
 		if current == nil {
@@ -363,8 +363,8 @@ func TestDecideChild(t *testing.T) {
 			return
 		}
 
-		if current.result != 4 {
-			t.Errorf("Expected current.result to be 4 instead received %d", current.result)
+		if current.Result != 4 {
+			t.Errorf("Expected current.result to be 4 instead received %d", current.Result)
 			return
 		}
 		str = current.Summary()
@@ -381,8 +381,8 @@ func TestDecideChild(t *testing.T) {
 		}
 
 		DecideChild(&current, &childDecision, "Z")
-		if current.result != 8 {
-			t.Errorf("Expected current.result to be 8 instead received %d", current.result)
+		if current.Result != 8 {
+			t.Errorf("Expected current.result to be 8 instead received %d", current.Result)
 			return
 		}
 		str = current.Summary()
@@ -407,8 +407,8 @@ func TestDecideChild(t *testing.T) {
 			return
 		}
 
-		if current.result != 4 {
-			t.Errorf("Expected current.result to be 4 instead received %d", current.result)
+		if current.Result != 4 {
+			t.Errorf("Expected current.result to be 4 instead received %d", current.Result)
 			return
 		}
 		str = current.Summary()

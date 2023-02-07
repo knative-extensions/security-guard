@@ -22,10 +22,11 @@ responseEnd="${response#*ALERT}"
 alert=${responseEnd%%\"*}
 
 
-if [[ "$alert" == "! HttpRequest -> [QueryString:[KeyVal:[Key a is not known,],],]"* ]];then
+if [[ "$alert" == "! Session ->[HttpRequest:[QueryString:[KeyVal:[Key a is not known,],],],]"* ]];then
    echo ">> Alert as expected for $URL?a=2"
 else
    echo ">> Alert value is not as expected: $alert"
+   echo ">>                       expected: Session ->[HttpRequest:[QueryString:[KeyVal:[Key a is not known,],],],]"
    exit 1
 fi
 
@@ -37,10 +38,11 @@ responseEnd="${response#*ALERT}"
 alert=${responseEnd%%\"*}
 
 
-if [[ "$alert" == "! HttpRequest -> [Headers:[KeyVal:[Key A is not known,],],]"* ]];then
+if [[ "$alert" == "! Session ->[HttpRequest:[Headers:[KeyVal:[Key A is not known,],],],]"* ]];then
    echo ">> Alert as expected for $URL -H \"a:2\""
 else
    echo ">> Alert value is not as expected: $alert"
+   echo ">>                       expected: Session ->[HttpRequest:[Headers:[KeyVal:[Key A is not known,],],],]"
    exit 1
 fi
 

@@ -53,7 +53,7 @@ func TestKubeMgr_TokenData(t *testing.T) {
 		})
 		k.cmClient = &cmClient
 
-		sid, ns, err := k.TokenData(testToken, nil)
+		podname, sid, ns, err := k.TokenData(testToken, nil)
 		if err == nil {
 			// TBD investigate fake client behavior
 			t.Errorf("fake client always produce an error %s", err.Error())
@@ -66,6 +66,10 @@ func TestKubeMgr_TokenData(t *testing.T) {
 		}
 		if sid != "" {
 			t.Errorf("KubeMgr.TokenData() sid = %v", sid)
+			return
+		}
+		if podname != "" {
+			t.Errorf("KubeMgr.TokenData() podname = %v", sid)
 			return
 		}
 	})

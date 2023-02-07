@@ -35,12 +35,15 @@ import (
 	pi "knative.dev/security-guard/pkg/pluginterfaces"
 )
 
+const (
+	MAX_ALERTS = 1000
+	PILE_LIMIT = 1000
+)
+
 type httpClientInterface interface {
 	ReadToken(audience string) bool
 	Do(req *http.Request) (*http.Response, error)
 }
-
-const pileLimit = 1000
 
 type httpClient struct {
 	client           http.Client
@@ -85,24 +88,28 @@ func (hc *httpClient) ReadToken(audience string) (tokenActive bool) {
 
 type gateClient struct {
 	guardServiceUrl string
+	podname         string
 	sid             string
 	ns              string
 	useCm           bool
+	tokenActive     bool
 	httpClient      httpClientInterface
 	pile            spec.SessionDataPile
 	pileMutex       sync.Mutex
+	alerts          []spec.Alert
 	kubeMgr         guardKubeMgr.KubeMgrInterface
 }
 
-func NewGateClient(guardServiceUrl string, sid string, ns string, useCm bool) *gateClient {
+func NewGateClient(guardServiceUrl string, podname string, sid string, ns string, useCm bool) *gateClient {
 	srv := new(gateClient)
 	srv.kubeMgr = guardKubeMgr.NewKubeMgr()
 	srv.guardServiceUrl = guardServiceUrl
+	srv.podname = podname
 	srv.sid = sid
 	srv.ns = ns
 	srv.useCm = useCm
 
-	srv.clearPile()
+	srv.pile.Clear()
 
 	return srv
 }
@@ -112,7 +119,7 @@ func (srv *gateClient) initKubeMgr() {
 	srv.kubeMgr.InitConfigs()
 }
 
-func (srv *gateClient) initHttpClient(certPool *x509.CertPool) (tokenActive bool) {
+func (srv *gateClient) initHttpClient(certPool *x509.CertPool) {
 	client := new(httpClient)
 	client.client.Transport = &http.Transport{
 		MaxConnsPerHost:     0,
@@ -124,131 +131,111 @@ func (srv *gateClient) initHttpClient(certPool *x509.CertPool) (tokenActive bool
 		},
 	}
 	srv.httpClient = client
-	tokenActive = srv.httpClient.ReadToken(guardKubeMgr.ServiceAudience)
-	return
+	srv.tokenActive = srv.httpClient.ReadToken(guardKubeMgr.ServiceAudience)
 }
 
-func (srv *gateClient) reportPile() {
-	if srv.pile.Count == 0 {
-		return
-	}
-	defer srv.clearPile()
+func (srv *gateClient) syncWithService() *spec.GuardianSpec {
+	var syncReq spec.SyncMessageReq
+	var syncResp spec.SyncMessageResp
 
 	srv.httpClient.ReadToken(guardKubeMgr.ServiceAudience)
 
+	syncReq.Alerts = srv.alerts
+	syncReq.Pile = &srv.pile
+
 	// protect pile internals read/write
 	srv.pileMutex.Lock()
-	postBody, marshalErr := json.Marshal(srv.pile)
+	postBody, marshalErr := json.Marshal(syncReq)
+	// We clear pile event if we dont know if the pile is sent to the service - to avoid accumulating forever
 	srv.pileMutex.Unlock()
 	// Must unlock srv.pileMutex before http.NewRequest
 
 	if marshalErr != nil {
 		// should never happen
 		pi.Log.Infof("Error during marshal: %v", marshalErr)
-		return
+		return nil
 	}
 	reqBody := bytes.NewBuffer(postBody)
-	req, err := http.NewRequest(http.MethodPost, srv.guardServiceUrl+"/pile", reqBody)
+	req, err := http.NewRequest(http.MethodPost, srv.guardServiceUrl+"/sync", reqBody)
 	if err != nil {
 		pi.Log.Infof("Http.NewRequest error %v", err)
-		return
+		return nil
 	}
 	query := req.URL.Query()
-	query.Add("sid", srv.sid)
-	query.Add("ns", srv.ns)
+	if !srv.tokenActive {
+		query.Add("sid", srv.sid)
+		query.Add("ns", srv.ns)
+		query.Add("pod", srv.podname)
+	}
 	if srv.useCm {
 		query.Add("cm", "true")
 	}
 	req.URL.RawQuery = query.Encode()
-	pi.Log.Debugf("Reporting a pile with pileCount %d records to guard-service", srv.pile.Count)
+	pi.Log.Debugf("Sync with guard-service!")
 
 	res, postErr := srv.httpClient.Do(req)
 	if postErr != nil {
 		pi.Log.Infof("httpClient.Do error %v", postErr)
-		return
+		return nil
 	}
-	if res.Body != nil {
-		defer res.Body.Close()
-		body, readErr := io.ReadAll(res.Body)
-		if readErr != nil {
-			pi.Log.Infof("Response error %v", readErr)
-			return
-		}
-		if len(body) != 0 {
-			pi.Log.Infof("guard-service response is %s", string(body))
-		}
-	}
-}
-
-func (srv *gateClient) addToPile(profile *spec.SessionDataProfile) {
-	// protect pile internals read/write
-	srv.pileMutex.Lock()
-	srv.pile.Add(profile)
-	srv.pileMutex.Unlock()
-	// Must unlock srv.pileMutex before srv.reportPile
-
-	if srv.pile.Count > pileLimit {
-		srv.reportPile()
+	if res.StatusCode != http.StatusOK {
+		pi.Log.Infof("guard-service did not respond with 200 OK")
+		return nil
 	}
 
-	pi.Log.Debugf("Learn - add to pile! pileCount %d", srv.pile.Count)
-}
+	if res.Body == nil {
+		pi.Log.Infof("guard-service did not accept sync - no response given")
+		return nil
+	}
+	defer res.Body.Close()
+	body, readErr := io.ReadAll(res.Body)
+	if readErr != nil {
+		pi.Log.Infof("Response error %v", readErr)
+		return nil
+	}
+	if len(body) == 0 {
+		pi.Log.Infof("guard-service did not accept sync - response is empty")
+		return nil
+	}
 
-func (srv *gateClient) clearPile() {
-	srv.pileMutex.Lock()
-	defer srv.pileMutex.Unlock()
+	jsonErr := json.Unmarshal(body, &syncResp)
+	if jsonErr != nil {
+		pi.Log.Infof("GuardianSpec: unmarshel error %v", jsonErr)
+		return nil
+	}
+	pi.Log.Debugf("loadGuardianFromService: accepted guardian from guard-service")
+
+	// We clear only when we know pile and alerts were delivered
+	srv.alerts = nil
 	srv.pile.Clear()
+	return syncResp.Guardian
 }
 
-func (srv *gateClient) loadGuardian() *spec.GuardianSpec {
-	wsGate := srv.loadGuardianFromService()
+func (srv *gateClient) addAlert(decision *spec.Decision, level string) {
+	srv.alerts = spec.AddAlert(srv.alerts, decision, level)
+
+	if numAlerts := len(srv.alerts); numAlerts > MAX_ALERTS {
+		srv.alerts = srv.alerts[:numAlerts-1]
+	}
+}
+
+func (srv *gateClient) addToPile(profile *spec.SessionDataProfile) uint32 {
+	if srv.pile.Count < 2*PILE_LIMIT {
+		// protect pile internals read/write
+		srv.pileMutex.Lock()
+		srv.pile.Add(profile)
+		srv.pileMutex.Unlock()
+		// Must unlock srv.pileMutex before srv.reportPile
+	}
+	pi.Log.Debugf("Learn - add to pile! pileCount %d", srv.pile.Count)
+	return srv.pile.Count
+}
+
+func (srv *gateClient) syncWithServiceAndKubeApi() *spec.GuardianSpec {
+	wsGate := srv.syncWithService()
 	if wsGate == nil {
 		// never return nil!
 		wsGate = srv.kubeMgr.GetGuardian(srv.ns, srv.sid, srv.useCm, true)
 	}
 	return wsGate
-}
-
-func (srv *gateClient) loadGuardianFromService() *spec.GuardianSpec {
-	srv.httpClient.ReadToken(guardKubeMgr.ServiceAudience)
-
-	req, err := http.NewRequest(http.MethodGet, srv.guardServiceUrl+"/config", nil)
-	if err != nil {
-		pi.Log.Infof("loadGuardianFromService Http.NewRequest error %v", err)
-		return nil
-	}
-	query := req.URL.Query()
-	query.Add("sid", srv.sid)
-	query.Add("ns", srv.ns)
-	if srv.useCm {
-		query.Add("cm", "true")
-	}
-	req.URL.RawQuery = query.Encode()
-
-	res, err := srv.httpClient.Do(req)
-
-	if err != nil {
-		pi.Log.Infof("loadGuardianFromService httpClient.Do error %v", err)
-		return nil
-	}
-
-	defer res.Body.Close()
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		pi.Log.Infof("loadGuardianFromService Response error %v", err)
-		return nil
-	}
-	if len(body) == 0 {
-		pi.Log.Infof("loadGuardianFromService Response empty")
-		return nil
-	}
-	pi.Log.Debugf("loadGuardianFromService: accepted guardian from guard-service")
-
-	g := new(spec.GuardianSpec)
-	jsonErr := json.Unmarshal(body, g)
-	if jsonErr != nil {
-		pi.Log.Infof("loadGuardianFromService GuardianSpec: unmarshel error %v", jsonErr)
-		return nil
-	}
-	return g
 }

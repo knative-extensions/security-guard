@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 )
 
 // A Profile describing the Value
@@ -29,9 +30,46 @@ type ValueProfile interface {
 }
 
 type Decision struct {
-	children map[string]*Decision
-	reasons  []string
-	result   int
+	Children map[string]*Decision `json:"children"`
+	Reasons  []string             `json:"reasons"`
+	Result   int                  `json:"result"`
+}
+
+// Level is "Session" or "Gate"
+type Alert struct {
+	str      string
+	Decision *Decision `json:"decision"`
+	Time     int64     `json:"time"`
+	Level    string    `json:"level"`
+	Count    uint      `json:"count"`
+}
+
+type SyncMessageReq struct {
+	Pile   *SessionDataPile `json:"pile"`
+	Alerts []Alert          `json:"alerts"`
+}
+
+type SyncMessageResp struct {
+	Guardian *GuardianSpec `json:"guardian"`
+}
+
+func AddAlert(alerts []Alert, decision *Decision, level string) []Alert {
+	str := decision.SortedString(level)
+	for i, alert := range alerts {
+		if alert.str == str {
+			alerts[i].Count++
+			return alerts
+		}
+	}
+
+	alert := Alert{
+		str:      str,
+		Decision: decision,
+		Time:     time.Now().Unix(),
+		Level:    level,
+		Count:    1,
+	}
+	return append(alerts, alert)
 }
 
 func DecideInner(current **Decision, result int, format string, a ...any) {
@@ -39,13 +77,13 @@ func DecideInner(current **Decision, result int, format string, a ...any) {
 	d := *current
 	if d == nil {
 		d = new(Decision)
-		d.children = make(map[string]*Decision, 8)
+		d.Children = make(map[string]*Decision, 8)
 		*current = d
 	}
 
 	reason := fmt.Sprintf(format, a...)
-	d.reasons = append((*current).reasons, reason)
-	d.result += result
+	d.Reasons = append((*current).Reasons, reason)
+	d.Result += result
 }
 
 func DecideChild(current **Decision, childDecision *Decision, format string, a ...any) {
@@ -57,18 +95,18 @@ func DecideChild(current **Decision, childDecision *Decision, format string, a .
 	d := *current
 	if d == nil {
 		d = new(Decision)
-		d.children = make(map[string]*Decision, 8)
+		d.Children = make(map[string]*Decision, 8)
 		*current = d
 	}
 
 	tag := fmt.Sprintf(format, a...)
-	d.children[tag] = childDecision
-	d.result += childDecision.result
+	d.Children[tag] = childDecision
+	d.Result += childDecision.Result
 }
 
 func (parent *Decision) Summary() string {
-	if parent.result > 0 {
-		return fmt.Sprintf("Fail (%d)", parent.result)
+	if parent.Result > 0 {
+		return fmt.Sprintf("Fail (%d)", parent.Result)
 	}
 	return ""
 }
@@ -76,13 +114,13 @@ func (parent *Decision) Summary() string {
 func (parent *Decision) SpillOut(sb *strings.Builder) {
 	// sprintf("[ %s: %s, %s: %s, ... %s, %s, ... ], ", tag1 , child1.SpillOut(), tag1 , child1.SpillOut(), ..., reason1, reason2, ...  )
 	sb.WriteByte('[')
-	for tag, child := range parent.children {
+	for tag, child := range parent.Children {
 		sb.WriteString(tag)
 		sb.WriteByte(':')
 		child.SpillOut(sb)
 		sb.WriteByte(',')
 	}
-	for _, reason := range parent.reasons {
+	for _, reason := range parent.Reasons {
 		sb.WriteString(reason)
 		sb.WriteByte(',')
 	}
@@ -90,9 +128,8 @@ func (parent *Decision) SpillOut(sb *strings.Builder) {
 }
 
 func (parent *Decision) String(tag string) string {
-	if parent.result > 0 {
+	if parent.Result > 0 {
 		var sb strings.Builder
-
 		sb.WriteString(tag)
 		parent.SpillOut(&sb)
 		return sb.String()
@@ -106,20 +143,20 @@ func (parent *Decision) SortedSpillOut(sb *strings.Builder) {
 	var tags []string
 
 	sb.WriteByte('[')
-	for tag := range parent.children {
+	for tag := range parent.Children {
 		tags = append(tags, tag)
 	}
 	sort.Strings(tags)
-	sort.Strings(parent.reasons)
+	sort.Strings(parent.Reasons)
 
 	for _, tag := range tags {
-		child := parent.children[tag]
+		child := parent.Children[tag]
 		sb.WriteString(tag)
 		sb.WriteByte(':')
 		child.SortedSpillOut(sb)
 		sb.WriteByte(',')
 	}
-	for _, reason := range parent.reasons {
+	for _, reason := range parent.Reasons {
 		sb.WriteString(reason)
 		sb.WriteByte(',')
 	}
@@ -127,7 +164,7 @@ func (parent *Decision) SortedSpillOut(sb *strings.Builder) {
 }
 
 func (parent *Decision) SortedString(tag string) string {
-	if parent.result > 0 {
+	if parent.Result > 0 {
 		var sb strings.Builder
 
 		sb.WriteString(tag)

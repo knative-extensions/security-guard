@@ -37,6 +37,7 @@ type gateState struct {
 	criteria    *spec.SessionDataConfig // gate Criteria
 	stat        utils.Stat              // gate stats
 	alert       string                  // gate alert
+	decision    *spec.Decision          // gate alert decision
 	monitorPod  bool                    // should gate profile the pod?
 	pod         spec.PodProfile         // pod profile
 	srv         *gateClient             // maintainer of the pile, include client to the guard-service & kubeApi
@@ -44,12 +45,12 @@ type gateState struct {
 	prevAlert   string                  // previous gate alert
 }
 
-func (gs *gateState) init(cancelFunc context.CancelFunc, monitorPod bool, guardServiceUrl string, sid string, ns string, useCm bool) {
+func (gs *gateState) init(cancelFunc context.CancelFunc, monitorPod bool, guardServiceUrl string, podname string, sid string, ns string, useCm bool) {
 	var err error
 	gs.stat.Init()
 	gs.monitorPod = monitorPod
 	gs.cancelFunc = cancelFunc
-	gs.srv = NewGateClient(guardServiceUrl, sid, ns, useCm)
+	gs.srv = NewGateClient(guardServiceUrl, podname, sid, ns, useCm)
 
 	gs.certPool, err = x509.SystemCertPool()
 	if err != nil {
@@ -63,23 +64,24 @@ func (gs *gateState) init(cancelFunc context.CancelFunc, monitorPod bool, guardS
 			pi.Log.Infof("TLS: Failed to AppendCertsFromPEM from ROOT_CA")
 		}
 	}
+	gs.srv.initHttpClient(gs.certPool)
 }
 
-func (gs gateState) start() (tokenActive bool) {
+func (gs gateState) start() {
 	// Skip during simulations
 	if len(gs.srv.ns) > 0 {
 		// initializtion that cant be tested due to use of KubeAMgr
 		gs.srv.initKubeMgr()
 	}
-	tokenActive = gs.srv.initHttpClient(gs.certPool)
-	return
 }
 
-// loadConfig is called periodically to load updated configuration from a Guardian
-func (gs *gateState) loadConfig() {
-	// loadGuardian never returns nil!
-	g := gs.srv.loadGuardian()
+// sync is called periodically to send pile and alerts and to load from the updated Guardian
+func (gs *gateState) sync() {
+	// send pile and alerts and get Guardian - never returns nil!
+	g := gs.srv.syncWithServiceAndKubeApi()
 
+	// load guardian
+	// Set the correct Control
 	if gs.ctrl = g.Control; gs.ctrl == nil {
 		pi.Log.Infof("Loading Guardian  - without Control")
 		gs.ctrl = new(spec.Ctrl)
@@ -101,14 +103,12 @@ func (gs *gateState) loadConfig() {
 	pi.Log.Infof("Loading Guardian  - Active %t Auto %t Block %t", gs.criteria.Active, gs.ctrl.Auto, gs.ctrl.Block)
 }
 
-// flushPile is called periodically to send the pile to the guard-service
-func (gs *gateState) flushPile() {
-	gs.srv.reportPile()
-}
-
 // addProfile is called every time we have a new profile ready to be added to a pile
 func (gs *gateState) addProfile(profile *spec.SessionDataProfile) {
-	gs.srv.addToPile(profile)
+
+	if gs.srv.addToPile(profile) > PILE_LIMIT {
+		gs.profileAndDecidePod()
+	}
 }
 
 // Methods to profile and decide base don pod data.
@@ -129,14 +129,13 @@ func (gs *gateState) profileAndDecidePod() {
 	// Therefore we terminate the reverse proxy
 	// Future - add more controls to decide what to do in this situation
 	if gs.criteria != nil && gs.criteria.Active {
-		decision := gs.criteria.Pod.Decide(&gs.pod)
-		if decision != nil {
-			gs.addStat("PodAlert")
-			gs.alert = decision.String("Pod  -> ")
+		spec.DecideChild(&gs.decision, gs.criteria.Pod.Decide(&gs.pod), "Pod")
+		if gs.decision != nil {
 			gs.logAlert()
 			if gs.shouldBlock() {
 				// Terminate the reverse proxy since all requests will block from now on
 				pi.Log.Infof("Terminating")
+				gs.addStat("BlockOnPod")
 				gs.cancelFunc()
 			}
 		}
@@ -144,11 +143,17 @@ func (gs *gateState) profileAndDecidePod() {
 }
 
 func (gs *gateState) logAlert() {
+	if gs.decision == nil {
+		return
+	}
+	alert := gs.decision.String("Gate ->")
 	if gs.prevAlert == gs.alert {
 		return
 	}
-	gs.prevAlert = gs.alert
-	logAlert(gs.alert)
+	gs.prevAlert = alert
+	logAlert(alert)
+	gs.addStat("GateLevelAlert")
+	gs.srv.addAlert(gs.decision, "Gate")
 }
 
 // if pod is monitored, copy its profile to the session profile
@@ -163,58 +168,53 @@ func (gs *gateState) copyPodProfile(pp *spec.PodProfile) {
 // the profiles are being decided and alerts is set accordingly.
 
 // returns the alert text if needed
-func (gs *gateState) decideReq(rp *spec.ReqProfile) string {
+func (gs *gateState) decideReq(decision **spec.Decision, rp *spec.ReqProfile) {
 	if gs.criteria != nil && gs.criteria.Active {
-		if decision := gs.criteria.Req.Decide(rp); decision != nil {
+		spec.DecideChild(decision, gs.criteria.Req.Decide(rp), "HttpRequest")
+		if *decision != nil {
 			gs.addStat("ReqAlert")
-			return decision.String("HttpRequest -> ")
 		}
 	}
-	return ""
 }
 
 // returns the alert text if needed
-func (gs *gateState) decideResp(rp *spec.RespProfile) string {
+func (gs *gateState) decideResp(decision **spec.Decision, rp *spec.RespProfile) {
 	if gs.criteria != nil && gs.criteria.Active {
-		if decision := gs.criteria.Resp.Decide(rp); decision != nil {
+		spec.DecideChild(decision, gs.criteria.Resp.Decide(rp), "HttpResponse")
+		if *decision != nil {
 			gs.addStat("RespAlert")
-			return decision.String("HttpResponse  -> ")
 		}
 	}
-	return ""
 }
 
 // returns the alert text if needed
-func (gs *gateState) decideReqBody(bp *spec.BodyProfile) string {
+func (gs *gateState) decideReqBody(decision **spec.Decision, bp *spec.BodyProfile) {
 	if gs.criteria != nil && gs.criteria.Active {
-		if decision := gs.criteria.ReqBody.Decide(bp); decision != nil {
+		spec.DecideChild(decision, gs.criteria.ReqBody.Decide(bp), "HttpRequestBody")
+		if *decision != nil {
 			gs.addStat("ReqBodyAlert")
-			return decision.String("HttpRequestBody -> ")
 		}
 	}
-	return ""
 }
 
 // returns the alert text if needed
-func (gs *gateState) decideRespBody(bp *spec.BodyProfile) string {
+func (gs *gateState) decideRespBody(decision **spec.Decision, bp *spec.BodyProfile) {
 	if gs.criteria != nil && gs.criteria.Active {
-		if decision := gs.criteria.RespBody.Decide(bp); decision != nil {
+		spec.DecideChild(decision, gs.criteria.RespBody.Decide(bp), "HttpResponseBody")
+		if *decision != nil {
 			gs.addStat("RespBodyAlert")
-			return decision.String("HttpResponseBody  -> ")
 		}
 	}
-	return ""
 }
 
 // returns the alert text if needed
-func (gs *gateState) decideEnvelop(ep *spec.EnvelopProfile) string {
+func (gs *gateState) decideEnvelop(decision **spec.Decision, ep *spec.EnvelopProfile) {
 	if gs.criteria != nil && gs.criteria.Active {
-		if decision := gs.criteria.Envelop.Decide(ep); decision != nil {
+		spec.DecideChild(decision, gs.criteria.Envelop.Decide(ep), "Envelop")
+		if *decision != nil {
 			gs.addStat("EnvelopAlert")
-			return decision.String("Envelop  -> ")
 		}
 	}
-	return ""
 }
 
 // generic methods:
@@ -226,17 +226,17 @@ func (gs *gateState) addStat(key string) {
 
 // are we blocking request on alerts?
 func (gs *gateState) shouldBlock() bool {
-	return gs.ctrl.Block
+	return (gs.ctrl != nil) && gs.ctrl.Block
 }
 
 // do we have a gate level alert?
 func (gs *gateState) hasAlert() bool {
-	return gs.alert != ""
+	return gs.decision != nil
 }
 
 // should we be learning?
 func (gs *gateState) shouldLearn(sessionAlert bool) bool {
-	// dio we have an alert?
+	// did we have an alert?
 	alert := (gs.alert != "") || !sessionAlert
-	return gs.ctrl.Learn && (!alert || gs.ctrl.Force)
+	return (gs.ctrl != nil) && gs.ctrl.Learn && (!alert || gs.ctrl.Force)
 }

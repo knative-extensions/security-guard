@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/emicklei/go-restful"
+	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
 	utils "knative.dev/security-guard/pkg/guard-utils"
 )
 
@@ -37,7 +38,7 @@ func fakeSessionCancel() {
 func Test_SessionInContext(t *testing.T) {
 	ctx1 := context.Background()
 	gs := fakeGateState()
-	gs.loadConfig()
+	gs.sync()
 
 	t.Run("simple", func(t *testing.T) {
 		s1 := newSession(gs, nil)
@@ -65,7 +66,7 @@ func Test_SessionInContext(t *testing.T) {
 		if !s2.hasAlert() {
 			t.Errorf("expected alert")
 		}
-		s2.alert = ""
+		s2.decision = nil
 		req.RemoteAddr = "1.2.3.4:80"
 		s2.screenRequest(req)
 		if s2.hasAlert() {
@@ -76,7 +77,7 @@ func Test_SessionInContext(t *testing.T) {
 		if !s2.hasAlert() {
 			t.Errorf("expected alert")
 		}
-		s2.alert = ""
+		s2.decision = nil
 		s2.gateState.criteria.Active = false
 
 		td, _ := time.ParseDuration("1s")
@@ -90,7 +91,7 @@ func Test_SessionInContext(t *testing.T) {
 		if !s2.hasAlert() {
 			t.Errorf("expected alert")
 		}
-		s2.alert = ""
+		s2.decision = nil
 		s2.gateState.criteria.Active = false
 
 		resp := &http.Response{ContentLength: 20}
@@ -103,7 +104,7 @@ func Test_SessionInContext(t *testing.T) {
 		if !s2.hasAlert() {
 			t.Errorf("expected alert")
 		}
-		s2.alert = ""
+		s2.decision = nil
 		s2.gateState.criteria.Active = false
 
 		s2.screenPod()
@@ -117,7 +118,7 @@ func Test_SessionInContext(t *testing.T) {
 
 func Test_session_sessionEventLoop(t *testing.T) {
 	gs := fakeGateState()
-	gs.loadConfig()
+	gs.sync()
 	gs.stat.Init()
 	ctx, cancelFunction := context.WithCancel(context.Background())
 	t.Run("simple", func(t *testing.T) {
@@ -155,14 +156,14 @@ func Test_session_sessionEventLoop(t *testing.T) {
 		}
 
 		gs.stat.Init()
-		s.alert = "x"
+		s.decision = &spec.Decision{}
 		s.cancel()
 		s.sessionEventLoop(ctx)
 		if ret := gs.stat.Log(); ret != "map[SessionLevelAlert:1]" {
 			t.Errorf("expected stat %s received %s", "map[SessionLevelAlert:1]", ret)
 		}
 		gs.stat.Init()
-		gs.alert = "x"
+		gs.decision = &spec.Decision{}
 		s.cancel()
 		s.sessionEventLoop(ctx)
 		if ret := gs.stat.Log(); ret != "map[BlockOnPod:1]" {
@@ -176,12 +177,12 @@ func Test_session_sessionEventLoopTicker(t *testing.T) {
 	t.Run("simple", func(t *testing.T) {
 		ctx, cancelFunction := context.WithCancel(context.Background())
 		gs := fakeGateState()
-		gs.loadConfig()
+		gs.sync()
 		gs.stat.Init()
 		s := newSession(gs, nil)
 		s.cancelFunc = cancelFunction
 
-		s.alert = "x"
+		s.decision = &spec.Decision{}
 
 		// lets rely on timeout
 		s.sessionTicker = utils.NewTicker(100000)

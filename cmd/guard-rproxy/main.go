@@ -83,13 +83,7 @@ func (p *GuardGate) Transport(t http.RoundTripper) http.RoundTripper {
 	return p
 }
 
-func preMain() (guardGate *GuardGate, mux *http.ServeMux, target string, plugConfig map[string]string, sid string, ns string) {
-	var env config
-	if err := envconfig.Process("", &env); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to process environment: %s\n", err.Error())
-		return
-	}
-
+func preMain(env *config) (guardGate *GuardGate, mux *http.ServeMux, target string, plugConfig map[string]string, sid string, ns string) {
 	plugConfig = make(map[string]string)
 	guardGate = new(GuardGate)
 
@@ -120,6 +114,11 @@ func preMain() (guardGate *GuardGate, mux *http.ServeMux, target string, plugCon
 	sid = env.ServiceName
 	ns = env.Namespace
 
+	if len(ns) == 0 || len(sid) == 0 || sid == "ns-"+ns {
+		pi.Log.Errorf("Failed illegal sid or ns")
+		return
+	}
+
 	pi.Log.Infof("guard-proxy serving serviceName: %s, namespace: %s, serviceUrl: %s", sid, ns, env.ServiceUrl)
 	parsedUrl, err := url.Parse(env.ServiceUrl)
 	if err != nil {
@@ -149,7 +148,13 @@ func preMain() (guardGate *GuardGate, mux *http.ServeMux, target string, plugCon
 }
 
 func main() {
-	guardGate, mux, target, plugConfig, sid, ns := preMain()
+	var env config
+	if err := envconfig.Process("", &env); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to process environment: %s\n", err.Error())
+		return
+	}
+
+	guardGate, mux, target, plugConfig, sid, ns := preMain(&env)
 	if mux == nil {
 		os.Exit(1)
 	}

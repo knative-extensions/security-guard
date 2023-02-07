@@ -21,6 +21,7 @@ import (
 	"errors"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -33,9 +34,8 @@ const plugVersion string = "0.3"
 const plugName string = "guard"
 
 const (
-	guardianLoadIntervalDefault = 5 * time.Minute
-	reportPileIntervalDefault   = 10 * time.Second
-	podMonitorIntervalDefault   = 5 * time.Second
+	syncIntervalDefault       = 10 * time.Second
+	podMonitorIntervalDefault = 5 * time.Second
 )
 
 var errSecurity error = errors.New("security blocked by guard")
@@ -47,15 +47,14 @@ type plug struct {
 	version string
 
 	// guard gate plug specifics
-	gateState          *gateState    // maintainer of the criteria and ctrl, include pod profile, gate stats and gate level alert
-	guardianLoadTicker *utils.Ticker // tick to gateState.loadConfig() gateState
-	reportPileTicker   *utils.Ticker // tick to gateState.flushPile()
-	podMonitorTicker   *utils.Ticker // tick to gateState.profileAndDecidePod()
+	gateState        *gateState    // maintainer of the criteria and ctrl, include pod profile, gate stats and gate level alert
+	podMonitorTicker *utils.Ticker // tick to gateState.profileAndDecidePod()
+	syncTicker       *utils.Ticker // tick to gateState.sync()
 }
 
 func (p *plug) Shutdown() {
 	pi.Log.Debugf("%s: Shutdown", p.name)
-	p.gateState.flushPile()
+	p.gateState.sync()
 }
 
 func (p *plug) PlugName() string {
@@ -118,14 +117,12 @@ func (p *plug) ApproveResponse(req *http.Request, resp *http.Response) (*http.Re
 }
 
 func (p *plug) guardMainEventLoop(ctx context.Context) {
-	p.guardianLoadTicker.Start()
-	p.reportPileTicker.Start()
+	p.syncTicker.Start()
 	p.podMonitorTicker.Start()
 	defer func() {
-		p.guardianLoadTicker.Stop()
-		p.reportPileTicker.Stop()
+		p.syncTicker.Stop()
 		p.podMonitorTicker.Stop()
-		p.gateState.flushPile()
+		p.gateState.sync()
 		pi.Log.Infof("%s: Done with the following statistics: %s", plugName, p.gateState.stat.Log())
 	}()
 
@@ -135,13 +132,9 @@ func (p *plug) guardMainEventLoop(ctx context.Context) {
 		case <-ctx.Done():
 			return
 
-		// Periodically get an updated Guardian
-		case <-p.guardianLoadTicker.Ch():
-			p.gateState.loadConfig()
-
-		// Periodically send pile to the guard-service
-		case <-p.reportPileTicker.Ch():
-			p.gateState.flushPile()
+		// Periodically send pile and alerts and get an updated Guardian
+		case <-p.syncTicker.Ch():
+			p.gateState.sync()
 
 		// Periodically profile of the pod
 		case <-p.podMonitorTicker.Ch():
@@ -149,8 +142,8 @@ func (p *plug) guardMainEventLoop(ctx context.Context) {
 		}
 	}
 }
-func (p *plug) preInit(ctxIn context.Context, c map[string]string, sid string, ns string, logger pi.Logger) (ctxOut context.Context, cancelFunction context.CancelFunc, tlsActive bool) {
-	var ok bool
+func (p *plug) preInit(ctxIn context.Context, c map[string]string, sid string, ns string, logger pi.Logger) (ctxOut context.Context, cancelFunction context.CancelFunc) {
+	var ok, tlsActive bool
 	var v string
 	var loadInterval, pileInterval, monitorInterval string
 
@@ -190,16 +183,25 @@ func (p *plug) preInit(ctxIn context.Context, c map[string]string, sid string, n
 		monitorInterval = c["pod-monitor-interval"]
 	}
 
-	p.guardianLoadTicker = utils.NewTicker(utils.MinimumInterval)
-	p.reportPileTicker = utils.NewTicker(utils.MinimumInterval)
+	p.syncTicker = utils.NewTicker(utils.MinimumInterval)
 	p.podMonitorTicker = utils.NewTicker(utils.MinimumInterval)
 
-	p.guardianLoadTicker.Parse(loadInterval, guardianLoadIntervalDefault)
-	p.reportPileTicker.Parse(pileInterval, reportPileIntervalDefault)
+	p.syncTicker.Parse(loadInterval, syncIntervalDefault)
 	p.podMonitorTicker.Parse(monitorInterval, podMonitorIntervalDefault)
 
-	pi.Log.Debugf("guard-gate configuration: sid=%s, ns=%s, useCm=%t, guardUrl=%s, p.monitorPod=%t, guardian-load-interval %v, report-pile-interval %v, pod-monitor-interval %v",
-		sid, ns, useCm, guardServiceUrl, monitorPod, loadInterval, pileInterval, monitorInterval)
+	podname := "unknown"
+	if v, ok = c["podname"]; ok {
+		podname = v
+	} else {
+		data, err := os.ReadFile("/etc/hostname")
+		if err == nil {
+			str := regexp.MustCompile(`[^a-zA-Z0-9\-]+`).ReplaceAllString(string(data), "")
+			podname = str
+		}
+	}
+
+	pi.Log.Debugf("guard-gate configuration: podname=%s, sid=%s, ns=%s, useCm=%t, guardUrl=%s, p.monitorPod=%t, guardian-load-interval %v, report-pile-interval %v, pod-monitor-interval %v",
+		podname, sid, ns, useCm, guardServiceUrl, monitorPod, loadInterval, pileInterval, monitorInterval)
 
 	// serviceName should never be "ns.{namespace}" as this is a reserved name
 	if strings.HasPrefix(sid, "ns.") {
@@ -209,19 +211,18 @@ func (p *plug) preInit(ctxIn context.Context, c map[string]string, sid string, n
 
 	p.gateState = new(gateState)
 	p.gateState.analyzeBody = analyzeBody
-	p.gateState.init(cancelFunction, monitorPod, guardServiceUrl, sid, ns, useCm)
+	p.gateState.init(cancelFunction, monitorPod, guardServiceUrl, podname, sid, ns, useCm)
+	pi.Log.Infof("guard-gate: TLS %t, Token %t", tlsActive, p.gateState.srv.tokenActive)
 	return
 }
 
 func (p *plug) Init(ctx context.Context, c map[string]string, sid string, ns string, logger pi.Logger) context.Context {
-	newCtx, _, tlsActive := p.preInit(ctx, c, sid, ns, logger)
+	newCtx, _ := p.preInit(ctx, c, sid, ns, logger)
 
 	// cant be tested as depend on KubeMgr
-	tokenActive := p.gateState.start()
+	p.gateState.start()
 
-	pi.Log.Infof("guard-gate: TLS %t, Token %t", tlsActive, tokenActive)
-
-	p.gateState.loadConfig()
+	p.gateState.sync()
 	p.gateState.profileAndDecidePod()
 
 	//goroutine for Guard instance
