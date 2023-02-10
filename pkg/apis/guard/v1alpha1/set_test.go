@@ -16,7 +16,10 @@ limitations under the License.
 
 package v1alpha1
 
-import "testing"
+import (
+	"encoding/json"
+	"testing"
+)
 
 func TestSet_STRING(t *testing.T) {
 	arguments := [][]string{
@@ -64,4 +67,54 @@ func TestSet_STRINGSLICE(t *testing.T) {
 		args = append(args, arguments[i])
 	}
 	ValueTests_All(t, profiles, piles, configs, args...)
+}
+
+func TestSet_Duplicates(t *testing.T) {
+	var profile1 SetProfile
+	var profile2 SetProfile
+	var pile1 SetPile
+	var pile2 SetPile
+	var config SetConfig
+	var config_load SetConfig
+
+	profile1.ProfileString("X")
+	profile1.ProfileString("X")
+	profile1.ProfileString("X")
+	profile1.ProfileString("X")
+	profile2.ProfileString("X")
+	profile2.ProfileString("X")
+	pile1.Add(&profile1)
+	pile2.Add(&profile2)
+	pile2.Merge(&pile1)
+	if len(pile2.List) != 1 {
+		t.Errorf("SetPile.Merge() expected 1 items found %d", len(pile2.List))
+	}
+	config.Learn(&pile2)
+	if len(config.List) != 1 {
+		t.Errorf("SetPile.Learn() expected 1 item found %d", len(config.List))
+	}
+	config.Learn(&pile2)
+	if len(config.List) != 1 {
+		t.Errorf("SetPile.Learn() expected 1 item found %d", len(config.List))
+	}
+	j, _ := json.Marshal(config)
+	json.Unmarshal(j, &config_load)
+	config_load.Prepare()
+	if len(config_load.List) != 1 {
+		t.Errorf("SetPile.Learn() expected 1 item found %d", len(config_load.List))
+	}
+	config_load.Learn(&pile2)
+	if len(config_load.List) != 1 {
+		t.Errorf("SetPile.Learn() expected 1 item found %d", len(config_load.List))
+	}
+	j, _ = json.Marshal(config)
+	json.Unmarshal(j, &config_load)
+	config_load.Prepare()
+	if len(config_load.List) != 1 {
+		t.Errorf("SetPile.Learn() expected 1 item found %d", len(config_load.List))
+	}
+	config_load.Learn(&pile2)
+	if len(config_load.List) != 1 {
+		t.Errorf("SetPile.Learn() expected 1 item found %d", len(config_load.List))
+	}
 }

@@ -164,6 +164,11 @@ func (s *services) get(ns string, sid string, cmFlag bool) *serviceRecord {
 // set to cache
 // caller ensures that guardianSpec is never nil
 func (s *services) set(ns string, sid string, cmFlag bool, guardianSpec *spec.GuardianSpec) *serviceRecord {
+	// we have  a new guardianSpec from update() or from get()
+	if guardianSpec.Learned != nil {
+		guardianSpec.Learned.Prepare()
+	}
+
 	service := serviceKey(ns, sid, cmFlag)
 
 	s.mutex.Lock()
