@@ -75,11 +75,21 @@ func (p *plug) ApproveRequest(req *http.Request) (*http.Request, error) {
 	s.screenRequest(req)
 	s.screenRequestBody(req)
 
-	if p.gateState.shouldBlock() && (s.hasAlert() || p.gateState.hasAlert()) {
-		p.gateState.addStat("BlockOnRequest")
-		pi.Log.Debugf("Request blocked")
-		cancelFunction()
-		return nil, errSecurity
+	if p.gateState.shouldBlock() {
+		// Should we alert?
+		if s.gateState.hasAlert() {
+			p.gateState.addStat("BlockOnPod")
+			pi.Log.Debugf("Request blocked")
+			cancelFunction()
+			return nil, errSecurity
+		}
+		if s.hasAlert() {
+			s.logAlert()
+			p.gateState.addStat("BlockOnRequest")
+			pi.Log.Debugf("Request blocked")
+			cancelFunction()
+			return nil, errSecurity
+		}
 	}
 
 	// Request not blocked
