@@ -116,7 +116,7 @@ func IpNetFromProc(protocol string) (ips []net.IP) {
 	}
 
 	ipMap := make(map[string]bool)
-	ips = make([]net.IP, 0)
+	ips = []net.IP{}
 
 	ip, data := nextRemoteIp(data)
 	for data != nil {

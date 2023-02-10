@@ -143,7 +143,7 @@ func (config *SetConfig) learnI(valPile ValuePile) {
 // pile is RO and unchanged - never uses pile internal objects
 func (config *SetConfig) Learn(pile *SetPile) {
 	if config.List == nil {
-		config.List = make([]string, len(pile.List))
+		config.List = []string{}
 	}
 	if config.m == nil {
 		config.m = make(map[string]bool, len(pile.List))

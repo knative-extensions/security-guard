@@ -289,7 +289,7 @@ func TestTLS_SyncHandler_MissingToken(t *testing.T) {
 	}
 
 	// Check the response body is what we expect.
-	buf := make([]byte, 0)
+	buf := []byte{}
 	if reflect.DeepEqual(rr.Body, buf) {
 		t.Errorf("handler returned unexpected body: got %v want %v",
 			rr.Body.String(), buf)
@@ -379,7 +379,7 @@ func TestTLS_SyncHandler_NotPOST(t *testing.T) {
 	}
 
 	// Check the response body is what we expect.
-	buf := make([]byte, 0)
+	buf := []byte{}
 	if reflect.DeepEqual(rr.Body, buf) {
 		t.Errorf("handler returned unexpected body: got %v want %v",
 			rr.Body.String(), buf)
@@ -422,7 +422,7 @@ func TestTLS_badUrl(t *testing.T) {
 	}
 
 	// Check the response body is what we expect.
-	buf := make([]byte, 0)
+	buf := []byte{}
 	if reflect.DeepEqual(rr.Body, buf) {
 		t.Errorf("handler returned unexpected body: got %v want %v",
 			rr.Body.String(), buf)
@@ -465,7 +465,7 @@ func TestTLS_SyncHandler_NoReqBody(t *testing.T) {
 	}
 
 	// Check the response body is what we expect.
-	buf := make([]byte, 0)
+	buf := []byte{}
 	if reflect.DeepEqual(rr.Body, buf) {
 		t.Errorf("handler returned unexpected body: got %v want %v",
 			rr.Body.String(), buf)
@@ -562,7 +562,7 @@ func TestTLS_SyncHandler_WithBadReq(t *testing.T) {
 	}
 
 	// Check the response body is what we expect.
-	buf := make([]byte, 0)
+	buf := []byte{}
 	if reflect.DeepEqual(rr.Body, buf) {
 		t.Errorf("handler returned unexpected body: got %v want %v",
 			rr.Body.String(), buf)
@@ -740,7 +740,7 @@ func TestNOTLS_SyncHandler_WithBadQuery(t *testing.T) {
 	}
 
 	// Check the response body is what we expect.
-	buf := make([]byte, 0)
+	buf := []byte{}
 	if reflect.DeepEqual(rr.Body, buf) {
 		t.Errorf("handler returned unexpected body: got %v want %v",
 			rr.Body.String(), buf)
