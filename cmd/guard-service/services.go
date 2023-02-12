@@ -239,3 +239,7 @@ func (s *services) persist(record *serviceRecord) {
 		pi.Log.Debugf("Update KubeApi with new config %s.%s", record.ns, record.sid)
 	}
 }
+
+func (s *services) deletePod(record *serviceRecord, podname string) {
+	s.kmgr.DeletePod(record.ns, podname)
+}

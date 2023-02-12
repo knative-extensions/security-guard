@@ -197,6 +197,10 @@ func (l *learner) processSync(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	if syncReq.IamCompromised {
+		l.services.deletePod(record, podname)
+	}
+
 	if syncReq.Pile != nil {
 		l.services.merge(record, syncReq.Pile)
 	}

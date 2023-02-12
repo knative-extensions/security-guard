@@ -97,6 +97,7 @@ type gateClient struct {
 	pile            spec.SessionDataPile
 	pileMutex       sync.Mutex
 	alerts          []spec.Alert
+	IamCompromised  bool
 	kubeMgr         guardKubeMgr.KubeMgrInterface
 }
 
@@ -134,12 +135,20 @@ func (srv *gateClient) initHttpClient(certPool *x509.CertPool) {
 	srv.tokenActive = srv.httpClient.ReadToken(guardKubeMgr.ServiceAudience)
 }
 
+func (srv *gateClient) signalCompromised() {
+	if !srv.IamCompromised {
+		srv.IamCompromised = true
+		srv.syncWithService()
+	}
+}
+
 func (srv *gateClient) syncWithService() *spec.GuardianSpec {
 	var syncReq spec.SyncMessageReq
 	var syncResp spec.SyncMessageResp
 
 	srv.httpClient.ReadToken(guardKubeMgr.ServiceAudience)
 
+	syncReq.IamCompromised = srv.IamCompromised
 	syncReq.Alerts = srv.alerts
 	syncReq.Pile = &srv.pile
 

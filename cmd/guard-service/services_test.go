@@ -52,6 +52,9 @@ func (f *fakeKmgr) TokenData(token string, labels []string) (podname string, sid
 	return "mypod", "mysid", "myns", nil
 }
 
+func (f *fakeKmgr) DeletePod(ns string, podname string) {
+}
+
 func Test_serviceKey(t *testing.T) {
 	type args struct {
 		ns     string
