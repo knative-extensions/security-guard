@@ -17,7 +17,6 @@ limitations under the License.
 package guardgate
 
 import (
-	"context"
 	"crypto/x509"
 	"os"
 
@@ -32,7 +31,6 @@ func logAlert(alert string) {
 
 type gateState struct {
 	analyzeBody bool
-	cancelFunc  context.CancelFunc      // cancel the entire reverse proxy
 	ctrl        *spec.Ctrl              // gate Ctrl
 	criteria    *spec.SessionDataConfig // gate Criteria
 	stat        utils.Stat              // gate stats
@@ -45,11 +43,10 @@ type gateState struct {
 	prevAlert   string                  // previous gate alert
 }
 
-func (gs *gateState) init(cancelFunc context.CancelFunc, monitorPod bool, guardServiceUrl string, podname string, sid string, ns string, useCm bool) {
+func (gs *gateState) init(monitorPod bool, guardServiceUrl string, podname string, sid string, ns string, useCm bool) {
 	var err error
 	gs.stat.Init()
 	gs.monitorPod = monitorPod
-	gs.cancelFunc = cancelFunc
 	gs.srv = NewGateClient(guardServiceUrl, podname, sid, ns, useCm)
 
 	gs.certPool, err = x509.SystemCertPool()
@@ -133,10 +130,10 @@ func (gs *gateState) profileAndDecidePod() {
 		if gs.decision != nil {
 			gs.logAlert()
 			if gs.shouldBlock() {
+				gs.srv.signalCompromised()
 				// Terminate the reverse proxy since all requests will block from now on
 				pi.Log.Infof("Terminating")
 				gs.addStat("BlockOnPod")
-				gs.cancelFunc()
 			}
 		}
 	}
@@ -146,12 +143,12 @@ func (gs *gateState) logAlert() {
 	if gs.decision == nil {
 		return
 	}
-	alert := gs.decision.String("Gate ->")
+	gs.alert = gs.decision.String("Gate ->")
 	if gs.prevAlert == gs.alert {
 		return
 	}
-	gs.prevAlert = alert
-	logAlert(alert)
+	gs.prevAlert = gs.alert
+	logAlert(gs.alert)
 	gs.addStat("GateLevelAlert")
 	gs.srv.addAlert(gs.decision, "Gate")
 }

@@ -30,13 +30,9 @@ import (
 
 var gateCanceled int
 
-func fakeGateCancel() {
-	gateCanceled++
-}
-
 func fakeGateState() *gateState {
 	gs := new(gateState)
-	gs.init(fakeGateCancel, false, "myurl", "mypodname", "mysid", "myns", true)
+	gs.init(false, "myurl", "mypodname", "mysid", "myns", true)
 	bytes, _ := json.Marshal(spec.Guardian{})
 	srv, _ := fakeClient(http.StatusOK, string(bytes))
 	gs.srv = srv
@@ -199,7 +195,7 @@ func Test_gateState_init(t *testing.T) {
 			os.Setenv("ROOT_CA", tt.cert)
 			gs := new(gateState)
 			// certPool, _ := x509.SystemCertPool()
-			gs.init(fakeGateCancel, false, "myurl", "mypodname", "mysid", "myns", true)
+			gs.init(false, "myurl", "mypodname", "mysid", "myns", true)
 			// TBD will be added when we move to go 1.19
 			// if !certPool.Equal(gs.certPool) && !tt.newCA {
 			// 	 t.Errorf("expected no new cert to be added")

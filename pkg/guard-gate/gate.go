@@ -152,12 +152,10 @@ func (p *plug) guardMainEventLoop(ctx context.Context) {
 		}
 	}
 }
-func (p *plug) preInit(ctxIn context.Context, c map[string]string, sid string, ns string, logger pi.Logger) (ctxOut context.Context, cancelFunction context.CancelFunc) {
+func (p *plug) preInit(c map[string]string, sid string, ns string, logger pi.Logger) {
 	var ok, tlsActive bool
 	var v string
 	var loadInterval, pileInterval, monitorInterval string
-
-	ctxOut, cancelFunction = context.WithCancel(ctxIn)
 
 	// Defaults used without config when used as a qpoption
 	useCm := false
@@ -221,13 +219,12 @@ func (p *plug) preInit(ctxIn context.Context, c map[string]string, sid string, n
 
 	p.gateState = new(gateState)
 	p.gateState.analyzeBody = analyzeBody
-	p.gateState.init(cancelFunction, monitorPod, guardServiceUrl, podname, sid, ns, useCm)
+	p.gateState.init(monitorPod, guardServiceUrl, podname, sid, ns, useCm)
 	pi.Log.Infof("guard-gate: TLS %t, Token %t", tlsActive, p.gateState.srv.tokenActive)
-	return
 }
 
 func (p *plug) Init(ctx context.Context, c map[string]string, sid string, ns string, logger pi.Logger) context.Context {
-	newCtx, _ := p.preInit(ctx, c, sid, ns, logger)
+	p.preInit(c, sid, ns, logger)
 
 	// cant be tested as depend on KubeMgr
 	p.gateState.start()
@@ -236,9 +233,9 @@ func (p *plug) Init(ctx context.Context, c map[string]string, sid string, ns str
 	p.gateState.profileAndDecidePod()
 
 	//goroutine for Guard instance
-	go p.guardMainEventLoop(newCtx)
+	go p.guardMainEventLoop(ctx)
 
-	return newCtx
+	return ctx
 }
 
 func init() {

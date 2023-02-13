@@ -51,13 +51,13 @@ func testInit(c map[string]string) *plug {
 	}
 
 	pi.RegisterPlug(p)
-	p.preInit(context.Background(), c, "svcName", "myns", defaultLog)
+	p.preInit(c, "svcName", "myns", defaultLog)
 	p.gateState = fakeGateState()
 	p.gateState.sync()
 	return p
 }
 
-func initTickerTest() (context.Context, context.CancelFunc, *plug) {
+func initTickerTest() *plug {
 	p := new(plug)
 	p.version = plugVersion
 	p.name = plugName
@@ -69,11 +69,11 @@ func initTickerTest() (context.Context, context.CancelFunc, *plug) {
 
 	pi.RegisterPlug(p)
 
-	ctx, cancelFunction := p.preInit(context.Background(), c, "svcName", "myns", defaultLog)
+	p.preInit(c, "svcName", "myns", defaultLog)
 	p.gateState = fakeGateState()
 	p.gateState.sync()
 	p.gateState.stat.Init()
-	return ctx, cancelFunction, p
+	return p
 }
 
 func cancelLater(cancel context.CancelFunc) {
@@ -84,10 +84,11 @@ func cancelLater(cancel context.CancelFunc) {
 
 func Test_plug_guardMainEventLoop_1(t *testing.T) {
 	t.Run("syncTicker", func(t *testing.T) {
-		ctx, cancelFunction, p := initTickerTest()
+		p := initTickerTest()
 		p.syncTicker = utils.NewTicker(100000)
 		p.syncTicker.Parse("", 300000)
 		// lets rely on timeout
+		ctx, cancelFunction := context.WithCancel(context.Background())
 		go cancelLater(cancelFunction)
 		p.guardMainEventLoop(ctx)
 		if ret := p.gateState.stat.Log(); ret != "map[]" {
@@ -97,7 +98,9 @@ func Test_plug_guardMainEventLoop_1(t *testing.T) {
 }
 func Test_plug_guardMainEventLoop_2(t *testing.T) {
 	t.Run("podMonitorTicker", func(t *testing.T) {
-		ctx, cancelFunction, p := initTickerTest()
+		p := initTickerTest()
+		ctx, cancelFunction := context.WithCancel(context.Background())
+
 		p.podMonitorTicker = utils.NewTicker(100000)
 		p.podMonitorTicker.Parse("", 300000)
 		// lets rely on timeout
@@ -111,7 +114,8 @@ func Test_plug_guardMainEventLoop_2(t *testing.T) {
 
 func Test_plug_guardMainEventLoop_4(t *testing.T) {
 	t.Run("reportPileTicker", func(t *testing.T) {
-		ctx, cancelFunction, p := initTickerTest()
+		p := initTickerTest()
+		ctx, cancelFunction := context.WithCancel(context.Background())
 		cancelFunction()
 		p.guardMainEventLoop(ctx)
 		if ret := p.gateState.stat.Log(); ret != "map[]" {
@@ -167,13 +171,8 @@ func Test_plug_Initialize(t *testing.T) {
 			p.syncTicker = utils.NewTicker(utils.MinimumInterval)
 
 			pi.RegisterPlug(p)
-			ctx, cancelFunction := p.preInit(context.Background(), tt.c, "svcName", "myns", defaultLog)
-			if ctx == context.Background() {
-				t.Error("extected a derived ctx")
-			}
-			if cancelFunction == nil {
-				t.Error("extected a cancelFunction")
-			}
+			p.preInit(tt.c, "svcName", "myns", defaultLog)
+
 			if tt.monitorPod != p.gateState.monitorPod {
 				t.Errorf("extected monitorPod %t got %t", tt.monitorPod, p.gateState.monitorPod)
 			}
@@ -192,7 +191,7 @@ func Test_plug_initPanic(t *testing.T) {
 	t.Run("panic on sid", func(t *testing.T) {
 		defer func() { _ = recover() }()
 		p := new(plug)
-		p.preInit(context.Background(), nil, "ns.svcName", "myns", defaultLog)
+		p.preInit(nil, "ns.svcName", "myns", defaultLog)
 		t.Error("extected to panic")
 	})
 }

@@ -77,6 +77,9 @@ func (f *fakeKmgr) TokenData(token string, labels []string) (podname string, sid
 	return "mypod", "mysid", "myns", nil
 }
 
+func (f *fakeKmgr) DeletePod(ns string, podname string) {
+}
+
 type fakeHttpClient struct {
 	statusCode int
 	json       []byte

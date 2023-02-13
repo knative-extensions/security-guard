@@ -45,8 +45,9 @@ type Alert struct {
 }
 
 type SyncMessageReq struct {
-	Pile   *SessionDataPile `json:"pile"`
-	Alerts []Alert          `json:"alerts"`
+	Pile           *SessionDataPile `json:"pile"`
+	Alerts         []Alert          `json:"alerts"`
+	IamCompromised bool             `json:"compromised"`
 }
 
 type SyncMessageResp struct {

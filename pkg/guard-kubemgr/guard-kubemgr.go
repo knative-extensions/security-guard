@@ -50,6 +50,7 @@ type KubeMgrInterface interface {
 	GetGuardian(ns string, sid string, cm bool, autoActivate bool) *spec.GuardianSpec
 	Watch(ns string, cmFlag bool, set func(ns string, sid string, cmFlag bool, g *spec.GuardianSpec))
 	TokenData(token string, labels []string) (podname string, sid string, ns string, err error)
+	DeletePod(ns string, podname string)
 }
 
 // KubeMgr manages Guardian CRDs and Guardian CMs
@@ -113,6 +114,17 @@ func (k *KubeMgr) InitConfigs() {
 		panic(err.Error())
 	}
 	k.crdClient = crdClientSet.GuardV1alpha1()
+}
+
+// DeletePod - Deletes a Pod
+func (k *KubeMgr) DeletePod(ns string, podname string) {
+	err := k.cmClient.CoreV1().Pods(ns).Delete(context.TODO(), podname, metav1.DeleteOptions{})
+	if err != nil {
+		// can't read CRD
+		pi.Log.Infof("fail to delete pod ns %s podname %s - error %v", ns, podname, err)
+	} else {
+		pi.Log.Infof("delete pod ns %s podname %s", ns, podname)
+	}
 }
 
 // readCrd - Reads a Guardian Crd from KubeApi
