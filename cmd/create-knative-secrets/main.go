@@ -36,7 +36,6 @@ import (
 	pkglogging "knative.dev/pkg/logging"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"knative.dev/control-protocol/pkg/certificates"
 )
 
