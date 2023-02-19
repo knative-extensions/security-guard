@@ -16,7 +16,7 @@
 
 # Create Kind cluster
 kind delete cluster --name k8s
-kind create cluster --config ./hack/kind/kind-config.yaml 
+kind create cluster --config ./hack/kind/kind-config.yaml
 kubectl cluster-info --context kind-k8s
 kubectl create namespace knative-serving
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
@@ -41,13 +41,13 @@ GS_IMAGE=`ko build ko://knative.dev/security-guard/cmd/guard-service -B  `
 kind load docker-image $GS_IMAGE --name k8s
 
 # start guard-service
-ko apply -f ./config-dev-only/deploy/guard-service.yaml -B 
+ko apply -f ./config-dev-only/deploy/guard-service.yaml -B
 
 # wait for ingress to be ready
 kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller  --timeout=120s
 
-#add hellowworld - protected using a guard sidecar  (the recomended pattern)
+#add hellowworld - protected using a guard sidecar  (the recommended pattern)
 ko apply -f ./config-dev-only/deploy/secured-helloworld.yaml -B
 
-#add myapp - protected using a seperate guard pod (non-recomended pattern)
+#add myapp - protected using a separate guard pod (non-recommended pattern)
 ko apply -f ./config-dev-only/deploy/secured-layered-myapp.yaml -B

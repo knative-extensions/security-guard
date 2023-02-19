@@ -99,4 +99,3 @@ Although **Guardian** CRDs and Configmaps can be controlled directly via `kubect
 ## Summary
 
 Guard takes a zero-trust approach. Guard assumes that all services are most likely vulnerable and places a gate in front of every service, implementing a zero-trust architecture.
-§
