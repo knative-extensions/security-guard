@@ -19,7 +19,6 @@
 
 echo "Activate TLS and AUTH in guard-service"
 kubectl patch deployment guard-service -n knative-serving --patch-file ./hack/production-patch.yaml
-exit
 
 echo "Copy the certificate to a temporary file"
 ROOTCA="$(mktemp)"
