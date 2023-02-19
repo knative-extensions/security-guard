@@ -155,7 +155,7 @@ func (p *plug) guardMainEventLoop(ctx context.Context) {
 func (p *plug) preInit(c map[string]string, sid string, ns string, logger pi.Logger) {
 	var ok, tlsActive bool
 	var v string
-	var loadInterval, pileInterval, monitorInterval string
+	var syncInterval, monitorInterval string
 
 	// Defaults used without config when used as a qpoption
 	useCm := false
@@ -186,15 +186,16 @@ func (p *plug) preInit(c map[string]string, sid string, ns string, logger pi.Log
 			analyzeBody = true
 		}
 
-		loadInterval = c["guardian-load-interval"]
-		pileInterval = c["report-pile-interval"]
+		syncInterval = c["guardian-sync-interval"]
 		monitorInterval = c["pod-monitor-interval"]
+	} else {
+		pi.Log.Infof("guard-gate missing configuration")
 	}
 
 	p.syncTicker = utils.NewTicker(utils.MinimumInterval)
 	p.podMonitorTicker = utils.NewTicker(utils.MinimumInterval)
 
-	p.syncTicker.Parse(loadInterval, syncIntervalDefault)
+	p.syncTicker.Parse(syncInterval, syncIntervalDefault)
 	p.podMonitorTicker.Parse(monitorInterval, podMonitorIntervalDefault)
 
 	podname := "unknown"
@@ -208,8 +209,8 @@ func (p *plug) preInit(c map[string]string, sid string, ns string, logger pi.Log
 		}
 	}
 
-	pi.Log.Debugf("guard-gate configuration: podname=%s, sid=%s, ns=%s, useCm=%t, guardUrl=%s, p.monitorPod=%t, guardian-load-interval %v, report-pile-interval %v, pod-monitor-interval %v",
-		podname, sid, ns, useCm, guardServiceUrl, monitorPod, loadInterval, pileInterval, monitorInterval)
+	pi.Log.Infof("guard-gate configuration: podname=%s, sid=%s, ns=%s, useCm=%t, guardUrl=%s, p.monitorPod=%t, guardian-sync-interval %v,  pod-monitor-interval %v",
+		podname, sid, ns, useCm, guardServiceUrl, monitorPod, syncInterval, monitorInterval)
 
 	// serviceName should never be "ns.{namespace}" as this is a reserved name
 	if strings.HasPrefix(sid, "ns.") {

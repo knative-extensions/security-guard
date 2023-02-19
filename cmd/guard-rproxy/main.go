@@ -43,8 +43,7 @@ type config struct {
 	LogLevel             string `split_words:"true" required:"false"`
 	GuardProxyPort       string `split_words:"true" required:"false"`
 	PodMonitorInterval   string `split_words:"true" required:"false"`
-	ReportPileInterval   string `split_words:"true" required:"false"`
-	GuardianLoadInterval string `split_words:"true" required:"false"`
+	GuardianSyncInterval string `split_words:"true" required:"false"`
 }
 
 type GuardGate struct {
@@ -107,8 +106,7 @@ func preMain(env *config) (guardGate *GuardGate, mux *http.ServeMux, target stri
 		plugConfig["use-cm"] = "false"
 	}
 
-	plugConfig["guardian-load-interval"] = env.GuardianLoadInterval
-	plugConfig["report-pile-interval"] = env.ReportPileInterval
+	plugConfig["guardian-sync-interval"] = env.GuardianSyncInterval
 	plugConfig["pod-monitor-interval"] = env.PodMonitorInterval
 
 	sid = env.ServiceName

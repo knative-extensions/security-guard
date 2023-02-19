@@ -18,6 +18,7 @@ package main
 
 import (
 	"sync"
+	"time"
 
 	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
 	guardKubeMgr "knative.dev/security-guard/pkg/guard-kubemgr"
@@ -25,28 +26,38 @@ import (
 )
 
 const (
-	pileMergeLimit  = uint32(1000)
-	numSamplesLimit = uint32(1000000)
+	pileMergeLimit         = uint32(1000)
+	numSamplesLimit        = uint32(1000000)
+	pileLearnMinTime       = 30 * 1000000000     // 30sec
+	guardianPersistMinTime = 5 * 60 * 1000000000 // 5min
 )
 
 // A cached record kept by guard-service for each deployed service
 type serviceRecord struct {
-	ns           string               // namespace of the deployed service
-	sid          string               // name of the deployed service
-	cmFlag       bool                 // indicate if the deployed service uses a ConfigMap (or CRD)
-	guardianSpec *spec.GuardianSpec   // a copy of the cached deployed service Guardian (RO - no mutext needed)
-	pile         spec.SessionDataPile // the deployed service Pile (RW - protected with pileMutex)
-	pileMutex    sync.Mutex           // protect access to the pile
-	alerts       uint                 // num of alerts
+	ns                     string               // namespace of the deployed service
+	sid                    string               // name of the deployed service
+	cmFlag                 bool                 // indicate if the deployed service uses a ConfigMap (or CRD)
+	guardianSpec           *spec.GuardianSpec   // a copy of the cached deployed service Guardian (RO - no mutext needed)
+	pile                   spec.SessionDataPile // the deployed service Pile (RW - protected with pileMutex)
+	pileLastLearn          time.Time            // Last time we learned
+	guardianLastPersist    time.Time            // Last time we stored the guardian
+	guardianPersistCounter uint                 // Counter guardian peristed
+	guardianLearnCounter   uint                 // Counter guardian learned
+	pileMergeCounter       uint                 // Counter pile merged
+	pileMutex              sync.Mutex           // protect access to the pile
+	alerts                 uint                 // num of alerts
+	deleted                bool                 // mark that record was deleted
 }
 
 // service cache maintaining a cached record per deployed service
 type services struct {
-	kmgr       guardKubeMgr.KubeMgrInterface // KubeMgr to access KuebApi during cache misses
-	mutex      sync.Mutex                    // protect access to cache map and to namespaces map
-	cache      map[string]*serviceRecord     // the cache
-	namespaces map[string]bool               // list of namespaces to watch for changes in ConfigMaps and CRDs
-	tickerKeys []string                      // list of cache keys to periodically process during a tick()
+	kmgr           guardKubeMgr.KubeMgrInterface // KubeMgr to access KuebApi during cache misses
+	mutex          sync.Mutex                    // protect access to cache map and to namespaces map
+	cache          map[string]*serviceRecord     // the cache
+	namespaces     map[string]bool               // list of namespaces to watch for changes in ConfigMaps and CRDs
+	tickerRecords  []*serviceRecord              // list of cache keys to periodically process during a tick()
+	lastTickerLoad time.Time                     // last time we loaded the ticker
+
 }
 
 // determine the cacheKey from its components
@@ -71,53 +82,81 @@ func (s *services) start() {
 	s.kmgr.InitConfigs()
 }
 
-// Periodical background work to ensure small piles eventually are stored using KubeApi
+func (s *services) loadTickerRecords() {
+	if time.Since(s.lastTickerLoad) < guardianPersistMinTime {
+		// no need to load ticker until it is time to have a fresh look at all records
+		return
+	}
+
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	// Assign more work to be done now and in future ticks
+	s.tickerRecords = make([]*serviceRecord, len(s.cache))
+	i := 0
+	for _, r := range s.cache {
+		s.tickerRecords[i] = r
+		i++
+	}
+}
+
+func (s *services) flushTickerRecords() {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	// Assign more work to be done now and in future ticks
+	s.tickerRecords = make([]*serviceRecord, len(s.cache))
+	i := 0
+	for _, r := range s.cache {
+		s.tickerRecords[i] = r
+		r.pileLastLearn = time.UnixMicro(0)
+		r.guardianLastPersist = time.UnixMicro(0)
+		i++
+	}
+}
+
+// Periodical background work to ensure:
+// 1. Small unused piles are eventually learned
+// 2. Learned unused guardians are eventually stored using KubeApi
+// in some unrealistics case, it is possible that ~1K ticks (1000 seconds = ~20m)
+// will be needed to persist all, hoever it will only happen if all services stop being used
+
 func (s *services) tick() {
 	// Tick should not include any asynchronous work
 	// Move all asynchronous work (e.g. KubeApi work) to go routines
-	s.mutex.Lock()
 
-	if len(s.tickerKeys) == 0 {
-		// Assign more work to be done now and in future ticks
-		s.tickerKeys = make([]string, len(s.cache))
-		i := 0
-		for k := range s.cache {
-			s.tickerKeys[i] = k
-			i++
-		}
+	// try up to 100 records per tick to find one that can be persisted
+	maxIterations := len(s.tickerRecords)
+	if maxIterations == 0 {
+		// May loop over some ~10K service records
+		s.loadTickerRecords()
+		return
 	}
 
-	// try up to 100 records per tick to find one that can be learned
-	maxIterations := len(s.tickerKeys)
 	if maxIterations > 100 {
 		maxIterations = 100
 	}
 
-	// find a record to learn
-	i := 0 // i is the index of the record to learn
-	var record *serviceRecord
+	// find a record to persist
+	// May loop and learn upto 100 service records + may persist one
+	i := 0          // i is the index of the record to learn
+	maxPersist := 0 // number of records we persisted
 	for ; i < maxIterations; i++ {
-		r, exists := s.cache[s.tickerKeys[i]]
-		if exists {
-			if r.pile.Count != 0 {
-				// we will learn this record!
-				record = r
-				// (during the next tick we should try the next one)
-				i++
-				break
+		r := s.tickerRecords[i]
+		if !r.deleted {
+			if s.learnAndPersistGuardian(r) {
+				maxPersist++
+				if maxPersist > 10 {
+					i++
+					break
+				}
+
 			}
 		}
 	}
-	s.mutex.Unlock()
-	// Must unlock s.mutex before s.learnPile
-
-	if record != nil {
-		// lets learn it
-		s.learnPile(record)
-	}
 
 	// remove the keys we processed from the key slice
-	s.tickerKeys = s.tickerKeys[i:]
+	s.tickerRecords = s.tickerRecords[i:]
 }
 
 // delete from cache
@@ -125,6 +164,10 @@ func (s *services) delete(ns string, sid string, cmFlag bool) {
 	service := serviceKey(ns, sid, cmFlag)
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
+	if r, ok := s.cache[service]; ok {
+		r.deleted = true
+	}
+
 	delete(s.cache, service)
 	pi.Log.Debugf("deleteSession %s", service)
 }
@@ -177,6 +220,8 @@ func (s *services) set(ns string, sid string, cmFlag bool, guardianSpec *spec.Gu
 	if !exists {
 		record = new(serviceRecord)
 		record.pile.Clear()
+		record.pileLastLearn = time.Now()
+		record.guardianLastPersist = time.Now()
 		record.ns = ns
 		record.sid = sid
 		record.cmFlag = cmFlag
@@ -199,40 +244,67 @@ func (s *services) update(ns string, sid string, cmFlag bool, guardianSpec *spec
 }
 
 // update the record pile by merging a new pile
-func (s *services) merge(record *serviceRecord, pile *spec.SessionDataPile) {
-	record.pileMutex.Lock()
-	record.pile.Merge(pile)
-	record.pileMutex.Unlock()
-	// Must unlock pileMutex before s.learnPile
-
-	if record.pile.Count > pileMergeLimit {
-		s.learnPile(record)
+func (s *services) mergeAndLearnAndPersistGuardian(record *serviceRecord, pile *spec.SessionDataPile) {
+	if pile != nil && pile.Count > 0 {
+		// Must unlock pileMutex before s.learnPile
+		record.pileMutex.Lock()
+		record.pile.Merge(pile)
+		record.pileMutex.Unlock()
+		record.pileMergeCounter++
 	}
+
+	s.learnAndPersistGuardian(record)
 }
 
-// update the record guardianSpec by learning a new config and fusing with the record existing config
-// update KubeAPI as well.
-// return true if we try to learn and access kubeApi, false if count is zero and we have nothing to do
-func (s *services) learnPile(record *serviceRecord) {
+// Update the guardian using the pile
+// Persist guardian using KubeAPI
+// Return true if persisted, false if not
+func (s *services) learnAndPersistGuardian(record *serviceRecord) bool {
+	var shouldPersist bool
+	var shouldLearn bool
+
 	if record.guardianSpec.Learned == nil {
+		// Our first guardian
 		record.guardianSpec.Learned = new(spec.SessionDataConfig)
+		shouldPersist = true
+		shouldLearn = true
+	} else {
+		// we already have a critiria - do we need to learn again?
+		if record.pile.Count >= pileMergeLimit || time.Since(record.pileLastLearn) >= pileLearnMinTime {
+			shouldLearn = true
+		}
+
+		// we already have a critiria - do we need to persist?
+		if time.Since(record.guardianLastPersist) > guardianPersistMinTime {
+			shouldPersist = true
+		}
 	}
 
-	record.pileMutex.Lock()
-	record.guardianSpec.Learned.Learn(&record.pile)
-	record.guardianSpec.NumSamples += record.pile.Count
-	if record.guardianSpec.NumSamples > numSamplesLimit {
-		record.guardianSpec.NumSamples = numSamplesLimit
+	if shouldLearn && record.pile.Count > 0 {
+		// ok, lets learn
+		record.pileMutex.Lock()
+		record.guardianSpec.Learned.Learn(&record.pile)
+		record.guardianSpec.NumSamples += record.pile.Count
+		if record.guardianSpec.NumSamples > numSamplesLimit {
+			record.guardianSpec.NumSamples = numSamplesLimit
+		}
+		record.pileLastLearn = time.Now()
+		record.pile.Clear()
+		record.pileMutex.Unlock()
+		record.guardianLearnCounter++
+		// Must unlock record.pileMutex before s.persist
 	}
-	record.pile.Clear()
-	record.pileMutex.Unlock()
-	// Must unlock record.pileMutex before s.persist
 
-	// update the kubeApi record
-	go s.persist(record)
+	if shouldPersist {
+		// update the kubeApi record
+		record.guardianLastPersist = time.Now()
+		record.guardianPersistCounter++
+		go s.persistGuardian(record)
+	}
+	return shouldPersist
 }
 
-func (s *services) persist(record *serviceRecord) {
+func (s *services) persistGuardian(record *serviceRecord) {
 	if err := s.kmgr.Set(record.ns, record.sid, record.cmFlag, record.guardianSpec); err != nil {
 		pi.Log.Infof("Failed to update KubeApi with new config %s.%s: %v", record.ns, record.sid, err)
 	} else {

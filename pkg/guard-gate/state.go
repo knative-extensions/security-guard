@@ -56,9 +56,9 @@ func (gs *gateState) init(monitorPod bool, guardServiceUrl string, podname strin
 
 	if rootCA := os.Getenv("ROOT_CA"); rootCA != "" {
 		if ok := gs.certPool.AppendCertsFromPEM([]byte(rootCA)); ok {
-			pi.Log.Debugf("TLS: Success adding ROOT_CA")
+			pi.Log.Debugf("TLS: Success adding ROOT_CA: %s", rootCA)
 		} else {
-			pi.Log.Infof("TLS: Failed to AppendCertsFromPEM from ROOT_CA")
+			pi.Log.Infof("TLS: Failed to AppendCertsFromPEM from ROOT_CA: %s", rootCA)
 		}
 	}
 	gs.srv.initHttpClient(gs.certPool)

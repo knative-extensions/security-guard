@@ -149,9 +149,12 @@ func Test_services_tick(t *testing.T) {
 			if pile1.Count != 4 {
 				t.Errorf("Expected len(pile1.Req.Method.List) of 4 in cache, have %d", pile1.Count)
 			}
-			s.merge(r1, &pile1)
-			if s.cache["sid1.ns"].pile.Count != 4 {
-				t.Errorf("Expected pileCount of 4 in cache, have %d", s.cache["sid1.ns"].pile.Count)
+			s.mergeAndLearnAndPersistGuardian(r1, &pile1)
+			if s.cache["sid1.ns"].pile.Count != 0 {
+				t.Errorf("Expected pileCount of 0 in cache, have %d", s.cache["sid1.ns"].pile.Count)
+			}
+			if s.cache["sid1.ns"].guardianSpec.NumSamples != 4 {
+				t.Errorf("Expected pileCount of 4 in cache, have %d", s.cache["sid1.ns"].guardianSpec.NumSamples)
 			}
 			s.set("ns", "sid2", true, new(spec.GuardianSpec))
 			s.update("ns", "sid3", false, new(spec.GuardianSpec))
@@ -172,11 +175,11 @@ func Test_services_tick(t *testing.T) {
 			pile2 := spec.SessionDataPile{}
 			pile2.Add(profile2)
 			pile2.Add(&spec.SessionDataProfile{})
-			s.merge(r2, &pile2)
+			s.mergeAndLearnAndPersistGuardian(r2, &pile2)
 			pile3 := spec.SessionDataPile{}
 			pile3.Add(profile3)
 			pile3.Add(&spec.SessionDataProfile{})
-			s.merge(r3, &pile3)
+			s.mergeAndLearnAndPersistGuardian(r3, &pile3)
 
 			s.tick()
 			s.tick()
@@ -185,7 +188,7 @@ func Test_services_tick(t *testing.T) {
 			profile11.Req.Method.ProfileString("Get")
 			pile11 := spec.SessionDataPile{}
 			pile11.Add(profile11)
-			s.merge(r1, &pile11)
+			s.mergeAndLearnAndPersistGuardian(r1, &pile11)
 			s.tick()
 			s.tick()
 			if len(s.cache) != 4 {

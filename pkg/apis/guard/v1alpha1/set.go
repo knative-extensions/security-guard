@@ -142,6 +142,9 @@ func (config *SetConfig) learnI(valPile ValuePile) {
 
 // pile is RO and unchanged - never uses pile internal objects
 func (config *SetConfig) Learn(pile *SetPile) {
+	if len(pile.List) == 0 {
+		return
+	}
 	if config.List == nil {
 		config.List = []string{}
 	}
