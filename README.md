@@ -7,17 +7,21 @@
 
 <h1><img src="img/guard.png" width="80"/> Security-Guard</h1>
 
-This readme file focus on assisting Knative users to secure their deployed services. When working with vanilla Kubernetes, [you may deploy Guard by adding a sidecar](KUBERNETES.md).
+Guard help secure microservices, serverless containers and serverless function. It detects and block exploits sent to services and can detect and restart compromised service pods.
+
+This readme file offer general information about Guard. Guard can be used with vanilla Kubernetes. See [how to install and use Guard on Kubernetes](KUBERNETES.md). Guard is integrated into Knative, making it easier to use. See [how to install and use Guard on Knative](https://knative.dev/docs/serving/app-security/security-guard-about/).
+
+The rest of ths Readme apply to using Guard on any system.
 
 ## Why Do We Need Security-Guard?
 
 User containers deployed on Kubernetes may include vulnerabilities, may be misconfigured and may include malicious code. The source of such vulnerabilities, misconfigurations or malicious code may be the DevOps team, a dependency or a hacker that has successfully penetrated any of the support systems (image repository, ci/cd, Knative, Kube, the DevOps team development systems etc. etc. etc.) or one of the backend services used by the user container. Any such security issue may enable an attacker to use the user container for other purposes than its original intention (e.g. steal data, attack others, spread, contact a C&C, Crypto mining, etc.)
 
-Users of Knative, same as any Kubernetes user, require the means to block (and/or get an alert about) an attempt to exploit a vulnerability or misconfiguration, embedded in a user container. Also, users require the means to establish situational awareness about container running potentially malicious code and be offered ways to respond once they discover that the user containers are being exploited by attackers.
+Kubernetes users require the means to block (and/or get an alert about) an attempt to exploit a vulnerability or misconfiguration, embedded in a user container. Also, users require the means to establish situational awareness about container running potentially malicious code and be offered ways to respond once they discover that the user containers are being exploited by attackers.
 
-## How Does Security-Guard Help Secure Knative Services
+## How Does Security-Guard Help Secure Kubernetes Services
 
-The core component of Security-Guard, or Guard for short, is the [guard-gate](pkg/guard-gate) which can be used to extend Knative Queue Proxy. [guard-gate](pkg/guard-gate) monitors and potentially blocks requests and/or responses to Knative services based on a per-service security configuration.
+The core component of Security-Guard, or Guard for short, is the [guard-gate](pkg/guard-gate). guard-gate is normally embedded in a sidecar to protect a pod offering a servic.  Under Knative, guard extends the Knative sidecar (Queue Proxy). [guard-gate](pkg/guard-gate) monitors and potentially blocks requests and/or responses to Kubernetes services based on a per-service security configuration.
 
 The per service security configuration is stored in a **"Guardian"** object. **Guardian** maintains a set of micro-rules that enable a fine grain filtering, performed against each value delivered to/from the service.
 By using the micro-rules, [guard-gate](pkg/guard-gate) can identify the delivery of exploits targeting vulnerabilities embedded as part of the service or its dependencies.
@@ -84,6 +88,10 @@ See [guard-gate](pkg/guard-gate) for more details on the different Guard working
 
 Additionally, [guard-service](cmd/guard-service) cache Guardians and serve [guard-gate](pkg/guard-gate) requests to get a copy of the Guardian. This is done to reduce the load on KubeApi since any deployed Knative pod requires to access a copy of the Guardian on startup.
 
+## Guard Service under Production
+
+When using [guard-service](cmd/guard-service) in a production cluster, it is important to secure the communication between [guard-gate](pkg/guard-gate) and [guard-service](cmd/guard-service). This requires the admin to switch on the TLS mode and the AUTH mode of both [guard-service](cmd/guard-service) and all instances of [guard-gate](pkg/guard-gate).
+
 ## Guard User Interface
 
 Although **Guardian** CRDs and Configmaps can be controlled directly via `kubectl`, an optional [guard-ui](cmd/guard-ui) is offered to simplify and clarify the micro-rules.
@@ -91,3 +99,4 @@ Although **Guardian** CRDs and Configmaps can be controlled directly via `kubect
 ## Summary
 
 Guard takes a zero-trust approach. Guard assumes that all services are most likely vulnerable and places a gate in front of every service, implementing a zero-trust architecture.
+§

@@ -17,8 +17,9 @@
 
 # Set the ROOT_CA and token audiences
 
-echo "Add TLS and Tokens to guard-service"
-kubectl patch deployment guard-service -n knative-serving -p '{"spec":{"template":{"spec":{"containers":[{"name":"guard-service","env":[{"name": "GUARD_SERVICE_TLS", "value": "true"}, {"name": "GUARD_SERVICE_AUTH", "value": "true"}]}]}}}}'
+echo "Activate TLS and AUTH in guard-service"
+kubectl patch deployment guard-service -n knative-serving --patch-file ./hack/production-patch.yaml
+exit
 
 echo "Copy the certificate to a temporary file"
 ROOTCA="$(mktemp)"

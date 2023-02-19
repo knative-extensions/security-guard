@@ -95,9 +95,9 @@ jobs:
       run: |
         ./test/e2e/e2e-tests.sh $SERVICE_URL "httptest1"
 
-    - name: Activate TLS
+    - name: Activate Production mode with AUTH and TLS
       run: |
-        ./hack/setTLS.sh
+        ./hack/setProduction.sh
         sleep 60
       
     - name: install test service2
