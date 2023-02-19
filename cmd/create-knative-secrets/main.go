@@ -85,9 +85,7 @@ func main() {
 	caSecret, err := secrets.Get(context.Background(), "serving-certs-ctrl-ca", metav1.GetOptions{})
 	if apierrors.IsNotFound(err) {
 		fmt.Printf("knative-serving-certs secret is missing - lets create it\n")
-		// The secret should be created explicitly by a higher-level system
-		// that's responsible for install/updates.  We simply populate the
-		// secret information.
+
 		s := corev1.Secret{}
 		s.Name = "serving-certs-ctrl-ca"
 		s.Namespace = "knative-serving"
@@ -126,9 +124,6 @@ func main() {
 	if apierrors.IsNotFound(err) {
 		fmt.Printf("serving-certs-ctrl-ca-public secret is missing - lets create it\n")
 
-		// The secret should be created explicitly by a higher-level system
-		// that's responsible for install/updates.  We simply populate the
-		// secret information.
 		s := corev1.Secret{}
 		s.Name = "serving-certs-ctrl-ca-public"
 		s.Namespace = "knative-serving"
@@ -154,9 +149,6 @@ func main() {
 	if apierrors.IsNotFound(err) {
 		fmt.Printf("knative-serving-certs secret is missing - lets create it\n")
 
-		// The secret should be created explicitly by a higher-level system
-		// that's responsible for install/updates.  We simply populate the
-		// secret information.
 		s := corev1.Secret{}
 		s.Name = "knative-serving-certs"
 		s.Namespace = "knative-serving"
