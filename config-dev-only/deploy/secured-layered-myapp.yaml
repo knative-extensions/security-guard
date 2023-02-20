@@ -34,7 +34,7 @@ spec:
         - name: SERVICE_URL
           value: "http://myapp.default"
         - name: USE_CRD
-          value: "false"
+          value: "true"
         - name: MONITOR_POD
           value: "false"
         - name: GUARDIAN_SYNC_INTERVAL
@@ -91,7 +91,8 @@ spec:
     app: myapp
   ports:
     - protocol: TCP
-      port: 8080
+      port: 80
+      targetPort: 8080
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress

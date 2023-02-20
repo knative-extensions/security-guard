@@ -35,7 +35,7 @@ Beyond, Situational Awareness, [guard-gate](pkg/guard-gate) enables blocking out
 Overall, the solution offers both visibility into the security of the service, and the ability to monitor/block both known patterns and unknown patterns (using a zero-day exploits).
 
 <p align="center">
-    <img src="img/GuardInKnative.png" width="700"  />
+    <img src="img/guardComponents.png" width="700"  />
 </p>
 
 ## Solution Components

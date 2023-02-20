@@ -46,7 +46,7 @@ spec:
         - name: SERVICE_URL
           value: "http://myapp.default"
         - name: USE_CRD
-          value: "false"
+          value: "true"
         - name: MONITOR_POD
           value: "false"
         - name: GUARDIAN_SYNC_INTERVAL
