@@ -1,7 +1,7 @@
 # Guard on Vanilla Kubernetes
-For direct deployment of guard on Kubernetes, [guard-gate](./pkg/guard-gate/README.md) needs to be deployed per-service inside a reverse proxy. The reverse proxy needs to be configured to consume all ingress requests and forward it to the protected service. [guard-rproxy](./cmd/guard-rproxy/README.md) can be used as the guard reverse proxy. 
+For direct deployment of guard on Kubernetes, [guard-gate](./pkg/guard-gate/README.md) needs to be deployed per-service inside a reverse proxy. The reverse proxy needs to be configured to consume all ingress requests and forward it to the protected service. [guard-rproxy](./cmd/guard-rproxy/README.md) can be used as the guard reverse proxy.
 
-The repository exemplifies the use of [guard-rproxy](./cmd/guard-rproxy/README.md) deployed as a sidecar to protect a "hello world" service - this is the recommended installation pattern of guard when deploying in vanilla Kubernetes - see the [helloworld example](#-using-guard-rproxy-as-a-sidecar) below. 
+The repository exemplifies the use of [guard-rproxy](./cmd/guard-rproxy/README.md) deployed as a sidecar to protect a "hello world" service - this is the recommended installation pattern of guard when deploying in vanilla Kubernetes - see the [helloworld example](#-using-guard-rproxy-as-a-sidecar) below.
 
 The repository also exemplifies the use of [guard-rproxy](./cmd/guard-rproxy/README.md) as a separate layer in front of a "hello world" service - see the [myapp example](#-using-guard-rproxy-in-a-separate-pod) below.
 
@@ -157,7 +157,7 @@ serving-certs-ctrl-ca          Opaque   4      12h
 serving-certs-ctrl-ca-public   Opaque   1      12h
 ```
 
-After the secrets were created, you should copy the `serving-certs-ctrl-ca-public` secret to any namespace where protected services are deployed. You may use [the `copyPublicCaKey` script] (./hack/copyPublicCaKey.sh) to ease your work. The Kind installation already use this script to copy the secrest to teh default namespace.
+After the secrets were created, you should copy the `serving-certs-ctrl-ca-public` secret to any namespace where protected services are deployed. You may use [the `copyPublicCaKey` script] (./hack/copyPublicCaKey.sh) to ease your work. The Kind installation already use this script to copy the secrets to the default namespace.
 
 ```
 kubectl get secrets

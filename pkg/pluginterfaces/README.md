@@ -1,6 +1,6 @@
 # Plug Interfaces
 
-This base package defines teh interface and common data structures for security plugs including:
+This base package defines the interface and common data structures for security plugs including:
 
 - [guard-gate](../guard-gate)
 - [test-gate](../test-gate)

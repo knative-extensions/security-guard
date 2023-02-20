@@ -1,6 +1,6 @@
 # Guard Create Knative Secrets
 
-This Kubernetes Job is used when deploying guard out side of Knative. When using Knative the knative secrets are deployed by the Knative Operator which installs Guard as well.When not using Knative, it is up to the admin to create the secrets used by Guard. Running `create-knative-secrets` as a Job allows a simple preperation of the required secrets.
+This Kubernetes Job is used when deploying guard out side of Knative. When using Knative the knative secrets are deployed by the Knative Operator which installs Guard as well.When not using Knative, it is up to the admin to create the secrets used by Guard. Running `create-knative-secrets` as a Job allows a simple preparation of the required secrets.
 
 It create to secrets:
 
