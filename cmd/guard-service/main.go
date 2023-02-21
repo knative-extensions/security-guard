@@ -242,7 +242,7 @@ func (l *learner) mainEventLoop(quit chan string, kill chan os.Signal) {
 		}
 	}
 	// persisting remaining services records
-	l.services.flushTickerRecords() // mark all for immidiate learn and persist
+	l.services.flushTickerRecords() // mark all for immediate learn and persist
 	for len(l.services.records) > 0 {
 		pi.Log.Infof("mainEventLoop completion - persisting %d remaining services records", len(l.services.records))
 		<-l.pileLearnTicker.Ch()
