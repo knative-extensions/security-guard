@@ -34,6 +34,11 @@ const plugVersion string = "0.3"
 const plugName string = "guard"
 
 const (
+	sessionKey = "GuardSession"
+	maxBody    = int64(1048576)
+)
+
+const (
 	syncIntervalDefault       = 60 * time.Second
 	podMonitorIntervalDefault = 5 * time.Second
 )
@@ -143,7 +148,7 @@ func (p *plug) guardMainEventLoop(ctx context.Context) {
 			return
 		// Periodically send pile and alerts and get an updated Guardian
 		case <-p.syncTicker.Ch():
-			p.gateState.sync(true)
+			p.gateState.syncIfNeeded()
 
 		// Periodically profile of the pod
 		case <-p.podMonitorTicker.Ch():
