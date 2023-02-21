@@ -38,7 +38,7 @@ import (
 const (
 	ALERTS_LIMIT           = 1000
 	PILE_LIMIT             = 1000
-	MIN_TIME_BETWEEN_SYNCS = 5 * 1000000000 // 5s
+	MIN_TIME_BETWEEN_SYNCS = 5 * time.Second // 5s
 )
 
 type httpClientInterface interface {

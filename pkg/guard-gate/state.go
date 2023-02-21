@@ -78,7 +78,7 @@ func (gs gateState) start() {
 
 // sync is called periodically to send pile and alerts and to load from the updated Guardian
 func (gs *gateState) sync(shouldLoad bool) {
-	if time.Since(gs.lastSync) > MIN_TIME_BETWEEN_SYNCS {
+	if time.Since(gs.lastSync) < MIN_TIME_BETWEEN_SYNCS {
 		return
 	}
 
