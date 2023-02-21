@@ -240,9 +240,9 @@ func (srv *gateClient) addToPile(profile *spec.SessionDataProfile) uint32 {
 	return srv.pile.Count
 }
 
-func (srv *gateClient) syncWithServiceAndKubeApi() *spec.GuardianSpec {
+func (srv *gateClient) syncWithServiceAndKubeApi(shouldLoad bool) *spec.GuardianSpec {
 	wsGate := srv.syncWithService()
-	if wsGate == nil {
+	if wsGate == nil && shouldLoad {
 		// never return nil!
 		wsGate = srv.kubeMgr.GetGuardian(srv.ns, srv.sid, srv.useCm, true)
 	}

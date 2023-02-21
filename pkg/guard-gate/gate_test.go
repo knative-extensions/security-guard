@@ -53,7 +53,7 @@ func testInit(c map[string]string) *plug {
 	pi.RegisterPlug(p)
 	p.preInit(c, "svcName", "myns", defaultLog)
 	p.gateState = fakeGateState()
-	p.gateState.sync()
+	p.gateState.sync(true)
 	return p
 }
 
@@ -71,7 +71,7 @@ func initTickerTest() *plug {
 
 	p.preInit(c, "svcName", "myns", defaultLog)
 	p.gateState = fakeGateState()
-	p.gateState.sync()
+	p.gateState.sync(true)
 	p.gateState.stat.Init()
 	return p
 }

@@ -73,9 +73,12 @@ func (gs gateState) start() {
 }
 
 // sync is called periodically to send pile and alerts and to load from the updated Guardian
-func (gs *gateState) sync() {
+func (gs *gateState) sync(shouldLoad bool) {
 	// send pile and alerts and get Guardian - never returns nil!
-	g := gs.srv.syncWithServiceAndKubeApi()
+	g := gs.srv.syncWithServiceAndKubeApi(shouldLoad)
+	if !shouldLoad {
+		return
+	}
 
 	// load guardian
 	// Set the correct Control

@@ -38,7 +38,7 @@ func fakeSessionCancel() {
 func Test_SessionInContext(t *testing.T) {
 	ctx1 := context.Background()
 	gs := fakeGateState()
-	gs.sync()
+	gs.sync(true)
 
 	t.Run("simple", func(t *testing.T) {
 		s1 := newSession(gs, nil)
@@ -118,7 +118,7 @@ func Test_SessionInContext(t *testing.T) {
 
 func Test_session_sessionEventLoop(t *testing.T) {
 	gs := fakeGateState()
-	gs.sync()
+	gs.sync(true)
 	gs.stat.Init()
 	ctx, cancelFunction := context.WithCancel(context.Background())
 	t.Run("simple", func(t *testing.T) {
@@ -177,7 +177,7 @@ func Test_session_sessionEventLoopTicker(t *testing.T) {
 	t.Run("simple", func(t *testing.T) {
 		ctx, cancelFunction := context.WithCancel(context.Background())
 		gs := fakeGateState()
-		gs.sync()
+		gs.sync(true)
 		gs.stat.Init()
 		s := newSession(gs, nil)
 		s.cancelFunc = cancelFunction

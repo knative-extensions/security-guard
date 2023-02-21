@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -24,6 +25,7 @@ import (
 	"net/url"
 	"os"
 	"runtime/debug"
+	"time"
 
 	"github.com/kelseyhightower/envconfig"
 
@@ -158,9 +160,31 @@ func main() {
 	}
 	defer utils.SyncLogger()
 
-	guardGate.securityPlug.Init(signals.NewContext(), plugConfig, sid, ns, pi.Log)
-	defer guardGate.securityPlug.Shutdown()
+	signalCtx := signals.NewContext()
+	guardGate.securityPlug.Init(signalCtx, plugConfig, sid, ns, pi.Log)
+	srv := &http.Server{
+		Addr:    target,
+		Handler: mux,
+	}
+	go func(srv *http.Server) {
+		err := srv.ListenAndServe()
+		if !errors.Is(err, http.ErrServerClosed) {
+			pi.Log.Infof("Http service failed to start %v\n", err)
+		} else {
+			pi.Log.Infof("Http services stoped!\n")
+		}
+	}(srv)
 
-	err := http.ListenAndServe(target, mux)
-	pi.Log.Errorf("Failed to open http local service: %s", err.Error())
+	// wait to die
+	<-signalCtx.Done()
+
+	pi.Log.Infof("Terminating guard-rproxy")
+
+	// Shutdown the http services
+	shutdownCtx, shutdownRelease := context.WithTimeout(context.Background(), 10*time.Second)
+	defer shutdownRelease()
+	srv.Shutdown(shutdownCtx)
+
+	// Shutdown guard (including a final sync)
+	guardGate.securityPlug.Shutdown()
 }

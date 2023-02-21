@@ -51,12 +51,12 @@ type serviceRecord struct {
 
 // service cache maintaining a cached record per deployed service
 type services struct {
-	kmgr           guardKubeMgr.KubeMgrInterface // KubeMgr to access KuebApi during cache misses
-	mutex          sync.Mutex                    // protect access to cache map and to namespaces map
-	cache          map[string]*serviceRecord     // the cache
-	namespaces     map[string]bool               // list of namespaces to watch for changes in ConfigMaps and CRDs
-	tickerRecords  []*serviceRecord              // list of cache keys to periodically process during a tick()
-	lastTickerLoad time.Time                     // last time we loaded the ticker
+	kmgr               guardKubeMgr.KubeMgrInterface // KubeMgr to access KuebApi during cache misses
+	mutex              sync.Mutex                    // protect access to cache map and to namespaces map
+	cache              map[string]*serviceRecord     // the cache
+	namespaces         map[string]bool               // list of namespaces to watch for changes in ConfigMaps and CRDs
+	records            []*serviceRecord              // list of records to periodically process learn and store during tick()
+	lastCreatedRecords time.Time                     // last time we created the records
 
 }
 
@@ -82,20 +82,21 @@ func (s *services) start() {
 	s.kmgr.InitConfigs()
 }
 
-func (s *services) loadTickerRecords() {
-	if time.Since(s.lastTickerLoad) < guardianPersistMinTime {
-		// no need to load ticker until it is time to have a fresh look at all records
+func (s *services) createRecords() {
+	if time.Since(s.lastCreatedRecords) < guardianPersistMinTime {
+		// no need to build the list until it is time to have a fresh look at all records
 		return
 	}
+	s.lastCreatedRecords = time.Now()
 
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
 	// Assign more work to be done now and in future ticks
-	s.tickerRecords = make([]*serviceRecord, len(s.cache))
+	s.records = make([]*serviceRecord, len(s.cache))
 	i := 0
 	for _, r := range s.cache {
-		s.tickerRecords[i] = r
+		s.records[i] = r
 		i++
 	}
 }
@@ -105,10 +106,10 @@ func (s *services) flushTickerRecords() {
 	defer s.mutex.Unlock()
 
 	// Assign more work to be done now and in future ticks
-	s.tickerRecords = make([]*serviceRecord, len(s.cache))
+	s.records = make([]*serviceRecord, len(s.cache))
 	i := 0
 	for _, r := range s.cache {
-		s.tickerRecords[i] = r
+		s.records[i] = r
 		r.pileLastLearn = time.UnixMicro(0)
 		r.guardianLastPersist = time.UnixMicro(0)
 		i++
@@ -118,35 +119,35 @@ func (s *services) flushTickerRecords() {
 // Periodical background work to ensure:
 // 1. Small unused piles are eventually learned
 // 2. Learned unused guardians are eventually stored using KubeApi
-// in some unrealistics case, it is possible that ~1K ticks (1000 seconds = ~20m)
-// will be needed to persist all, hoever it will only happen if all services stop being used
+// In some unrealistic case, it is possible that ~1K ticks (1000 seconds = ~20m)
+// will be needed to persist all records (assuming all waiting to be persisted)
 
 func (s *services) tick() {
 	// Tick should not include any asynchronous work
 	// Move all asynchronous work (e.g. KubeApi work) to go routines
 
 	// try up to 100 records per tick to find one that can be persisted
-	maxIterations := len(s.tickerRecords)
-	if maxIterations == 0 {
+	numRecordsToProcess := len(s.records)
+	if numRecordsToProcess == 0 {
 		// May loop over some ~10K service records
-		s.loadTickerRecords()
+		s.createRecords()
 		return
 	}
 
-	if maxIterations > 100 {
-		maxIterations = 100
+	if numRecordsToProcess > 100 {
+		numRecordsToProcess = 100
 	}
 
 	// find a record to persist
-	// May loop and learn upto 100 service records + may persist one
-	i := 0          // i is the index of the record to learn
-	maxPersist := 0 // number of records we persisted
-	for ; i < maxIterations; i++ {
-		r := s.tickerRecords[i]
+	// May loop and learn upto 100 service records + may persist 10
+	i := 0              // i is the index of the record to learn
+	persistCounter := 0 // number of records we persisted
+	for ; i < numRecordsToProcess; i++ {
+		r := s.records[i]
 		if !r.deleted {
 			if s.learnAndPersistGuardian(r) {
-				maxPersist++
-				if maxPersist > 10 {
+				persistCounter++
+				if persistCounter > 10 {
 					i++
 					break
 				}
@@ -155,8 +156,8 @@ func (s *services) tick() {
 		}
 	}
 
-	// remove the keys we processed from the key slice
-	s.tickerRecords = s.tickerRecords[i:]
+	// remove the records we processed
+	s.records = s.records[i:]
 }
 
 // delete from cache

@@ -20,6 +20,7 @@ import (
 	"os"
 
 	_ "knative.dev/security-guard/pkg/guard-gate"
+	pi "knative.dev/security-guard/pkg/pluginterfaces"
 	"knative.dev/security-guard/pkg/qpoption"
 	"knative.dev/serving/pkg/queue/sharedmain"
 )
@@ -27,9 +28,12 @@ import (
 // Knative Serving Queue Proxy with support for a guard-gate QPOption
 func main() {
 	qOpt := qpoption.NewGateQPOption()
-	defer qOpt.Shutdown()
+	defer qOpt.Shutdown() // Shutdown guard (including a final sync)
 
-	if sharedmain.Main(qOpt.Setup) != nil {
+	if err := sharedmain.Main(qOpt.Setup); err != nil {
+		pi.Log.Infof("Queue Sharedmain failed!!!! %v\n", err)
+
+		// Shutdown guard (including a final sync)
 		qOpt.Shutdown()
 		os.Exit(1)
 	}

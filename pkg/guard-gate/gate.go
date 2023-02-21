@@ -34,7 +34,7 @@ const plugVersion string = "0.3"
 const plugName string = "guard"
 
 const (
-	syncIntervalDefault       = 10 * time.Second
+	syncIntervalDefault       = 60 * time.Second
 	podMonitorIntervalDefault = 5 * time.Second
 )
 
@@ -53,8 +53,12 @@ type plug struct {
 }
 
 func (p *plug) Shutdown() {
-	pi.Log.Debugf("%s: Shutdown", p.name)
-	p.gateState.sync()
+	pi.Log.Infof("%s Shutdown - performing final Sync!", p.name)
+	p.syncTicker.Stop()
+	p.podMonitorTicker.Stop()
+	p.gateState.sync(false)
+	pi.Log.Infof("%s - Done with the following statistics: %s", p.name, p.gateState.stat.Log())
+	pi.Log.Sync()
 }
 
 func (p *plug) PlugName() string {
@@ -129,22 +133,17 @@ func (p *plug) ApproveResponse(req *http.Request, resp *http.Response) (*http.Re
 func (p *plug) guardMainEventLoop(ctx context.Context) {
 	p.syncTicker.Start()
 	p.podMonitorTicker.Start()
-	defer func() {
-		p.syncTicker.Stop()
-		p.podMonitorTicker.Stop()
-		p.gateState.sync()
-		pi.Log.Infof("%s: Done with the following statistics: %s", plugName, p.gateState.stat.Log())
-	}()
-
 	for {
 		select {
 		// Always finish guard here!
 		case <-ctx.Done():
+			pi.Log.Debugf("Terminating the guardMainEventLoop")
+			p.syncTicker.Stop()
+			p.podMonitorTicker.Stop()
 			return
-
 		// Periodically send pile and alerts and get an updated Guardian
 		case <-p.syncTicker.Ch():
-			p.gateState.sync()
+			p.gateState.sync(true)
 
 		// Periodically profile of the pod
 		case <-p.podMonitorTicker.Ch():
@@ -230,7 +229,7 @@ func (p *plug) Init(ctx context.Context, c map[string]string, sid string, ns str
 	// cant be tested as depend on KubeMgr
 	p.gateState.start()
 
-	p.gateState.sync()
+	p.gateState.sync(true)
 	p.gateState.profileAndDecidePod()
 
 	//goroutine for Guard instance
