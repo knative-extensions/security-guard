@@ -294,6 +294,7 @@ func (s *services) learnAndPersistGuardian(record *serviceRecord) bool {
 		record.pileMutex.Unlock()
 		record.guardianLearnCounter++
 		// Must unlock record.pileMutex before s.persist
+
 	}
 
 	if shouldPersist {

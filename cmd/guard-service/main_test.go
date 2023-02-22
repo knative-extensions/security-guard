@@ -40,8 +40,26 @@ func addSample(s *services) {
 	s.mergeAndLearnAndPersistGuardian(r1, &pile1)
 }
 
+func testStatus(txt string, s *services, t *testing.T, pile uint32, guardian uint32, meregd uint, learned uint, persisted uint) {
+	if s.cache["sid1.ns"].pile.Count != pile {
+		t.Errorf("During %s - pile.Count Expected %d in pile have %d", txt, pile, s.cache["sid1.ns"].pile.Count)
+	}
+	if s.cache["sid1.ns"].guardianSpec.NumSamples != guardian {
+		t.Errorf("During %s - guardianSpec.NumSamples Expected %d in guardianSpec have %d", txt, guardian, s.cache["sid1.ns"].guardianSpec.NumSamples)
+	}
+	if s.cache["sid1.ns"].pileMergeCounter != meregd {
+		t.Errorf("During %s -pileMergeCounter Expected %d in pileMergeCounter have %d", txt, meregd, s.cache["sid1.ns"].pileMergeCounter)
+	}
+	if s.cache["sid1.ns"].guardianLearnCounter != learned {
+		t.Errorf("During %s - guardianLearnCounter Expected %d in guardianLearnCounter have %d", txt, learned, s.cache["sid1.ns"].guardianLearnCounter)
+	}
+	if s.cache["sid1.ns"].guardianPersistCounter != persisted {
+		t.Errorf("During %s - guardianPersistCounter Expected %d in guardianPersistCounter have %d", txt, persisted, s.cache["sid1.ns"].guardianPersistCounter)
+	}
+}
+
 func Test_learner_mainEventLoop(t *testing.T) {
-	quit := make(chan string)
+	quit := make(chan string, 1)
 
 	// services
 	s := new(services)
@@ -61,117 +79,36 @@ func Test_learner_mainEventLoop(t *testing.T) {
 			services:        s,
 			pileLearnTicker: ticker,
 		}
-		if s.cache["sid1.ns"].pile.Count != 0 {
-			t.Errorf("Expected 0 in pile have %d", s.cache["sid1.ns"].pile.Count)
-		}
-		if s.cache["sid1.ns"].guardianSpec.NumSamples != 1 {
-			t.Errorf("Expected 1 in guardianSpec have %d", s.cache["sid1.ns"].guardianSpec.NumSamples)
-		}
-		if s.cache["sid1.ns"].pileMergeCounter != 1 {
-			t.Errorf("Expected 1 in pileMergeCounter have %d", s.cache["sid1.ns"].pileMergeCounter)
-		}
-		if s.cache["sid1.ns"].guardianLearnCounter != 1 {
-			t.Errorf("Expected 1 in guardianLearnCounter have %d", s.cache["sid1.ns"].guardianLearnCounter)
-		}
-		if s.cache["sid1.ns"].guardianPersistCounter != 1 {
-			t.Errorf("Expected 1 in guardianPersistCounter have %d", s.cache["sid1.ns"].guardianPersistCounter)
-		}
+		testStatus("first sample", s, t, 0, 1, 1, 1, 1)
 
 		addSample(s)
-		if s.cache["sid1.ns"].pile.Count != 1 {
-			t.Errorf("Expected 1 in pile have %d", s.cache["sid1.ns"].pile.Count)
-		}
-		if s.cache["sid1.ns"].guardianSpec.NumSamples != 1 {
-			t.Errorf("Expected 1 in guardianSpec have %d", s.cache["sid1.ns"].guardianSpec.NumSamples)
-		}
-		if s.cache["sid1.ns"].pileMergeCounter != 2 {
-			t.Errorf("Expected 2 in pileMergeCounter have %d", s.cache["sid1.ns"].pileMergeCounter)
-		}
-		if s.cache["sid1.ns"].guardianLearnCounter != 1 {
-			t.Errorf("Expected 1 in guardianLearnCounter have %d", s.cache["sid1.ns"].guardianLearnCounter)
-		}
-		if s.cache["sid1.ns"].guardianPersistCounter != 1 {
-			t.Errorf("Expected 1 in guardianPersistCounter have %d", s.cache["sid1.ns"].guardianPersistCounter)
-		}
+		testStatus("second sample", s, t, 1, 1, 2, 1, 1)
+
 		// Start event loop
-		go l.mainEventLoop(quit, kill)
-
-		<-time.After(100 * time.Millisecond)
-
-		if s.cache["sid1.ns"].pile.Count != 1 {
-			t.Errorf("Expected 1 in pile  have %d", s.cache["sid1.ns"].pile.Count)
-		}
-		if s.cache["sid1.ns"].guardianSpec.NumSamples != 1 {
-			t.Errorf("Expected 1 in guardianSpec have %d", s.cache["sid1.ns"].guardianSpec.NumSamples)
-		}
-		if s.cache["sid1.ns"].pileMergeCounter != 2 {
-			t.Errorf("Expected 2 in pileMergeCounter have %d", s.cache["sid1.ns"].pileMergeCounter)
-		}
-		if s.cache["sid1.ns"].guardianLearnCounter != 1 {
-			t.Errorf("Expected 1 in guardianLearnCounter have %d", s.cache["sid1.ns"].guardianLearnCounter)
-		}
-		if s.cache["sid1.ns"].guardianPersistCounter != 1 {
-			t.Errorf("Expected 1 in guardianPersistCounter have %d", s.cache["sid1.ns"].guardianPersistCounter)
-		}
+		l.mainEventProcessing(quit, kill)
+		testStatus("Main Loop", s, t, 1, 1, 2, 1, 1)
 
 		s.cache["sid1.ns"].pileLastLearn = time.Unix(0, 0)
-		<-time.After(100 * time.Millisecond)
-
-		if s.cache["sid1.ns"].pile.Count != 0 {
-			t.Errorf("Expected 0 in pile  have %d", s.cache["sid1.ns"].pile.Count)
-		}
-		if s.cache["sid1.ns"].guardianSpec.NumSamples != 2 {
-			t.Errorf("Expected 2 in guardianSpec have %d", s.cache["sid1.ns"].guardianSpec.NumSamples)
-		}
-		if s.cache["sid1.ns"].pileMergeCounter != 2 {
-			t.Errorf("Expected 2 in pileMergeCounter have %d", s.cache["sid1.ns"].pileMergeCounter)
-		}
-		if s.cache["sid1.ns"].guardianLearnCounter != 2 {
-			t.Errorf("Expected 2 in guardianLearnCounter have %d", s.cache["sid1.ns"].guardianLearnCounter)
-		}
-		if s.cache["sid1.ns"].guardianPersistCounter != 1 {
-			t.Errorf("Expected 1 in guardianPersistCounter have %d", s.cache["sid1.ns"].guardianPersistCounter)
-		}
+		l.mainEventProcessing(quit, kill)
+		testStatus("Main Loop with pileLastLearn reset", s, t, 0, 2, 2, 2, 1)
 
 		s.cache["sid1.ns"].guardianLastPersist = time.Unix(0, 0)
-		<-time.After(100 * time.Millisecond)
+		l.mainEventProcessing(quit, kill)
+		// blocked by lastCreatedRecords
+		testStatus("Main Loop with guardianLastPersist reset", s, t, 0, 2, 2, 2, 1)
 
-		if s.cache["sid1.ns"].pile.Count != 0 {
-			t.Errorf("Expected 0 in pile  have %d", s.cache["sid1.ns"].pile.Count)
-		}
-		if s.cache["sid1.ns"].guardianSpec.NumSamples != 2 {
-			t.Errorf("Expected 2 in guardianSpec have %d", s.cache["sid1.ns"].guardianSpec.NumSamples)
-		}
-		if s.cache["sid1.ns"].pileMergeCounter != 2 {
-			t.Errorf("Expected 2 in pileMergeCounter have %d", s.cache["sid1.ns"].pileMergeCounter)
-		}
-		if s.cache["sid1.ns"].guardianLearnCounter != 2 {
-			t.Errorf("Expected 2 in guardianLearnCounter have %d", s.cache["sid1.ns"].guardianLearnCounter)
-		}
-		if s.cache["sid1.ns"].guardianPersistCounter != 2 {
-			t.Errorf("Expected 2 in guardianPersistCounter have %d", s.cache["sid1.ns"].guardianPersistCounter)
-		}
+		s.lastCreatedRecords = time.Unix(0, 0)
+		l.mainEventProcessing(quit, kill)
+		testStatus("Main Loop with guardianLastPersist reset - first time", s, t, 0, 2, 2, 2, 1)
 
-		addSample(s)
+		l.mainEventProcessing(quit, kill)
+		testStatus("Main Loop with lastCreatedRecords reset - second time", s, t, 0, 2, 2, 2, 2)
+
 		// Ask event loop to quit
+		addSample(s)
 		quit <- "test done"
-		<-time.After(100 * time.Millisecond)
-
-		if s.cache["sid1.ns"].pile.Count != 0 {
-			t.Errorf("Expected 0 in pile  have %d", s.cache["sid1.ns"].pile.Count)
-		}
-		if s.cache["sid1.ns"].guardianSpec.NumSamples != 3 {
-			t.Errorf("Expected 3 in guardianSpec have %d", s.cache["sid1.ns"].guardianSpec.NumSamples)
-		}
-		if s.cache["sid1.ns"].pileMergeCounter != 3 {
-			t.Errorf("Expected 3 in pileMergeCounter have %d", s.cache["sid1.ns"].pileMergeCounter)
-		}
-		if s.cache["sid1.ns"].guardianLearnCounter != 3 {
-			t.Errorf("Expected 3 in guardianLearnCounter have %d", s.cache["sid1.ns"].guardianLearnCounter)
-		}
-		if s.cache["sid1.ns"].guardianPersistCounter != 3 {
-			t.Errorf("Expected 3 in guardianPersistCounter have %d", s.cache["sid1.ns"].guardianPersistCounter)
-		}
+		l.mainEventLoop(quit, kill)
+		testStatus("Main Loop with quit", s, t, 0, 3, 3, 3, 3)
 	})
 
 }

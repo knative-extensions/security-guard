@@ -224,24 +224,32 @@ func (l *learner) processSync(w http.ResponseWriter, req *http.Request) {
 	w.Write(buf)
 }
 
+func (l *learner) mainEventProcessing(quit chan string, kill chan os.Signal) bool {
+	select {
+	case <-l.pileLearnTicker.Ch():
+		// no reenterncy! No need to protect tick() only data with mutex
+		l.services.tick()
+	case reason := <-kill:
+		pi.Log.Infof("mainEventLoop received kill signal: %s", reason.String())
+		shutdownCtx, shutdownRelease := context.WithTimeout(context.Background(), 10*time.Second)
+		l.srv.Shutdown(shutdownCtx)
+		defer shutdownRelease()
+	case reason := <-quit:
+		fmt.Printf("mainEventProcessing Quit!\n")
+		pi.Log.Infof("mainEventLoop was asked to quit! - Reason: %s", reason)
+		return false
+	}
+	return true
+}
+
 func (l *learner) mainEventLoop(quit chan string, kill chan os.Signal) {
+	// main loop
 	alive := true
 	for alive {
-		select {
-		case <-l.pileLearnTicker.Ch():
-			// no reenterncy! No need to protect tick() only data with mutex
-			l.services.tick()
-		case reason := <-kill:
-			pi.Log.Infof("mainEventLoop received kill signal: %s", reason.String())
-			shutdownCtx, shutdownRelease := context.WithTimeout(context.Background(), 10*time.Second)
-			l.srv.Shutdown(shutdownCtx)
-			defer shutdownRelease()
-		case reason := <-quit:
-			pi.Log.Infof("mainEventLoop was asked to quit! - Reason: %s", reason)
-			alive = false
-		}
+		alive = l.mainEventProcessing(quit, kill)
 	}
-	// persisting remaining services records
+
+	// main loop ended, persisting remaining services records
 	l.services.flushTickerRecords() // mark all for immediate learn and persist
 	for len(l.services.records) > 0 {
 		pi.Log.Infof("mainEventLoop completion - persisting %d remaining services records", len(l.services.records))
