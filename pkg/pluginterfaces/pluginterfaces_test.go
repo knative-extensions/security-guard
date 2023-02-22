@@ -95,3 +95,109 @@ func TestGetPlugByName(t *testing.T) {
 		})
 	}
 }
+
+type MyLogger struct {
+	debug int
+	info  int
+	warn  int
+	err   int
+	sync  int
+}
+
+func (m *MyLogger) Debugf(format string, args ...interface{}) {
+	m.debug++
+}
+func (m *MyLogger) Infof(format string, args ...interface{}) {
+	m.info++
+}
+func (m *MyLogger) Warnf(format string, args ...interface{}) {
+	m.warn++
+}
+func (m *MyLogger) Errorf(format string, args ...interface{}) {
+	m.err++
+}
+func (m *MyLogger) Sync() error {
+	m.sync++
+	return nil
+}
+
+func Test_LOGONCE(t *testing.T) {
+	var mylogger MyLogger
+	Log = &mylogger
+
+	t.Run("simple", func(t *testing.T) {
+		if mylogger.debug != 0 {
+			t.Errorf("mylogger.debug expected 0 got %d", mylogger.debug)
+		}
+		LogOnce.Debugf("xxx")
+		if mylogger.debug != 1 {
+			t.Errorf("mylogger.debug expected 1 got %d", mylogger.debug)
+		}
+		LogOnce.Debugf("yyy")
+		if mylogger.debug != 2 {
+			t.Errorf("mylogger.debug expected 2 got %d", mylogger.debug)
+		}
+		LogOnce.Debugf("yyy")
+		if mylogger.debug != 2 {
+			t.Errorf("mylogger.debug expected 2 got %d", mylogger.debug)
+		}
+
+		if mylogger.info != 0 {
+			t.Errorf("mylogger.info expected 0 got %d", mylogger.info)
+		}
+		LogOnce.Infof("xxx")
+		if mylogger.info != 1 {
+			t.Errorf("mylogger.info expected 1 got %d", mylogger.info)
+		}
+		LogOnce.Infof("yyy")
+		if mylogger.info != 2 {
+			t.Errorf("mylogger.info expected 2 got %d", mylogger.info)
+		}
+		LogOnce.Infof("yyy")
+		if mylogger.info != 2 {
+			t.Errorf("mylogger.info expected 2 got %d", mylogger.info)
+		}
+
+		if mylogger.warn != 0 {
+			t.Errorf("mylogger.warn expected 0 got %d", mylogger.warn)
+		}
+		LogOnce.Warnf("xxx")
+		if mylogger.warn != 1 {
+			t.Errorf("mylogger.warn expected 1 got %d", mylogger.warn)
+		}
+		LogOnce.Warnf("yyy")
+		if mylogger.warn != 2 {
+			t.Errorf("mylogger.warn expected 2 got %d", mylogger.warn)
+		}
+		LogOnce.Warnf("yyy")
+		if mylogger.warn != 2 {
+			t.Errorf("mylogger.warn expected 2 got %d", mylogger.warn)
+		}
+
+		if mylogger.err != 0 {
+			t.Errorf("mylogger.err expected 0 got %d", mylogger.err)
+		}
+		LogOnce.Errorf("xxx")
+		if mylogger.err != 1 {
+			t.Errorf("mylogger.err expected 1 got %d", mylogger.err)
+		}
+		LogOnce.Errorf("yyy")
+		if mylogger.err != 2 {
+			t.Errorf("mylogger.err expected 2 got %d", mylogger.err)
+		}
+		LogOnce.Errorf("yyy")
+		if mylogger.err != 2 {
+			t.Errorf("mylogger.err expected 2 got %d", mylogger.err)
+		}
+
+		if mylogger.sync != 0 {
+			t.Errorf("mylogger.sync expected 0 got %d", mylogger.sync)
+		}
+		LogOnce.Sync()
+		if mylogger.sync != 1 {
+			t.Errorf("mylogger.sync expected 1 got %d", mylogger.sync)
+		}
+
+	})
+
+}
