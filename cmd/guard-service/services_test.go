@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
-	utils "knative.dev/security-guard/pkg/guard-utils"
 )
 
 type fakeKmgr struct{}
@@ -94,7 +93,6 @@ func Test_services_tick(t *testing.T) {
 			name: "simple",
 		},
 	}
-	utils.CreateLogger("debug")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := newServices()
