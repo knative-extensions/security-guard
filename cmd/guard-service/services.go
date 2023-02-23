@@ -271,7 +271,7 @@ func (s *services) learnAndPersistGuardian(record *serviceRecord) bool {
 		shouldLearn = true
 	} else {
 		// we already have a critiria - do we need to learn again?
-		if record.pile.Count >= pileMergeLimit || time.Since(record.pileLastLearn) >= pileLearnMinTime {
+		if record.pile.Count >= pileMergeLimit || record.guardianSpec.NumSamples < record.pile.Count*10 || time.Since(record.pileLastLearn) >= pileLearnMinTime {
 			shouldLearn = true
 		}
 
@@ -297,7 +297,7 @@ func (s *services) learnAndPersistGuardian(record *serviceRecord) bool {
 
 	}
 
-	if shouldPersist {
+	if shouldPersist && record.guardianLastPersist.Before(record.pileLastLearn) {
 		// update the kubeApi record
 		record.guardianLastPersist = time.Now()
 		record.guardianPersistCounter++

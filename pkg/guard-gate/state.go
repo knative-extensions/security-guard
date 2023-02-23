@@ -77,8 +77,8 @@ func (gs gateState) start() {
 }
 
 // sync is called periodically to send pile and alerts and to load from the updated Guardian
-func (gs *gateState) sync(shouldLoad bool) {
-	if time.Since(gs.lastSync) < MIN_TIME_BETWEEN_SYNCS {
+func (gs *gateState) sync(shouldLoad bool, forceSync bool) {
+	if !forceSync && time.Since(gs.lastSync) < MIN_TIME_BETWEEN_SYNCS {
 		return
 	}
 
@@ -116,29 +116,29 @@ func (gs *gateState) sync(shouldLoad bool) {
 
 func (gs *gateState) syncIfNeeded() {
 	// if we have 10% new samples or more (otherwise wait till we get to 1000 samples)
-	if gs.numSamples < gs.srv.pile.Count*10 {
-		gs.sync(true)
+	if gs.numSamples < gs.srv.pile.Count*10 || len(gs.srv.alerts) > 0 {
+		gs.sync(true, false)
 	}
 
 	// if we skipped 4 times, then this time we will sync
 	// 5 min for the default 1 min syncInterval
 	gs.skippedSyncs++
 	if gs.skippedSyncs >= 5 {
-		gs.sync(true)
+		gs.sync(true, false)
 	}
 }
 
 // addProfile is called every time we have a new profile ready to be added to a pile
 func (gs *gateState) addProfile(profile *spec.SessionDataProfile) {
 	if gs.srv.addToPile(profile) >= PILE_LIMIT {
-		gs.sync(true)
+		gs.sync(true, false)
 	}
 }
 
 // addAlert is called every time we have a new alert
 func (gs *gateState) addAlert(decision *spec.Decision, level string) {
 	if gs.srv.addAlert(decision, level) >= ALERTS_LIMIT {
-		gs.sync(true)
+		gs.sync(true, false)
 	}
 }
 

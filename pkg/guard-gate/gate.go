@@ -61,7 +61,9 @@ func (p *plug) Shutdown() {
 	pi.Log.Infof("%s Shutdown - performing final Sync!", p.name)
 	p.syncTicker.Stop()
 	p.podMonitorTicker.Stop()
-	p.gateState.sync(false)
+	if p.gateState.srv.pile.Count > 0 || len(p.gateState.srv.alerts) > 0 {
+		p.gateState.sync(false, true)
+	}
 	pi.Log.Infof("%s - Done with the following statistics: %s", p.name, p.gateState.stat.Log())
 	pi.Log.Sync()
 }
@@ -234,7 +236,7 @@ func (p *plug) Init(ctx context.Context, c map[string]string, sid string, ns str
 	// cant be tested as depend on KubeMgr
 	p.gateState.start()
 
-	p.gateState.sync(true)
+	p.gateState.sync(true, true)
 	p.gateState.profileAndDecidePod()
 
 	//goroutine for Guard instance
