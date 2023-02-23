@@ -19,6 +19,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -59,56 +60,62 @@ func testStatus(txt string, s *services, t *testing.T, pile uint32, guardian uin
 }
 
 func Test_learner_mainEventLoop(t *testing.T) {
-	quit := make(chan string, 1)
-
-	// services
-	s := new(services)
-	s.cache = make(map[string]*serviceRecord, 64)
-	s.namespaces = make(map[string]bool, 4)
-	s.kmgr = new(fakeKmgr)
-
-	ticker := utils.NewTicker(100000)
-	ticker.Parse("", 100000)
-	ticker.Start()
-
-	addSample(s)
-
 	t.Run("simple", func(t *testing.T) {
+		quit := make(chan string, 1)
+
+		// services
+		s := new(services)
+		s.cache = make(map[string]*serviceRecord, 64)
+		s.namespaces = make(map[string]bool, 4)
+		s.kmgr = new(fakeKmgr)
+
+		ticker := utils.NewTicker(100000)
+		ticker.Parse("", 100000)
+		ticker.Start()
 		kill := make(chan os.Signal, 1)
 		l := &learner{
 			services:        s,
 			pileLearnTicker: ticker,
 		}
-		testStatus("first sample", s, t, 0, 1, 1, 1, 1)
+		for i := uint(1); i <= 10; i++ {
+			addSample(s)
+			// 10% rule - immidiate learning
+			testStatus(fmt.Sprintf("sample #%d", i), s, t, 0, uint32(i), i, i, 1)
+		}
 
+		// no longer 10% rule
 		addSample(s)
-		testStatus("second sample", s, t, 1, 1, 2, 1, 1)
+		testStatus("11th sample", s, t, 1, 10, 11, 10, 1)
 
-		// Start event loop
+		// Start event loop - no longer 10% rule
 		l.mainEventProcessing(quit, kill)
-		testStatus("Main Loop", s, t, 1, 1, 2, 1, 1)
+		testStatus("Main Loop", s, t, 1, 10, 11, 10, 1)
 
+		// Start event loop - no longer 10% rule, but 30 seconds passed since we learned
 		s.cache["sid1.ns"].pileLastLearn = time.Unix(0, 0)
 		l.mainEventProcessing(quit, kill)
-		testStatus("Main Loop with pileLastLearn reset", s, t, 0, 2, 2, 2, 1)
+		testStatus("Main Loop with pileLastLearn reset", s, t, 0, 11, 11, 11, 1)
 
+		// Start event loop - 5 min passed since we persisted
 		s.cache["sid1.ns"].guardianLastPersist = time.Unix(0, 0)
 		l.mainEventProcessing(quit, kill)
 		// blocked by lastCreatedRecords
-		testStatus("Main Loop with guardianLastPersist reset", s, t, 0, 2, 2, 2, 1)
+		testStatus("Main Loop with guardianLastPersist reset", s, t, 0, 11, 11, 11, 1)
 
+		// Start event loop - also 5 min passed since we reviewed all records - first tick, build records
 		s.lastCreatedRecords = time.Unix(0, 0)
 		l.mainEventProcessing(quit, kill)
-		testStatus("Main Loop with guardianLastPersist reset - first time", s, t, 0, 2, 2, 2, 1)
+		testStatus("Main Loop with guardianLastPersist reset - first time", s, t, 0, 11, 11, 11, 1)
 
+		// Start event loop - also 5 min passed since we reviewed all records - second tick, persist
 		l.mainEventProcessing(quit, kill)
-		testStatus("Main Loop with lastCreatedRecords reset - second time", s, t, 0, 2, 2, 2, 2)
+		testStatus("Main Loop with lastCreatedRecords reset - second time", s, t, 0, 11, 11, 11, 2)
 
 		// Ask event loop to quit
 		addSample(s)
 		quit <- "test done"
 		l.mainEventLoop(quit, kill)
-		testStatus("Main Loop with quit", s, t, 0, 3, 3, 3, 3)
+		testStatus("Main Loop with quit", s, t, 0, 12, 12, 12, 3)
 	})
 
 }
