@@ -13,8 +13,8 @@ require (
 	k8s.io/client-go v0.26.1
 	knative.dev/control-protocol v0.0.0-20230216145552-932229de6ed1
 	knative.dev/hack v0.0.0-20230217131352-f2f3107be156
-	knative.dev/pkg v0.0.0-20230215234751-2f55fe00c5a1
-	knative.dev/serving v0.36.1-0.20230217163907-7aeb55d6418d
+	knative.dev/pkg v0.0.0-20230222150228-2fdd6bf8be31
+	knative.dev/serving v0.36.1-0.20230222152728-f4792e4f9730
 )
 
 require (
