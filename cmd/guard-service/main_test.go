@@ -79,7 +79,7 @@ func Test_learner_mainEventLoop(t *testing.T) {
 		}
 		for i := uint(1); i <= 10; i++ {
 			addSample(s)
-			// 10% rule - immidiate learning
+			// 10% rule - immediate learning
 			testStatus(fmt.Sprintf("sample #%d", i), s, t, 0, uint32(i), i, i, 1)
 		}
 
