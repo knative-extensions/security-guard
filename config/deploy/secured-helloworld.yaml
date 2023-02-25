@@ -15,6 +15,15 @@ spec:
       labels:
         app: secured-helloworld
     spec:
+      volumes:
+      - name: guard-token-volume
+        projected:
+          defaultMode: 420
+          sources:
+          - serviceAccountToken:
+              audience: guard-service
+              expirationSeconds: 3600
+              path: guard-service
       serviceAccountName: guardian-reader
       containers:
       - env:
@@ -32,9 +41,12 @@ spec:
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 22000
+        volumeMounts:
+        - mountPath: /var/run/secrets/tokens
+          name: guard-token-volume
         env:
         - name: GUARD_URL
-          value: "http://guard-service.knative-serving"
+          value: "https://guard-service.knative-serving"
         - name: LOG_LEVEL
           value: "info"
         - name: SERVICE_NAME
@@ -50,7 +62,11 @@ spec:
         - name: GUARDIAN_SYNC_INTERVAL
           value: "60s"
         - name: ROOT_CA
-          value: ""
+          valueFrom:
+            secretKeyRef:
+              optional: true
+              name: serving-certs-ctrl-ca-public
+              key: ca.crt
 ---
 apiVersion: v1
 kind: Service

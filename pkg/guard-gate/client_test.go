@@ -211,6 +211,6 @@ func Test_gateClient_initHttpClient(t *testing.T) {
 			useCm:   false,
 			kubeMgr: &fakeKmgr{},
 		}
-		srv.initHttpClient(x509.NewCertPool())
+		srv.initHttpClient(x509.NewCertPool(), false)
 	})
 }
