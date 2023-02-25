@@ -19,6 +19,7 @@ spec:
       volumes:
       - name: guard-service-tls-volume
         secret:
+          optional: true
           secretName: knative-serving-certs
       containers:
       - name: guard-service
