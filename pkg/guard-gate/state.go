@@ -45,6 +45,8 @@ type gateState struct {
 
 func (gs *gateState) init(monitorPod bool, guardServiceUrl string, podname string, sid string, ns string, useCm bool) {
 	var err error
+	var insecureSkipVerify bool
+
 	gs.stat.Init()
 	gs.monitorPod = monitorPod
 	gs.srv = NewGateClient(guardServiceUrl, podname, sid, ns, useCm)
@@ -56,12 +58,17 @@ func (gs *gateState) init(monitorPod bool, guardServiceUrl string, podname strin
 
 	if rootCA := os.Getenv("ROOT_CA"); rootCA != "" {
 		if ok := gs.certPool.AppendCertsFromPEM([]byte(rootCA)); ok {
-			pi.Log.Debugf("TLS: Success adding ROOT_CA")
+			pi.Log.Infof("TLS: Success adding ROOT_CA")
 		} else {
-			pi.Log.Infof("TLS: Failed to AppendCertsFromPEM from ROOT_CA")
+			pi.Log.Warnf("TLS: Failed to AppendCertsFromPEM from ROOT_CA - Working in insecure mode!!!")
+			insecureSkipVerify = true
 		}
+	} else {
+		pi.Log.Warnf("environment ROOT_CA is empty! - Working in insecure mode!!!")
+		insecureSkipVerify = true
 	}
-	gs.srv.initHttpClient(gs.certPool)
+
+	gs.srv.initHttpClient(gs.certPool, insecureSkipVerify)
 }
 
 func (gs gateState) start() {

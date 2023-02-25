@@ -153,7 +153,7 @@ func (p *plug) guardMainEventLoop(ctx context.Context) {
 	}
 }
 func (p *plug) preInit(c map[string]string, sid string, ns string, logger pi.Logger) {
-	var ok, tlsActive bool
+	var ok, securedCommunication bool
 	var v string
 	var loadInterval, pileInterval, monitorInterval string
 
@@ -162,10 +162,9 @@ func (p *plug) preInit(c map[string]string, sid string, ns string, logger pi.Log
 	monitorPod := true
 	analyzeBody := false
 
-	guardServiceUrl := "http://guard-service.knative-serving"
+	guardServiceUrl := "https://guard-service.knative-serving"
 	if rootCA := os.Getenv("ROOT_CA"); rootCA != "" {
-		guardServiceUrl = "https://guard-service.knative-serving"
-		tlsActive = true
+		securedCommunication = true
 	}
 
 	if c != nil {
@@ -220,7 +219,7 @@ func (p *plug) preInit(c map[string]string, sid string, ns string, logger pi.Log
 	p.gateState = new(gateState)
 	p.gateState.analyzeBody = analyzeBody
 	p.gateState.init(monitorPod, guardServiceUrl, podname, sid, ns, useCm)
-	pi.Log.Infof("guard-gate: TLS %t, Token %t", tlsActive, p.gateState.srv.tokenActive)
+	pi.Log.Infof("guard-gate: Secured Communication %t, Token %t", securedCommunication, p.gateState.srv.tokenActive)
 }
 
 func (p *plug) Init(ctx context.Context, c map[string]string, sid string, ns string, logger pi.Logger) context.Context {

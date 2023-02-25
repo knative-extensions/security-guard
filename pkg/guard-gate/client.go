@@ -120,15 +120,16 @@ func (srv *gateClient) initKubeMgr() {
 	srv.kubeMgr.InitConfigs()
 }
 
-func (srv *gateClient) initHttpClient(certPool *x509.CertPool) {
+func (srv *gateClient) initHttpClient(certPool *x509.CertPool, insecureSkipVerify bool) {
 	client := new(httpClient)
 	client.client.Transport = &http.Transport{
 		MaxConnsPerHost:     0,
 		MaxIdleConns:        0,
 		MaxIdleConnsPerHost: 0,
 		TLSClientConfig: &tls.Config{
-			ServerName: certificates.FakeDnsName,
-			RootCAs:    certPool,
+			InsecureSkipVerify: insecureSkipVerify,
+			ServerName:         certificates.FakeDnsName,
+			RootCAs:            certPool,
 		},
 	}
 	srv.httpClient = client

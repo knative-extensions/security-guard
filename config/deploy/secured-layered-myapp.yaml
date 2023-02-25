@@ -54,6 +54,7 @@ spec:
         - name: ROOT_CA
           valueFrom:
             secretKeyRef:
+              optional: true
               name: serving-certs-ctrl-ca-public
               key: ca.crt
 ---
@@ -66,21 +67,7 @@ spec:
     app: myapp-guard
   ports:
     - protocol: TCP
-      port: 80
-      targetPort: 22000
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: myapp-guard
-  labels:
-    app: myapp-guard
-spec:
-  selector:
-    app: myapp-guard
-  type: NodePort
-  ports:
-   - port: 22000
+      port: 22000
 ---
 apiVersion: apps/v1
 kind: Deployment
