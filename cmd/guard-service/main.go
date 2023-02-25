@@ -224,7 +224,7 @@ func (l *learner) processSync(w http.ResponseWriter, req *http.Request) {
 	w.Write(buf)
 }
 
-func (l *learner) mainEventProcessing(quit chan string, kill chan os.Signal) bool {
+func (l *learner) mainEventProcessing(quit <-chan bool, kill <-chan os.Signal) bool {
 	select {
 	case <-l.pileLearnTicker.Ch():
 		// no reenterncy! No need to protect tick() only data with mutex
@@ -234,15 +234,13 @@ func (l *learner) mainEventProcessing(quit chan string, kill chan os.Signal) boo
 		shutdownCtx, shutdownRelease := context.WithTimeout(context.Background(), 10*time.Second)
 		l.srv.Shutdown(shutdownCtx)
 		defer shutdownRelease()
-	case reason := <-quit:
-		fmt.Printf("mainEventProcessing Quit!\n")
-		pi.Log.Infof("mainEventLoop was asked to quit! - Reason: %s", reason)
+	case <-quit:
 		return false
 	}
 	return true
 }
 
-func (l *learner) mainEventLoop(quit chan string, kill chan os.Signal) {
+func (l *learner) mainEventLoop(quit <-chan bool, flushed chan<- bool, kill <-chan os.Signal) {
 	// main loop
 	alive := true
 	for alive {
@@ -250,18 +248,19 @@ func (l *learner) mainEventLoop(quit chan string, kill chan os.Signal) {
 	}
 
 	// main loop ended, persisting remaining services records
+	pi.Log.Infof("Persist all changed records")
 	l.services.flushTickerRecords() // mark all for immediate learn and persist
 	for len(l.services.records) > 0 {
 		pi.Log.Infof("mainEventLoop completion - persisting %d remaining services records", len(l.services.records))
 		<-l.pileLearnTicker.Ch()
 		l.services.tick()
 	}
-	pi.Log.Infof("mainEventLoop done!")
-
+	pi.Log.Infof("mainEventLoop done")
+	flushed <- true
 }
 
 // initialization of the lerner + prepare the web service
-func (l *learner) init() (srv *http.Server, quit chan string) {
+func (l *learner) init() (srv *http.Server, quit chan bool, flushed chan bool) {
 	utils.CreateLogger(l.env.GuardServiceLogLevel)
 
 	l.pileLearnTicker = utils.NewTicker(time.Second)
@@ -279,7 +278,8 @@ func (l *learner) init() (srv *http.Server, quit chan string) {
 		Handler: mux,
 	}
 
-	quit = make(chan string)
+	quit = make(chan bool)
+	flushed = make(chan bool)
 
 	pi.Log.Infof("Starting guard-service on %s", target)
 	if l.env.GuardServiceAuth {
@@ -309,14 +309,14 @@ func main() {
 	}
 
 	// move all initialization which can be tested using unit tests to init
-	srv, quit := l.init()
+	srv, quit, flushed := l.init()
 
 	l.srv = srv
 
 	// cant be tested due to KubeMgr
 	l.services.start()
 	// start a mainLoop
-	go l.mainEventLoop(quit, kill)
+	go l.mainEventLoop(quit, flushed, kill)
 
 	// affected by file system
 	// starts a web service
@@ -338,8 +338,11 @@ func main() {
 		err = srv.ListenAndServe()
 	}
 	if errors.Is(err, http.ErrServerClosed) {
-		quit <- "Http service shutdown"
+		pi.Log.Infof("Http service orderly shutdown")
 	} else {
-		quit <- fmt.Sprintf("Http service failed to start %v", err)
+		pi.Log.Infof("Http service error while starting server: %v", err)
 	}
+	quit <- true
+	<-flushed
+	pi.Log.Infof("guard-service done")
 }

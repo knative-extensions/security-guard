@@ -61,7 +61,8 @@ func testStatus(txt string, s *services, t *testing.T, pile uint32, guardian uin
 
 func Test_learner_mainEventLoop(t *testing.T) {
 	t.Run("simple", func(t *testing.T) {
-		quit := make(chan string, 1)
+		quit := make(chan bool, 1)
+		flushed := make(chan bool, 1)
 
 		// services
 		s := new(services)
@@ -113,8 +114,8 @@ func Test_learner_mainEventLoop(t *testing.T) {
 
 		// Ask event loop to quit
 		addSample(s)
-		quit <- "test done"
-		l.mainEventLoop(quit, kill)
+		quit <- true
+		l.mainEventLoop(quit, flushed, kill)
 		testStatus("Main Loop with quit", s, t, 0, 12, 12, 12, 3)
 	})
 
@@ -343,7 +344,7 @@ func TestNOTLS_SyncHandler_main(t *testing.T) {
 	l.env.GuardServiceTls = false
 	l.env.GuardServiceLabels = []string{"aaa", "bbb"}
 
-	srv, _ := l.init()
+	srv, _, _ := l.init()
 
 	if srv.Addr != ":8888" {
 		t.Errorf("handler returned wrong default target code: got %s want %s", srv.Addr, ":8888")
@@ -365,7 +366,7 @@ func TestTLS_SyncHandler_main(t *testing.T) {
 	l.env.GuardServiceTls = true
 	l.env.GuardServiceLabels = []string{}
 
-	srv, _ := l.init()
+	srv, _, _ := l.init()
 
 	if srv.Addr != ":8888" {
 		t.Errorf("handler returned wrong default target code: got %s want %s", srv.Addr, ":555")
