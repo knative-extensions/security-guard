@@ -158,7 +158,7 @@ func Test_plug_Initialize(t *testing.T) {
 			name:            "no c",
 			c:               nil,
 			monitorPod:      true,
-			guardServiceUrl: "http://guard-service.knative-serving",
+			guardServiceUrl: "https://guard-service.knative-serving",
 			useCm:           false,
 		},
 	}
