@@ -22,10 +22,13 @@ import (
 	"errors"
 	"net/http"
 	"os"
+	"path"
 	"runtime/debug"
 	"strings"
 
 	"go.uber.org/zap"
+	"knative.dev/control-protocol/pkg/certificates"
+	"knative.dev/serving/pkg/queue"
 	"knative.dev/serving/pkg/queue/sharedmain"
 
 	pi "knative.dev/security-guard/pkg/pluginterfaces"
@@ -124,6 +127,21 @@ func (p *GateQPOption) ProcessAnnotations() bool {
 		p.defaults.Logger.Infof("File %s - scanner Error %s", annotationsFilePath, err.Error())
 		return false
 	}
+
+	var buf []byte
+	buf, err = os.ReadFile(path.Join(queue.CertDirectory, certificates.CaCertName))
+	if err != nil {
+		// lets try the older secret names
+		pi.Log.Debugf("RootCa (%s) is missing", path.Join(queue.CertDirectory, certificates.CaCertName))
+		buf, err = os.ReadFile(path.Join(queue.CertDirectory, certificates.SecretCaCertKey))
+		if err != nil {
+			pi.Log.Debugf("RootCa (%s) is missing - Insecure communication, working without TLS RootCA!", path.Join(queue.CertDirectory, certificates.SecretCaCertKey))
+		}
+	}
+	if err == nil {
+		p.config["rootca"] = string(buf)
+	}
+
 	return true
 }
 

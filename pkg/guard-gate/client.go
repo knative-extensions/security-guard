@@ -87,18 +87,19 @@ func (hc *httpClient) ReadToken(audience string) (tokenActive bool) {
 }
 
 type gateClient struct {
-	guardServiceUrl string
-	podname         string
-	sid             string
-	ns              string
-	useCm           bool
-	tokenActive     bool
-	httpClient      httpClientInterface
-	pile            spec.SessionDataPile
-	pileMutex       sync.Mutex
-	alerts          []spec.Alert
-	IamCompromised  bool
-	kubeMgr         guardKubeMgr.KubeMgrInterface
+	guardServiceUrl  string
+	podname          string
+	sid              string
+	ns               string
+	useCm            bool
+	tokenActive      bool // secure mode - AUTH token used
+	certVerifyActive bool // secure mode - Server TLS certificate verified
+	httpClient       httpClientInterface
+	pile             spec.SessionDataPile
+	pileMutex        sync.Mutex
+	alerts           []spec.Alert
+	IamCompromised   bool
+	kubeMgr          guardKubeMgr.KubeMgrInterface
 }
 
 func NewGateClient(guardServiceUrl string, podname string, sid string, ns string, useCm bool) *gateClient {
@@ -121,6 +122,7 @@ func (srv *gateClient) initKubeMgr() {
 }
 
 func (srv *gateClient) initHttpClient(certPool *x509.CertPool, insecureSkipVerify bool) {
+	srv.certVerifyActive = !insecureSkipVerify
 	client := new(httpClient)
 	client.client.Transport = &http.Transport{
 		MaxConnsPerHost:     0,

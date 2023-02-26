@@ -1,61 +1,3 @@
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: knative-secrets-role
-  namespace: knative-serving
-  labels:
-    rbac.authorization.k8s.io/guardian: 'true'
-rules:
-  - apiGroups:
-      - ""
-    resources:
-      - secrets
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - update
-      - patch
-      - delete
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: knative-secrets-admin
-  namespace: knative-serving
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: knative-secrets
-  namespace: knative-serving
-subjects:
-  - kind: ServiceAccount
-    name: knative-secrets-admin
-    namespace: knative-serving
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: knative-secrets-role
----
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: create-knative-secrets
-  namespace: knative-serving
-  labels:
-    app: create-knative-secrets
-spec:
-  template:
-    spec:
-      serviceAccountName: knative-secrets-admin
-      containers:
-      - name: create-knative-secrets
-        image: ko://knative.dev/security-guard/cmd/create-knative-secrets
-        imagePullPolicy: IfNotPresent
-      restartPolicy: OnFailure
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -77,8 +19,8 @@ spec:
       volumes:
       - name: guard-service-tls-volume
         secret:
-          optional: true
           secretName: knative-serving-certs
+          optional: true
       containers:
       - name: guard-service
         image: ko://knative.dev/security-guard/cmd/guard-service
@@ -86,6 +28,7 @@ spec:
         volumeMounts:
         - mountPath: /secrets
           name: guard-service-tls-volume
+          readOnly:  true
         ports:
           - containerPort: 8888
         env:

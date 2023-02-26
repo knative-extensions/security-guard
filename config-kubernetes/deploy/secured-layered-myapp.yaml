@@ -16,6 +16,10 @@ spec:
         app: myapp-guard
     spec:
       volumes:
+      - name: certificate-volume
+        secret:
+          secretName: default-serving-certs
+          optional: true
       - name: guard-token-volume
         projected:
           defaultMode: 420
@@ -34,6 +38,10 @@ spec:
         volumeMounts:
         - mountPath: /var/run/secrets/tokens
           name: guard-token-volume
+          readOnly:  true
+        - mountPath: /var/lib/knative/certs
+          name: certificate-volume
+          readOnly:  true
         env:
         - name: GUARD_URL
           value: "https://guard-service.knative-serving"
@@ -51,12 +59,6 @@ spec:
           value: "false"
         - name: GUARDIAN_SYNC_INTERVAL
           value: "60s"
-        - name: ROOT_CA
-          valueFrom:
-            secretKeyRef:
-              optional: true
-              name: serving-certs-ctrl-ca-public
-              key: ca.crt
 ---
 apiVersion: v1
 kind: Service

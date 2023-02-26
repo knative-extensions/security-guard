@@ -23,14 +23,17 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"path"
 	"runtime/debug"
 
 	"github.com/kelseyhightower/envconfig"
 
+	"knative.dev/control-protocol/pkg/certificates"
 	"knative.dev/pkg/signals"
 	_ "knative.dev/security-guard/pkg/guard-gate"
 	utils "knative.dev/security-guard/pkg/guard-utils"
 	pi "knative.dev/security-guard/pkg/pluginterfaces"
+	"knative.dev/serving/pkg/queue"
 )
 
 type config struct {
@@ -88,6 +91,16 @@ func preMain(env *config) (guardGate *GuardGate, mux *http.ServeMux, target stri
 	guardGate = new(GuardGate)
 
 	utils.CreateLogger(env.LogLevel)
+
+	var err error
+	var buf []byte
+	buf, err = os.ReadFile(path.Join(queue.CertDirectory, certificates.CaCertName))
+	if err != nil {
+		pi.Log.Debugf("ROOT_CA (%s) is missing - Insecure communication, working without TLS RootCA!", path.Join(queue.CertDirectory, certificates.CaCertName))
+	}
+	if err == nil {
+		plugConfig["rootca"] = string(buf)
+	}
 
 	if env.GuardUrl != "" {
 		plugConfig["guard-url"] = env.GuardUrl

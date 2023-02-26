@@ -56,7 +56,6 @@ spec:
     deployment:
       queue-sidecar-token-audiences: guard-service
       queue-sidecar-rootca: ${CERT}
-      
 EOF
 
 kubectl get KnativeServing -n knative-serving -o yaml

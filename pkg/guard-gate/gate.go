@@ -153,9 +153,9 @@ func (p *plug) guardMainEventLoop(ctx context.Context) {
 	}
 }
 func (p *plug) preInit(c map[string]string, sid string, ns string, logger pi.Logger) {
-	var ok, securedCommunication bool
+	var ok bool
 	var v string
-	var loadInterval, pileInterval, monitorInterval string
+	var loadInterval, pileInterval, monitorInterval, rootCA string
 
 	// Defaults used without config when used as a qpoption
 	useCm := false
@@ -163,11 +163,10 @@ func (p *plug) preInit(c map[string]string, sid string, ns string, logger pi.Log
 	analyzeBody := false
 
 	guardServiceUrl := "https://guard-service.knative-serving"
-	if rootCA := os.Getenv("ROOT_CA"); rootCA != "" {
-		securedCommunication = true
-	}
 
 	if c != nil {
+		rootCA = c["rootca"]
+
 		if v, ok = c["guard-url"]; ok && v != "" {
 			// use default
 			guardServiceUrl = v
@@ -218,8 +217,9 @@ func (p *plug) preInit(c map[string]string, sid string, ns string, logger pi.Log
 
 	p.gateState = new(gateState)
 	p.gateState.analyzeBody = analyzeBody
-	p.gateState.init(monitorPod, guardServiceUrl, podname, sid, ns, useCm)
-	pi.Log.Infof("guard-gate: Secured Communication %t, Token %t", securedCommunication, p.gateState.srv.tokenActive)
+	p.gateState.init(monitorPod, guardServiceUrl, podname, sid, ns, useCm, rootCA)
+
+	pi.Log.Infof("guard-gate: Secured Communication %t (CERT Verification %t AUTH Token %t)", p.gateState.srv.certVerifyActive && p.gateState.srv.tokenActive, p.gateState.srv.certVerifyActive, p.gateState.srv.tokenActive)
 }
 
 func (p *plug) Init(ctx context.Context, c map[string]string, sid string, ns string, logger pi.Logger) context.Context {

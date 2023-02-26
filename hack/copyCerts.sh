@@ -22,5 +22,6 @@ if [ -z "$1" ]
 fi
 
 echo Copying secert to namespace: \"$1\"
-REPLACE="s/namespace: .*/namespace: ${1}/"
-kubectl get secret serving-certs-ctrl-ca-public  --namespace=knative-serving -o yaml | sed "${REPLACE}" |sed  "s/selfLink: .*/ /"|sed  "s/uid: .*/ /" |sed  "s/resourceVersion: .*/ /" | kubectl apply -f -
+REPLACE_NS="s/ namespace: .*/ namespace: ${1}/"
+REPLACE_NAME="s/ name: knative-serving-certs/ name: ${1}-serving-certs/"
+kubectl get secret knative-serving-certs --namespace=knative-serving -o yaml |sed "${REPLACE_NS}" |sed "${REPLACE_NAME}" |sed  "s/ selfLink: .*/ /"|sed  "s/ uid: .*/ /" |sed  "s/ resourceVersion: .*/ /" |kubectl apply -f -

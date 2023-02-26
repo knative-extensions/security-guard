@@ -4,7 +4,7 @@ guard-rproxy is a reverse proxy embedded with a guard-gate and packed as a conta
 
 1. As a sidecar while deploying a Kubernetes microservice. This is the recommended mode of operation and offers both client request monitoring and control and microservice pod monitoring and control.
 
-1. As a standalone exposed Pod protecting an unexposed microservice. This mode is simple to try out. It offers client request monitoring and control but does not offer microservice pod monitoring and control.
+1. As a standalone exposed microservice protecting a second, unexposed microservice. This mode is simple to try out. It offers client request monitoring and control but does not offer microservice pod monitoring and control.
 
 ## Environment Variables
 

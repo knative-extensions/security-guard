@@ -119,31 +119,6 @@ func main() {
 	}
 	fmt.Printf("Done processing serving-certs-ctrl-ca secret\n")
 
-	// Certificate Authority Public Key
-	caPublicSecret, err := secrets.Get(context.Background(), "serving-certs-ctrl-ca-public", metav1.GetOptions{})
-	if apierrors.IsNotFound(err) {
-		fmt.Printf("serving-certs-ctrl-ca-public secret is missing - lets create it\n")
-
-		s := corev1.Secret{}
-		s.Name = "serving-certs-ctrl-ca-public"
-		s.Namespace = "knative-serving"
-		s.Data = map[string][]byte{}
-		caPublicSecret, err = secrets.Create(context.Background(), &s, metav1.CreateOptions{})
-	}
-	if err != nil {
-		fmt.Printf("Error accessing serving-certs-ctrl-ca-public secret: %v\n", err)
-		return
-	}
-	caPublicBytes := caSecret.Data[certificates.SecretCertKey]
-	caPublicSecret.Data = make(map[string][]byte, 2)
-	caPublicSecret.Data[certificates.CaCertName] = caPublicBytes
-	fmt.Printf("Done processing serving-certs-ctrl-ca-public secret\n")
-
-	_, err = client.CoreV1().Secrets("knative-serving").Update(context.Background(), caPublicSecret, metav1.UpdateOptions{})
-	if err != nil {
-		fmt.Printf("Error updating serving-certs-ctrl-ca-public secret: %v\n", err)
-		return
-	}
 	// Current Keys
 	secret, err := secrets.Get(context.Background(), "knative-serving-certs", metav1.GetOptions{})
 	if apierrors.IsNotFound(err) {

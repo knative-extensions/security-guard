@@ -39,6 +39,9 @@ kind load docker-image guard-rproxy --name k8s
 GS_IMAGE=`ko build ko://knative.dev/security-guard/cmd/guard-service -B  `
 kind load docker-image $GS_IMAGE --name k8s
 
+# start create-secrets
+ko apply -f ./config-kubernetes/deploy/create-secrets.yaml -B
+
 # start guard-service
 ko apply -f ./config/deploy/guard-service.yaml -B
 
@@ -46,13 +49,13 @@ ko apply -f ./config/deploy/guard-service.yaml -B
 kubectl wait --namespace knative-serving --for=condition=complete job/create-knative-secrets --timeout=120s
 
 # copy the secret with the ca key to the default namespace
-./hack/copyPublicCaKey.sh default
+./hack/copyCerts.sh default
 
 # wait for ingress to be ready
 kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller  --timeout=120s
 
 #add hellowworld - protected using a guard sidecar  (the recommended pattern)
-ko apply -f ./config/deploy/secured-helloworld.yaml -B
+ko apply -f ./config-kubernetes/deploy/secured-helloworld.yaml -B
 
 #add myapp - protected using a separate guard pod (non-recommended pattern)
-ko apply -f ./config/deploy/secured-layered-myapp.yaml -B
+ko apply -f ./config-kubernetes/deploy/secured-layered-myapp.yaml -B

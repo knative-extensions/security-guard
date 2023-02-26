@@ -18,7 +18,6 @@ package guardgate
 
 import (
 	"crypto/x509"
-	"os"
 
 	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
 	utils "knative.dev/security-guard/pkg/guard-utils"
@@ -43,9 +42,9 @@ type gateState struct {
 	prevAlert   string                  // previous gate alert
 }
 
-func (gs *gateState) init(monitorPod bool, guardServiceUrl string, podname string, sid string, ns string, useCm bool) {
+func (gs *gateState) init(monitorPod bool, guardServiceUrl string, podname string, sid string, ns string, useCm bool, rootCA string) {
 	var err error
-	var insecureSkipVerify bool
+	var skipVerify bool 
 
 	gs.stat.Init()
 	gs.monitorPod = monitorPod
@@ -56,19 +55,21 @@ func (gs *gateState) init(monitorPod bool, guardServiceUrl string, podname strin
 		gs.certPool = x509.NewCertPool()
 	}
 
-	if rootCA := os.Getenv("ROOT_CA"); rootCA != "" {
+	if rootCA != "" {
 		if ok := gs.certPool.AppendCertsFromPEM([]byte(rootCA)); ok {
 			pi.Log.Infof("TLS: Success adding ROOT_CA")
 		} else {
-			pi.Log.Warnf("TLS: Failed to AppendCertsFromPEM from ROOT_CA - Insecure Communication, Working without TLS ROOT_CA!!!")
-			insecureSkipVerify = true
+			pi.Log.Infof("TLS: Failed to AppendCertsFromPEM from ROOT_CA, ROOT_CA is: %s", rootCA)
+			pi.Log.Warnf("Insecure Communication, Working without TLS ROOT_CA!!!")
+			skipVerify = true
 		}
 	} else {
-		pi.Log.Warnf("environment ROOT_CA is empty! - Insecure Communication,  Working without TLS ROOT_CA!!!")
-		insecureSkipVerify = true
+		pi.Log.Infof("ROOT_CA is empty!")
+		pi.Log.Warnf("Insecure Communication, Working without TLS ROOT_CA!!!")
+		skipVerify = true
 	}
 
-	gs.srv.initHttpClient(gs.certPool, insecureSkipVerify)
+	gs.srv.initHttpClient(gs.certPool, skipVerify)
 }
 
 func (gs gateState) start() {
