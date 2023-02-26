@@ -95,7 +95,7 @@ jobs:
       run: |
         ./test/e2e/e2e-tests.sh $SERVICE_URL "httptest1"
 
-    - name: Activate Production mode with AUTH and TLS
+    - name: Activate (Adding TLS Server side verification)
       run: |
         ./hack/copyCerts.sh default
       
@@ -117,7 +117,7 @@ jobs:
         # For debugging.
         kubectl get pods --all-namespaces
 
-    - name: Run e2e Tests With TLS
+    - name: Run e2e Tests "httptest2"
       run: |
         ./test/e2e/e2e-tests.sh $SERVICE_URL "httptest2"
 

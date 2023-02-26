@@ -44,7 +44,7 @@ type gateState struct {
 
 func (gs *gateState) init(monitorPod bool, guardServiceUrl string, podname string, sid string, ns string, useCm bool, rootCA string) {
 	var err error
-	var skipVerify bool 
+	var skipVerify bool
 
 	gs.stat.Init()
 	gs.monitorPod = monitorPod
