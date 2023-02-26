@@ -19,6 +19,12 @@ ROOTCA="$(mktemp)"
 FILENAME=`basename $ROOTCA`
 kubectl get secret -n knative-serving knative-serving-certs -o json| jq -r '.data."ca-cert.pem"' | base64 -d >  $ROOTCA
 
+echo "(Re)Create secrets serving-certs-ctrl-ca-public in namespaces: default, knative-serving"
+kubectl delete secret serving-certs-ctrl-ca-public -n knative-serving
+kubectl delete secret serving-certs-ctrl-ca-public
+kubectl create secret generic serving-certs-ctrl-ca-public --from-file=ca.crt=$ROOTCA -n knative-serving
+kubectl create secret generic serving-certs-ctrl-ca-public --from-file=ca.crt=$ROOTCA -n default
+
 echo "Create a temporary config-deployment configmap with the certificate"
 CERT=`kubectl create cm config-deployment --from-file $ROOTCA -o json --dry-run=client |jq .data.\"$FILENAME\"`
 
@@ -38,15 +44,6 @@ metadata:
   name: knative-serving
   namespace: knative-serving
 spec:
-  deployments:
-  - name: guard-service
-    env:
-    - container: guard-service
-      envVars:
-      - name: GUARD_SERVICE_TLS
-        value: "true"
-      - name: GUARD_SERVICE_AUTH
-        value: "true"
   security:
     securityGuard:
       enabled: true
@@ -57,8 +54,9 @@ spec:
     network:
       ingress.class: "kourier.ingress.networking.knative.dev"
     deployment:
-      queue-sidecar-rootca: ${CERT}
       queue-sidecar-token-audiences: guard-service
+      queue-sidecar-rootca: ${CERT}
+      
 EOF
 
 kubectl get KnativeServing -n knative-serving -o yaml

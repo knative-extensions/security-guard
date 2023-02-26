@@ -30,7 +30,7 @@ import (
 	utils "knative.dev/security-guard/pkg/guard-utils"
 )
 
-const plugVersion string = "0.3"
+const plugVersion string = "0.5"
 const plugName string = "guard"
 
 const (

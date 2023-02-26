@@ -15,10 +15,7 @@
 # limitations under the License.
 
 
-# Set the ROOT_CA and token audiences
-
-echo "Activate TLS and AUTH in guard-service"
-kubectl patch deployment guard-service -n knative-serving --patch-file ./hack/production-patch.yaml
+# Set the ROOT_CA
 
 echo "Copy the certificate to a temporary file"
 ROOTCA="$(mktemp)"
@@ -36,11 +33,10 @@ echo "Get the certificate in a configmap friendly form"
 CERT=`kubectl create cm config-deployment --from-file $ROOTCA -o json --dry-run=client |jq .data.\"$FILENAME\"`
 
 echo "Add TLS and Tokens to config-deployment configmap"
-kubectl patch cm config-deployment -n knative-serving -p '{"data":{"queue-sidecar-token-audiences": "guard-service", "queue-sidecar-rootca": '"$CERT"'}}'
+kubectl patch cm config-deployment -n knative-serving -p '{"data":{"queue-sidecar-rootca": '"$CERT"'}}'
 
 echo "cleanup"
 rm  $ROOTCA
 
 echo "Results:"
 kubectl get cm config-deployment -n knative-serving -o json|jq '.data'
-kubectl get deployment guard-service -n knative-serving -o json|jq .spec.template.spec.containers[0].env

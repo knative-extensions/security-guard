@@ -60,11 +60,11 @@ func (gs *gateState) init(monitorPod bool, guardServiceUrl string, podname strin
 		if ok := gs.certPool.AppendCertsFromPEM([]byte(rootCA)); ok {
 			pi.Log.Infof("TLS: Success adding ROOT_CA")
 		} else {
-			pi.Log.Warnf("TLS: Failed to AppendCertsFromPEM from ROOT_CA - Working in insecure mode!!!")
+			pi.Log.Warnf("TLS: Failed to AppendCertsFromPEM from ROOT_CA - Insecure Communication, Working without TLS ROOT_CA!!!")
 			insecureSkipVerify = true
 		}
 	} else {
-		pi.Log.Warnf("environment ROOT_CA is empty! - Working in insecure mode!!!")
+		pi.Log.Warnf("environment ROOT_CA is empty! - Insecure Communication,  Working without TLS ROOT_CA!!!")
 		insecureSkipVerify = true
 	}
 

@@ -91,10 +91,6 @@ spec:
         env:
           - name: GUARD_SERVICE_LABELS
             value: ""
-          - name: GUARD_SERVICE_TLS
-            value: "true"
-          - name: GUARD_SERVICE_AUTH
-            value: "true"
           - name: GUARD_SERVICE_LOG_LEVEL
             value: "info"
 ---

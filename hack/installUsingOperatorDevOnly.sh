@@ -36,6 +36,8 @@ spec:
   config:
     network:
       ingress.class: "kourier.ingress.networking.knative.dev"
+    deployment:
+      queue-sidecar-token-audiences: guard-service
 EOF
 
 kubectl get KnativeServing -n knative-serving -o yaml

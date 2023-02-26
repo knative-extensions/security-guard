@@ -82,15 +82,15 @@ When looking for a service **Guardian**:
 
 See [guard-gate](pkg/guard-gate) for more details on the different Guard working modes.
 
+## Guard Gate in Production
+
+When using Guard in a production cluster, secure the communication between [guard-gate](pkg/guard-gate) and [guard-service](cmd/guard-service) by configuring [guard-gate](pkg/guard-gate) environment variable ROOT_CA to the value of the Certificate Authority used by Guard which can be found in the `serving-certs-ctrl-ca-public` secret.
+
 ## Guard Service
 
 [guard-service](cmd/guard-service) is a standalone service used to learn **Guardian** micro-rules based on inputs from instances of [guard-gate](pkg/guard-gate). [guard-service](cmd/guard-service) stores the **Guardian** as a CRD (guardians.guard.security.knative.dev) under the name `<servicename>` or in a Configmap under the name `guardian-<servicename>`.
 
 Additionally, [guard-service](cmd/guard-service) cache Guardians and serve [guard-gate](pkg/guard-gate) requests to get a copy of the Guardian. This is done to reduce the load on KubeApi since any deployed Knative pod requires to access a copy of the Guardian on startup.
-
-## Guard Service under Production
-
-When using [guard-service](cmd/guard-service) in a production cluster, it is important to secure the communication between [guard-gate](pkg/guard-gate) and [guard-service](cmd/guard-service). This requires the admin to switch on the TLS mode and the AUTH mode of both [guard-service](cmd/guard-service) and all instances of [guard-gate](pkg/guard-gate).
 
 ## Guard User Interface
 

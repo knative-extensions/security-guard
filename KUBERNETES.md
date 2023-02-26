@@ -1,9 +1,10 @@
 # Guard on Vanilla Kubernetes
+
 For direct deployment of guard on Kubernetes, [guard-gate](./pkg/guard-gate/README.md) needs to be deployed per-service inside a reverse proxy. The reverse proxy needs to be configured to consume all ingress requests and forward it to the protected service. [guard-rproxy](./cmd/guard-rproxy/README.md) can be used as the guard reverse proxy.
 
-The repository exemplifies the use of [guard-rproxy](./cmd/guard-rproxy/README.md) deployed as a sidecar to protect a "hello world" service - this is the recommended installation pattern of guard when deploying in vanilla Kubernetes - see the [helloworld example](#-using-guard-rproxy-as-a-sidecar) below.
+The repository exemplifies the use of [guard-rproxy](./cmd/guard-rproxy/README.md) deployed as a sidecar to protect a "hello world" service - this is the recommended installation pattern of guard when deploying in vanilla Kubernetes - see the [helloworld example](#using-guard-rproxy-as-a-sidecar) below.
 
-The repository also exemplifies the use of [guard-rproxy](./cmd/guard-rproxy/README.md) as a separate layer in front of a "hello world" service - see the [myapp example](#-using-guard-rproxy-in-a-separate-pod) below.
+The repository also exemplifies the use of [guard-rproxy](./cmd/guard-rproxy/README.md) as a separate layer in front of a "hello world" service - see the [myapp example](#using-guard-rproxy-in-a-separate-pod) below.
 
 ## Before you use Vanilla Kubernetes
 
@@ -13,9 +14,7 @@ Continue reading here if you prefer the usual (and a bit more rocky) Kubernetes 
 
 ## Installing in Kind
 
-See the [installation script](./hack/kind/deployDevOnly.sh) for a quick deployment of a secured-hello pod on Kind exemplifying a non production environment (no secrets deployed, no TLS, no auth token used).
-
-See the [installation script](./hack/kind/deployProduction.sh) for a quick deployment of a secured-hello pod on Kind exemplifying a production environment.
+See the [installation script](./hack/kind/deployKind.sh) for a quick deployment of a secured-hello pod on Kind.
 
 The installation scripts install guard components and two example services:
 
@@ -24,11 +23,12 @@ The installation scripts install guard components and two example services:
 
 ### Installing guard-service
 
-By default, [guard-service](cmd/guard-service/README.md) is installed in the `knative-serving` namespace. Therefore, [guard-rproxy](./cmd/guard-rproxy/README.md) will by default look for [guard-service](cmd/guard-service/README.md) in the url `"https://guard-service.knative-serving"` for production deployments and `"http://guard-service.knative-serving"` for non-production deployments.
+By default, [guard-service](cmd/guard-service/README.md) is installed in the `knative-serving` namespace. Therefore, [guard-rproxy](./cmd/guard-rproxy/README.md) will by default look for [guard-service](cmd/guard-service/README.md) in the url `"https://guard-service.knative-serving"` for production deployments and `"https://guard-service.knative-serving"` for non-production deployments.
 
 If you are using a different namespace, you need to setup [guard-rproxy](./cmd/guard-rproxy/README.md)'s GUARD_URL env variable to ensure it can access [guard-service](cmd/guard-service/README.md).
 
 ### Using guard-rproxy as a sidecar
+
 This is the recommended way to protect services under vanilla Kubernetes.
 
 <p align="center">
@@ -37,7 +37,7 @@ This is the recommended way to protect services under vanilla Kubernetes.
 
 The diagram shows the installed resources after using the installation script. Note that `secured-helloworld` has two containers - the "hellloworld" container represent the service logic being deployed while "guard-rproxy" container is the [guard-rproxy](./cmd/guard-rproxy/README.md) protecting the service. Correspondingly, we set the protected container to not be exposed outside the pod.
 
-```
+```sh
 kubectl get pods
 NAME                                  READY   STATUS    RESTARTS   AGE
 ...
@@ -55,14 +55,14 @@ guard-service-6b6d5d9444-hzjtl   1/1     Running     0          12h
 
 Once installed, try accessing the service using curl:
 
-```
+```sh
 curl http://127.0.0.1:/hello
 Hello World!
 ```
 
 Note that guard learns the access patterns over time - wait until guard have created the guardian for your service. See the guardian crd related to `helloworld` using kubectl.
 
-```
+```sh
 kubectl get guardians.guard.security.knative.dev
 
 NAME                 AGE
@@ -72,7 +72,7 @@ secured-helloworld   3m32s
 
 Now try a different pattern and notice the alert in the logs:
 
-```
+```sh
 curl http://127.0.0.1:/hello?a=2
 Hello World!
 
@@ -91,7 +91,7 @@ Guard identified that a query string with a key 'a' was not inline with the guar
 </p>
 The diagram shows the installed resources after using the installation script. Note that `myapp` represent the service logic being deployed while `myapp-guard` is the [guard-rproxy](./cmd/guard-rproxy/README.md) protecting the service. Correspondingly, we set `myapp` to not be exposed outside of the cluster - set it to only accept requests coming from `myapp-guard`.
 
-```
+```sh
 kubectl get pods
 NAME                                  READY   STATUS    RESTARTS   AGE
 ...
@@ -101,14 +101,14 @@ myapp-guard-864fb77854-gdz8j          1/1     Running   0          13h
 
 Once installed, try accessing the service using curl:
 
-```
+```sh
 curl http://127.0.0.1:/myapp
 Hello World!
 ```
 
 Note that guard learns the access patterns over time - wait until guard have created the guardian for your service. See the guardian crd related to `myapp` using kubectl.
 
-```
+```sh
 kubectl get guardians.guard.security.knative.dev
 
 NAME                 AGE
@@ -118,7 +118,7 @@ myapp-guard          22s
 
 Now try a different pattern and notice the alert in the logs:
 
-```
+```sh
 curl http://127.0.0.1:/myapp?a=2
 Hello World!
 
@@ -142,8 +142,7 @@ For development environments see yamls:
 
 When working in production mode, you can create the secrets used by guard by deploying the [create-knative-secrets](./cmd/create-knative-secrets/README.md) Job. This Job will create the secrets in the `knative-serving` namespace.
 
-
-```
+```sh
 kubectl get pods -n knative-serving
 NAME                            READY   STATUS      RESTARTS   AGE
 ...
@@ -159,7 +158,7 @@ serving-certs-ctrl-ca-public   Opaque   1      12h
 
 After the secrets were created, you should copy the `serving-certs-ctrl-ca-public` secret to any namespace where protected services are deployed. You may use [the `copyPublicCaKey` script] (./hack/copyPublicCaKey.sh) to ease your work. The Kind installation already use this script to copy the secrets to the default namespace.
 
-```
+```sh
 kubectl get secrets
 
 NAME                           TYPE     DATA   AGE
@@ -174,15 +173,11 @@ For production environments see yamls:
 
 When using in production, it is necessary to ensure that:
 
-- [guard-service](cmd/guard-service/README.md) need to mount the `knative-serving-certs` secret in the `/secrets` path. The secret contains its Certificate Authority key pair and the service key pair. You can deploy [create-knative-secrets](./cmd/create-knative-secrets/README.md) as a Job to create the secret for you.
-- [guard-service](cmd/guard-service/README.md) need have the env variables GUARD_SERVICE_TLS and GUARD_SERVICE_AUTH both set to "true".
-- [guard-rproxy](./cmd/guard-rproxy/README.md) runs as a sidecar as part of your service pods. Therefroe, it may run in any namespace. In order to be able to securely communicate with [guard-service](cmd/guard-service/README.md), The ROOT_CA env variable of the [guard-rproxy](./cmd/guard-rproxy/README.md) need to be configured using the Certificate Authority public key contained in the `serving-certs-ctrl-ca-public` secret. You can deploy [create-knative-secrets](./cmd/create-knative-secrets/README.md) as a Job to create the `serving-certs-ctrl-ca-public` secret in the `knative-serving` namespace. Once created, you may copy the secret to any namespace where protected services are deployed. You may also use [the `copyPublicCaKey` script] (./hack/copyPublicCaKey.sh) to ease your work.
-- [guard-rproxy](./cmd/guard-rproxy/README.md) need to mount a service acount token with the guard-service audience in the `/var/run/secrets/tokens` path.
+- [guard-rproxy](./cmd/guard-rproxy/README.md) runs as a sidecar as part of your service pods. Therefore, it may run in any namespace. In order to be able to securely communicate with [guard-service](cmd/guard-service/README.md), The ROOT_CA env variable of the [guard-rproxy](./cmd/guard-rproxy/README.md) need to be configured using the Certificate Authority public key contained in the `serving-certs-ctrl-ca-public` secret. You can deploy [create-knative-secrets](./cmd/create-knative-secrets/README.md) as a Job to create the `serving-certs-ctrl-ca-public` secret in the `knative-serving` namespace. Once created, you may copy the secret to any namespace where protected services are deployed. You may also use [the `copyPublicCaKey` script] (./hack/copyPublicCaKey.sh) to ease your work.
 
-## Installing in your own cluster
 ### From guard-service from source
 
-```
+```sh
 kubectl apply -Rf ./config-production/resources/
 export KO_DOCKER_REPO= \<your image repository\>
 
@@ -192,7 +187,7 @@ ko apply -f ./config-production/deploy/guard-service.yaml
 
 ### Install guard-service from released images and yamls
 
-```
+```sh
 kubectl apply -f https://raw.githubusercontent.com/knative-sandbox/security-guard/release-0.5/config/resources/gateAccount.yaml
 kubectl apply -f https://raw.githubusercontent.com/knative-sandbox/security-guard/release-0.5/config/resources/serviceAccount.yaml
 kubectl apply -f https://raw.githubusercontent.com/knative-sandbox/security-guard/release-0.5/config/resources/guardiansCrd.yaml
@@ -205,12 +200,13 @@ kubectl apply -f https://github.com/knative-sandbox/security-guard/releases/down
 
 First make sure to copy the Cetificate Authority public key secret to your namespace.
 
-```
+```sh
 ./hack/copyPublicCaKey.sh \<namespace-of-your-app\>
 ```
 
 Next add the [guard-rproxy](./cmd/guard-rproxy/README.md) container to your service. Make sure only the [guard-rproxy](./cmd/guard-rproxy/README.md) container is exposed outside the container:
-```
+
+```sh
 apiVersion: apps/v1
 kind: Deployment
 ...

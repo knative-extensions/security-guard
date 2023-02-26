@@ -89,9 +89,7 @@ func preMain(env *config) (guardGate *GuardGate, mux *http.ServeMux, target stri
 
 	utils.CreateLogger(env.LogLevel)
 
-	if env.GuardUrl == "" {
-		env.GuardUrl = "http://guard-service.knative-serving"
-	} else {
+	if env.GuardUrl != "" {
 		plugConfig["guard-url"] = env.GuardUrl
 	}
 

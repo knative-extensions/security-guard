@@ -40,9 +40,9 @@ const (
 type config struct {
 	GuardServiceLogLevel string   `split_words:"true" required:"false"`
 	GuardServiceInterval string   `split_words:"true" required:"false"`
-	GuardServiceAuth     bool     `split_words:"true" required:"false"`
+	GuardServiceAuth     string   `split_words:"true" required:"false"`
 	GuardServiceLabels   []string `split_words:"true" required:"false"`
-	GuardServiceTls      bool     `split_words:"true" required:"false"`
+	GuardServiceTls      string   `split_words:"true" required:"false"`
 }
 
 type learner struct {
@@ -137,7 +137,7 @@ func (l *learner) baseHandler(w http.ResponseWriter, req *http.Request) (record 
 	var sid, ns string
 	var cmFlag bool
 
-	if l.env.GuardServiceAuth {
+	if l.env.GuardServiceAuth != "false" {
 		cmFlag, err = l.queryDataAuth(req.URL.Query())
 		if err != nil {
 			pi.Log.Infof("queryData failed with %v", err)
@@ -263,12 +263,13 @@ func (l *learner) init(minimumInterval time.Duration) (srv *http.Server, quit ch
 	quit = make(chan string)
 
 	pi.Log.Infof("Starting guard-service on %s", target)
-	if l.env.GuardServiceAuth {
+	if l.env.GuardServiceAuth != "false" {
+		l.env.GuardServiceAuth = "true"
 		pi.Log.Infof("Token turned on - clients identity is confirmed")
 	} else {
 		pi.Log.Infof("Token turned off - clients identity is not confirmed")
 	}
-	if l.env.GuardServiceTls {
+	if l.env.GuardServiceTls != "false" {
 		pi.Log.Infof("TLS turned on")
 	} else {
 		pi.Log.Infof("TLS turned off")
@@ -295,7 +296,7 @@ func main() {
 
 	// affected by file system
 	// starts a web service
-	if l.env.GuardServiceTls {
+	if l.env.GuardServiceTls != "false" {
 		srv.TLSConfig = &tls.Config{
 			MinVersion:               tls.VersionTLS12,
 			PreferServerCipherSuites: true,
