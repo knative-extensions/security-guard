@@ -9,4 +9,3 @@ metadata:
 data:
   # This overrides the configmap produced by knative serving
   queueproxy.mount-podinfo: allowed
-  
