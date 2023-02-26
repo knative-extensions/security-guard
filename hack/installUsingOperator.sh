@@ -15,6 +15,7 @@
 # limitations under the License.
 
 echo "Apply new Knative Operator configuration"
+
 kubectl apply --filename - <<EOF
 apiVersion: v1
 kind: Namespace
