@@ -198,6 +198,7 @@ func (l *learner) processSync(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	if syncReq.IamCompromised {
+		pi.Log.Infof("Gate %s ns %s reported Pod is Compromised!!", podname, record.ns)
 		l.services.deletePod(record, podname)
 	}
 
@@ -206,7 +207,7 @@ func (l *learner) processSync(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if syncReq.Alerts != nil {
-		pi.Log.Debugf("%s:%s:%s sent alerts:", record.ns, record.sid, podname)
+		pi.Log.Infof("Pod %s ns %s sent %d Alerts", podname, record.ns, len(syncReq.Alerts))
 		for _, alert := range syncReq.Alerts {
 			record.alerts++
 			time := time.Unix(alert.Time, 0)

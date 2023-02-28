@@ -41,4 +41,6 @@ spec:
       queue-sidecar-token-audiences: guard-service
 EOF
 
+kubectl apply -f https://storage.googleapis.com/knative-nightly/serving/latest/serving-default-domain.yaml
+
 kubectl get KnativeServing -n knative-serving -o yaml
