@@ -18,6 +18,7 @@ package guardgate
 
 import (
 	"crypto/x509"
+	"time"
 
 	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
 	utils "knative.dev/security-guard/pkg/guard-utils"

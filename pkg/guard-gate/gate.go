@@ -162,6 +162,7 @@ func (p *plug) preInit(c map[string]string, sid string, ns string, logger pi.Log
 	var ok bool
 	var v string
 	var syncInterval, monitorInterval string
+	var rootCA string
 
 	// Defaults used without config when used as a qpoption
 	useCm := false
