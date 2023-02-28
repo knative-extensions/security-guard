@@ -204,7 +204,7 @@ func Test_NOTLS_learner_baseHandler(t *testing.T) {
 				services:        s,
 				pileLearnTicker: ticker,
 			}
-			l.env.GuardServiceAuth = false
+			l.env.GuardServiceAuth = "false"
 			gotCmFlag, gotPod, gotSid, gotNs, gotErr := l.queryDataNoAuth(tt.query)
 			if tt.wantErr == (gotErr == nil) {
 				t.Errorf("learner.queryData() gotErr = %v, want %v", gotErr, tt.wantErr)
@@ -271,7 +271,7 @@ func Test_TLS_learner_baseHandler(t *testing.T) {
 				services:        s,
 				pileLearnTicker: ticker,
 			}
-			l.env.GuardServiceAuth = true
+			l.env.GuardServiceAuth = "anything"
 			gotCmFlag, gotErr := l.queryDataAuth(tt.query)
 			if tt.wantErr == (gotErr == nil) {
 				t.Errorf("learner.queryData() gotErr = %v, want %v", gotErr, tt.wantErr)
@@ -303,7 +303,7 @@ func TestTLS_SyncHandler_MissingToken(t *testing.T) {
 		services:        s,
 		pileLearnTicker: ticker,
 	}
-	l.env.GuardServiceAuth = true
+	l.env.GuardServiceAuth = "anything"
 
 	// We create a ResponseRecorder (which satisfies http.ResponseWriter) to record the response.
 	rr := httptest.NewRecorder()
@@ -340,8 +340,10 @@ func TestNOTLS_SyncHandler_main(t *testing.T) {
 		services:        s,
 		pileLearnTicker: ticker,
 	}
-	l.env.GuardServiceAuth = false
-	l.env.GuardServiceTls = false
+
+	l.env.GuardServiceAuth = "false"
+	l.env.GuardServiceTls = "false"
+	l.env.GuardServiceInterval = "30s"
 	l.env.GuardServiceLabels = []string{"aaa", "bbb"}
 
 	srv, _, _ := l.init()
@@ -362,8 +364,10 @@ func TestTLS_SyncHandler_main(t *testing.T) {
 		services:        s,
 		pileLearnTicker: ticker,
 	}
-	l.env.GuardServiceAuth = true
-	l.env.GuardServiceTls = true
+
+	l.env.GuardServiceAuth = "anything"
+	l.env.GuardServiceTls = "anything"
+	l.env.GuardServiceInterval = "asdkasg"
 	l.env.GuardServiceLabels = []string{}
 
 	srv, _, _ := l.init()
@@ -384,7 +388,7 @@ func TestTLS_SyncHandler_NotPOST(t *testing.T) {
 		services:        s,
 		pileLearnTicker: ticker,
 	}
-	l.env.GuardServiceAuth = true
+	l.env.GuardServiceAuth = "anything"
 
 	// Create a request to pass to our handler. We don't have any query parameters for now, so we'll
 	// pass 'nil' as the third parameter.
@@ -427,7 +431,7 @@ func TestTLS_badUrl(t *testing.T) {
 		services:        s,
 		pileLearnTicker: ticker,
 	}
-	l.env.GuardServiceAuth = true
+	l.env.GuardServiceAuth = "anything"
 
 	// Create a request to pass to our handler. We don't have any query parameters for now, so we'll
 	// pass 'nil' as the third parameter.
@@ -470,7 +474,7 @@ func TestTLS_SyncHandler_NoReqBody(t *testing.T) {
 		services:        s,
 		pileLearnTicker: ticker,
 	}
-	l.env.GuardServiceAuth = true
+	l.env.GuardServiceAuth = "anything"
 
 	// Create a request to pass to our handler. We don't have any query parameters for now, so we'll
 	// pass 'nil' as the third parameter.
@@ -513,7 +517,7 @@ func TestTLS_SyncHandler_EmptyPileAndAlert(t *testing.T) {
 		services:        s,
 		pileLearnTicker: ticker,
 	}
-	l.env.GuardServiceAuth = true
+	l.env.GuardServiceAuth = "anything"
 
 	record := s.get("ns", "sid9", false)
 	postBody, _ := json.Marshal(&record.pile)
@@ -564,7 +568,7 @@ func TestTLS_SyncHandler_WithBadReq(t *testing.T) {
 		services:        s,
 		pileLearnTicker: ticker,
 	}
-	l.env.GuardServiceAuth = true
+	l.env.GuardServiceAuth = "anything"
 
 	postBody, _ := json.Marshal("xx")
 	reqBody := bytes.NewBuffer(postBody)
@@ -610,7 +614,7 @@ func TestTLS_SyncHandler_WithGoodReq(t *testing.T) {
 		services:        s,
 		pileLearnTicker: ticker,
 	}
-	l.env.GuardServiceAuth = true
+	l.env.GuardServiceAuth = "anything"
 
 	var syncReq spec.SyncMessageReq
 	var decision *spec.Decision
@@ -675,7 +679,7 @@ func TestNOTLS_SyncHandler_WithGoodReq(t *testing.T) {
 		services:        s,
 		pileLearnTicker: ticker,
 	}
-	l.env.GuardServiceAuth = false
+	l.env.GuardServiceAuth = "false"
 
 	var syncReq spec.SyncMessageReq
 	var decision *spec.Decision
@@ -742,7 +746,7 @@ func TestNOTLS_SyncHandler_WithBadQuery(t *testing.T) {
 		services:        s,
 		pileLearnTicker: ticker,
 	}
-	l.env.GuardServiceAuth = false
+	l.env.GuardServiceAuth = "false"
 
 	var syncReq spec.SyncMessageReq
 	var decision *spec.Decision
@@ -830,7 +834,7 @@ func Test_learner_authenticate(t *testing.T) {
 				services:        s,
 				pileLearnTicker: ticker,
 			}
-			l.env.GuardServiceAuth = true
+			l.env.GuardServiceAuth = "anything"
 
 			gotPodname, gotSid, gotNs, err := l.authenticate(req)
 			if (err != nil) != tt.wantErr {

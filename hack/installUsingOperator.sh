@@ -15,6 +15,7 @@
 # limitations under the License.
 
 echo "Apply new Knative Operator configuration"
+
 kubectl apply --filename - <<EOF
 apiVersion: v1
 kind: Namespace
@@ -36,6 +37,10 @@ spec:
   config:
     network:
       ingress.class: "kourier.ingress.networking.knative.dev"
+    deployment:
+      queue-sidecar-token-audiences: guard-service
 EOF
+
+kubectl apply -f https://storage.googleapis.com/knative-nightly/serving/latest/serving-default-domain.yaml
 
 kubectl get KnativeServing -n knative-serving -o yaml

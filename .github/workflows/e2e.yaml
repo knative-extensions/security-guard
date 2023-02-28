@@ -95,33 +95,6 @@ jobs:
       run: |
         ./test/e2e/e2e-tests.sh $SERVICE_URL "httptest1"
 
-    - name: Activate TLS
-      run: |
-        ./hack/setTLS.sh
-        sleep 60
-      
-    - name: install test service2
-      run: |
-        kubectl apply -f ./test/e2e/deploy/httptest2Crd.yaml
-        kn service create httptest2 \
-           --image gcr.io/knative-samples/helloworld-go \
-           --env "TARGET=Secured World" \
-           --annotation features.knative.dev/queueproxy-podinfo=enabled \
-           --annotation qpoption.knative.dev/guard-activate=enable
-        URL=`kn service list|grep httptest2|awk '{print $2}'`   
-        echo "SERVICE_URL=$URL" >> $GITHUB_ENV
-
-    - name: Wait for Ready2
-      run: |
-        echo Waiting for Pods to become ready.
-        kubectl wait pod --timeout 300s --for=condition=Ready -n knative-serving -l "app=guard-service"
-        # For debugging.
-        kubectl get pods --all-namespaces
-
-    - name: Run e2e Tests With TLS
-      run: |
-        ./test/e2e/e2e-tests.sh $SERVICE_URL "httptest2"
-
     - uses: chainguard-dev/actions/kind-diag@main
       # Only upload logs on failure.
       if: ${{ failure() }}

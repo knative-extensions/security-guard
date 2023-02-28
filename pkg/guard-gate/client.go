@@ -75,7 +75,7 @@ func (hc *httpClient) ReadToken(audience string) (tokenActive bool) {
 	b, err := os.ReadFile(path.Join("/var/run/secrets/tokens", audience))
 
 	if err != nil {
-		pi.Log.Debugf("Token %s is missing - working without token", audience)
+		pi.Log.Debugf("Token %s is missing - Insecure communication, working without AUTH Token!", audience)
 		hc.missingToken = true
 		return
 	}
@@ -88,18 +88,19 @@ func (hc *httpClient) ReadToken(audience string) (tokenActive bool) {
 }
 
 type gateClient struct {
-	guardServiceUrl string
-	podname         string
-	sid             string
-	ns              string
-	useCm           bool
-	tokenActive     bool
-	httpClient      httpClientInterface
-	pile            spec.SessionDataPile
-	pileMutex       sync.Mutex
-	alerts          []spec.Alert
-	IamCompromised  bool
-	kubeMgr         guardKubeMgr.KubeMgrInterface
+	guardServiceUrl  string
+	podname          string
+	sid              string
+	ns               string
+	useCm            bool
+	tokenActive      bool // secure mode - AUTH token used
+	certVerifyActive bool // secure mode - Server TLS certificate verified
+	httpClient       httpClientInterface
+	pile             spec.SessionDataPile
+	pileMutex        sync.Mutex
+	alerts           []spec.Alert
+	IamCompromised   bool
+	kubeMgr          guardKubeMgr.KubeMgrInterface
 }
 
 func NewGateClient(guardServiceUrl string, podname string, sid string, ns string, useCm bool) *gateClient {
@@ -121,15 +122,17 @@ func (srv *gateClient) initKubeMgr() {
 	srv.kubeMgr.InitConfigs()
 }
 
-func (srv *gateClient) initHttpClient(certPool *x509.CertPool) {
+func (srv *gateClient) initHttpClient(certPool *x509.CertPool, insecureSkipVerify bool) {
+	srv.certVerifyActive = !insecureSkipVerify
 	client := new(httpClient)
 	client.client.Transport = &http.Transport{
 		MaxConnsPerHost:     0,
 		MaxIdleConns:        0,
 		MaxIdleConnsPerHost: 0,
 		TLSClientConfig: &tls.Config{
-			ServerName: certificates.FakeDnsName,
-			RootCAs:    certPool,
+			InsecureSkipVerify: insecureSkipVerify,
+			ServerName:         certificates.FakeDnsName,
+			RootCAs:            certPool,
 		},
 	}
 	srv.httpClient = client

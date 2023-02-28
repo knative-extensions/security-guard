@@ -20,22 +20,20 @@ spec:
       - name: guard-service-tls-volume
         secret:
           secretName: knative-serving-certs
+          optional: true
       containers:
       - name: guard-service
         image: ko://knative.dev/security-guard/cmd/guard-service
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         volumeMounts:
         - mountPath: /secrets
           name: guard-service-tls-volume
+          readOnly:  true
         ports:
           - containerPort: 8888
         env:
           - name: GUARD_SERVICE_LABELS
             value: ""
-          - name: GUARD_SERVICE_TLS
-            value: "false"
-          - name: GUARD_SERVICE_AUTH
-            value: "false"
           - name: GUARD_SERVICE_LOG_LEVEL
             value: "info"
 ---

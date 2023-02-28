@@ -30,7 +30,7 @@ import (
 	utils "knative.dev/security-guard/pkg/guard-utils"
 )
 
-const plugVersion string = "0.3"
+const plugVersion string = "0.5"
 const plugName string = "guard"
 
 const (
@@ -159,22 +159,21 @@ func (p *plug) guardMainEventLoop(ctx context.Context) {
 	}
 }
 func (p *plug) preInit(c map[string]string, sid string, ns string, logger pi.Logger) {
-	var ok, tlsActive bool
+	var ok bool
 	var v string
 	var syncInterval, monitorInterval string
+	var rootCA string
 
 	// Defaults used without config when used as a qpoption
 	useCm := false
 	monitorPod := true
 	analyzeBody := false
 
-	guardServiceUrl := "http://guard-service.knative-serving"
-	if rootCA := os.Getenv("ROOT_CA"); rootCA != "" {
-		guardServiceUrl = "https://guard-service.knative-serving"
-		tlsActive = true
-	}
+	guardServiceUrl := "https://guard-service.knative-serving"
 
 	if c != nil {
+		rootCA = c["rootca"]
+
 		if v, ok = c["guard-url"]; ok && v != "" {
 			// use default
 			guardServiceUrl = v
@@ -226,8 +225,9 @@ func (p *plug) preInit(c map[string]string, sid string, ns string, logger pi.Log
 
 	p.gateState = new(gateState)
 	p.gateState.analyzeBody = analyzeBody
-	p.gateState.init(monitorPod, guardServiceUrl, podname, sid, ns, useCm)
-	pi.Log.Infof("guard-gate: TLS %t, Token %t", tlsActive, p.gateState.srv.tokenActive)
+	p.gateState.init(monitorPod, guardServiceUrl, podname, sid, ns, useCm, rootCA)
+
+	pi.Log.Infof("guard-gate: Secured Communication %t (CERT Verification %t AUTH Token %t)", p.gateState.srv.certVerifyActive && p.gateState.srv.tokenActive, p.gateState.srv.certVerifyActive, p.gateState.srv.tokenActive)
 }
 
 func (p *plug) Init(ctx context.Context, c map[string]string, sid string, ns string, logger pi.Logger) context.Context {

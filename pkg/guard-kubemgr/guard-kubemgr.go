@@ -123,7 +123,7 @@ func (k *KubeMgr) DeletePod(ns string, podname string) {
 		// can't read CRD
 		pi.Log.Infof("fail to delete pod ns %s podname %s - error %v", ns, podname, err)
 	} else {
-		pi.Log.Infof("delete pod ns %s podname %s", ns, podname)
+		pi.Log.Debugf("Delete pod ns %s podname %s", ns, podname)
 	}
 }
 

@@ -51,6 +51,8 @@ rm -fr ${YAML_OUTPUT_DIR}/*.yaml
 # Generated Knative component YAML files
 readonly SECURED_HELLO_YAML=${YAML_OUTPUT_DIR}/secured-helloworld.yaml
 readonly SECURED_LAYERED_MYAPP_YAML=${YAML_OUTPUT_DIR}/secured-layered-myapp.yaml
+readonly CREATE_SECRETS_YAML=${YAML_OUTPUT_DIR}/create-secrets.yaml
+readonly CONFIG_FEATURES_YAML=${YAML_OUTPUT_DIR}/config-features.yaml
 readonly GUARD_SERVICE_YAML=${YAML_OUTPUT_DIR}/guard-service.yaml
 readonly QUEUE_PROXY_YAML=${YAML_OUTPUT_DIR}/queue-proxy.yaml
 readonly GATE_ACCOUNT_YAML=${YAML_OUTPUT_DIR}/gate-account.yaml
@@ -81,8 +83,10 @@ cd "${YAML_REPO_ROOT}"
 
 echo "Building Knative Secuity-Guard"
 echo KO_YAML_FLAGS: ${KO_YAML_FLAGS}
-ko resolve ${KO_YAML_FLAGS} -f config/deploy/secured-helloworld.yaml | "${LABEL_YAML_CMD[@]}" > "${SECURED_HELLO_YAML}"
-ko resolve ${KO_YAML_FLAGS} -f config/deploy/secured-layered-myapp.yaml | "${LABEL_YAML_CMD[@]}" > "${SECURED_LAYERED_MYAPP_YAML}"
+ko resolve ${KO_YAML_FLAGS} -f config-kubernetes/deploy/secured-helloworld.yaml | "${LABEL_YAML_CMD[@]}" > "${SECURED_HELLO_YAML}"
+ko resolve ${KO_YAML_FLAGS} -f config-kubernetes/deploy/secured-layered-myapp.yaml | "${LABEL_YAML_CMD[@]}" > "${SECURED_LAYERED_MYAPP_YAML}"
+ko resolve ${KO_YAML_FLAGS} -f config-kubernetes/deploy/create-secrets.yaml | "${LABEL_YAML_CMD[@]}" > "${CREATE_SECRETS_YAML}"
+ko resolve ${KO_YAML_FLAGS} -f config/deploy/config-features.yaml | "${LABEL_YAML_CMD[@]}" > "${CONFIG_FEATURES_YAML}"
 ko resolve ${KO_YAML_FLAGS} -f config/deploy/guard-service.yaml | "${LABEL_YAML_CMD[@]}" > "${GUARD_SERVICE_YAML}"
 ko resolve ${KO_YAML_FLAGS} -f config/deploy/queue-proxy.yaml | "${LABEL_YAML_CMD[@]}" > "${QUEUE_PROXY_YAML}"
 ko resolve ${KO_YAML_FLAGS} -f config/resources/gateAccount.yaml | "${LABEL_YAML_CMD[@]}" > "${GATE_ACCOUNT_YAML}"
@@ -95,6 +99,8 @@ echo "All manifests generated"
 cat << EOF > ${YAML_LIST_FILE}
 ${SECURED_HELLO_YAML}
 ${SECURED_LAYERED_MYAPP_YAML}
+${CREATE_SECRETS_YAML}
+${CONFIG_FEATURES_YAML}
 ${GUARD_SERVICE_YAML}
 ${QUEUE_PROXY_YAML}
 ${GATE_ACCOUNT_YAML}
@@ -106,6 +112,8 @@ EOF
 cat << EOF > "${YAML_ENV_FILE}"
 export SECURED_HELLO_YAML=${SECURED_HELLO_YAML}
 export SECURED_LAYERED_MYAPP_YAML=${SECURED_LAYERED_MYAPP_YAML}
+export CREATE_SECRETS_YAML=${CREATE_SECRETS_YAML}
+export CONFIG_FEATURES_YAML=${CONFIG_FEATURES_YAML}
 export GUARD_SERVICE_YAML=${GUARD_SERVICE_YAML}
 export QUEUE_PROXY_YAML=${QUEUE_PROXY_YAML}
 export GATE_ACCOUNT_YAML=${GATE_ACCOUNT_YAML}
