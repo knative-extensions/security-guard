@@ -149,6 +149,7 @@ func (p *GateQPOption) Setup(defaults *sharedmain.Defaults) {
 	// Never panic the caller app from here
 	defer func() {
 		if r := recover(); r != nil {
+			p.activated = false
 			pi.Log.Warnf("Recovered from panic during Setup()! Recover: %v", r)
 		}
 	}()
@@ -203,5 +204,7 @@ func (p *GateQPOption) Shutdown() {
 		}
 		pi.Log.Sync()
 	}()
-	p.securityPlug.Shutdown()
+	if p.activated {
+		p.securityPlug.Shutdown()
+	}
 }

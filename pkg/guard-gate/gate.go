@@ -34,7 +34,12 @@ const plugVersion string = "0.5"
 const plugName string = "guard"
 
 const (
-	syncIntervalDefault       = 10 * time.Second
+	sessionKey = "GuardSession"
+	maxBody    = int64(1048576)
+)
+
+const (
+	syncIntervalDefault       = 60 * time.Second
 	podMonitorIntervalDefault = 5 * time.Second
 )
 
@@ -53,8 +58,14 @@ type plug struct {
 }
 
 func (p *plug) Shutdown() {
-	pi.Log.Debugf("%s: Shutdown", p.name)
-	p.gateState.sync()
+	pi.Log.Infof("%s Shutdown - performing final Sync!", p.name)
+	p.syncTicker.Stop()
+	p.podMonitorTicker.Stop()
+	if p.gateState.srv.pile.Count > 0 || len(p.gateState.srv.alerts) > 0 {
+		p.gateState.sync(false, true)
+	}
+	pi.Log.Infof("%s - Done with the following statistics: %s", p.name, p.gateState.stat.Log())
+	pi.Log.Sync()
 }
 
 func (p *plug) PlugName() string {
@@ -129,22 +140,17 @@ func (p *plug) ApproveResponse(req *http.Request, resp *http.Response) (*http.Re
 func (p *plug) guardMainEventLoop(ctx context.Context) {
 	p.syncTicker.Start()
 	p.podMonitorTicker.Start()
-	defer func() {
-		p.syncTicker.Stop()
-		p.podMonitorTicker.Stop()
-		p.gateState.sync()
-		pi.Log.Infof("%s: Done with the following statistics: %s", plugName, p.gateState.stat.Log())
-	}()
-
 	for {
 		select {
 		// Always finish guard here!
 		case <-ctx.Done():
+			pi.Log.Debugf("Terminating the guardMainEventLoop")
+			p.syncTicker.Stop()
+			p.podMonitorTicker.Stop()
 			return
-
 		// Periodically send pile and alerts and get an updated Guardian
 		case <-p.syncTicker.Ch():
-			p.gateState.sync()
+			p.gateState.syncIfNeeded()
 
 		// Periodically profile of the pod
 		case <-p.podMonitorTicker.Ch():
@@ -155,7 +161,7 @@ func (p *plug) guardMainEventLoop(ctx context.Context) {
 func (p *plug) preInit(c map[string]string, sid string, ns string, logger pi.Logger) {
 	var ok bool
 	var v string
-	var loadInterval, pileInterval, monitorInterval, rootCA string
+	var syncInterval, monitorInterval string
 
 	// Defaults used without config when used as a qpoption
 	useCm := false
@@ -184,15 +190,16 @@ func (p *plug) preInit(c map[string]string, sid string, ns string, logger pi.Log
 			analyzeBody = true
 		}
 
-		loadInterval = c["guardian-load-interval"]
-		pileInterval = c["report-pile-interval"]
+		syncInterval = c["guardian-sync-interval"]
 		monitorInterval = c["pod-monitor-interval"]
+	} else {
+		pi.Log.Infof("guard-gate missing configuration")
 	}
 
 	p.syncTicker = utils.NewTicker(utils.MinimumInterval)
 	p.podMonitorTicker = utils.NewTicker(utils.MinimumInterval)
 
-	p.syncTicker.Parse(loadInterval, syncIntervalDefault)
+	p.syncTicker.Parse(syncInterval, syncIntervalDefault)
 	p.podMonitorTicker.Parse(monitorInterval, podMonitorIntervalDefault)
 
 	podname := "unknown"
@@ -206,8 +213,8 @@ func (p *plug) preInit(c map[string]string, sid string, ns string, logger pi.Log
 		}
 	}
 
-	pi.Log.Debugf("guard-gate configuration: podname=%s, sid=%s, ns=%s, useCm=%t, guardUrl=%s, p.monitorPod=%t, guardian-load-interval %v, report-pile-interval %v, pod-monitor-interval %v",
-		podname, sid, ns, useCm, guardServiceUrl, monitorPod, loadInterval, pileInterval, monitorInterval)
+	pi.Log.Infof("guard-gate configuration: podname=%s, sid=%s, ns=%s, useCm=%t, guardUrl=%s, p.monitorPod=%t, guardian-sync-interval %v,  pod-monitor-interval %v",
+		podname, sid, ns, useCm, guardServiceUrl, monitorPod, syncInterval, monitorInterval)
 
 	// serviceName should never be "ns.{namespace}" as this is a reserved name
 	if strings.HasPrefix(sid, "ns.") {
@@ -228,7 +235,7 @@ func (p *plug) Init(ctx context.Context, c map[string]string, sid string, ns str
 	// cant be tested as depend on KubeMgr
 	p.gateState.start()
 
-	p.gateState.sync()
+	p.gateState.sync(true, true)
 	p.gateState.profileAndDecidePod()
 
 	//goroutine for Guard instance

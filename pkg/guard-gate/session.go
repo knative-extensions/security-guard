@@ -32,16 +32,12 @@ import (
 	"knative.dev/security-guard/pkg/iodup"
 )
 
-const sessionKey = "GuardSession"
-
 const (
 	other_type      = 0
 	json_type       = 1
 	multipart_type  = 2
 	urlencoded_type = 3
 )
-
-var maxBody int64 = int64(1048576)
 
 type session struct {
 	sessionTicker *utils.Ticker
@@ -102,7 +98,7 @@ func (s *session) logAlert() {
 	}
 	logAlert(s.decision.String("Session ->"))
 	s.gateState.addStat("SessionLevelAlert")
-	s.gateState.srv.addAlert(s.decision, "Session")
+	s.gateState.addAlert(s.decision, "Session")
 }
 
 func (s *session) sessionEventLoop(ctx context.Context) {

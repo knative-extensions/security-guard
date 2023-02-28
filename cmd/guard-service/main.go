@@ -17,13 +17,17 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/kelseyhightower/envconfig"
@@ -31,10 +35,6 @@ import (
 	utils "knative.dev/security-guard/pkg/guard-utils"
 
 	pi "knative.dev/security-guard/pkg/pluginterfaces"
-)
-
-const (
-	serviceIntervalDefault = 5 * time.Minute
 )
 
 type config struct {
@@ -49,6 +49,7 @@ type learner struct {
 	services        *services
 	pileLearnTicker *utils.Ticker
 	env             config
+	srv             *http.Server
 }
 
 func (l *learner) authenticate(req *http.Request) (podname string, sid string, ns string, err error) {
@@ -202,9 +203,8 @@ func (l *learner) processSync(w http.ResponseWriter, req *http.Request) {
 		l.services.deletePod(record, podname)
 	}
 
-	if syncReq.Pile != nil {
-		l.services.merge(record, syncReq.Pile)
-	}
+	// merge if needed, learn if needed and persist if needed
+	l.services.mergeAndLearnAndPersistGuardian(record, syncReq.Pile)
 
 	if syncReq.Alerts != nil {
 		pi.Log.Infof("Pod %s ns %s sent %d Alerts", podname, record.ns, len(syncReq.Alerts))
@@ -226,27 +226,46 @@ func (l *learner) processSync(w http.ResponseWriter, req *http.Request) {
 	w.Write(buf)
 }
 
-func (l *learner) mainEventLoop(quit chan string) {
-	for {
-		select {
-		case <-l.pileLearnTicker.Ch():
-			l.services.tick()
-		case reason := <-quit:
-			pi.Log.Infof("mainEventLoop was asked to quit! - Reason: %s", reason)
-			return
-		}
+func (l *learner) mainEventProcessing(quit <-chan bool, kill <-chan os.Signal) bool {
+	select {
+	case <-l.pileLearnTicker.Ch():
+		// no reenterncy! No need to protect tick() only data with mutex
+		l.services.tick()
+	case reason := <-kill:
+		pi.Log.Infof("mainEventLoop received kill signal: %s", reason.String())
+		shutdownCtx, shutdownRelease := context.WithTimeout(context.Background(), 10*time.Second)
+		l.srv.Shutdown(shutdownCtx)
+		defer shutdownRelease()
+	case <-quit:
+		return false
 	}
+	return true
+}
+
+func (l *learner) mainEventLoop(quit <-chan bool, flushed chan<- bool, kill <-chan os.Signal) {
+	// main loop
+	alive := true
+	for alive {
+		alive = l.mainEventProcessing(quit, kill)
+	}
+
+	// main loop ended, persisting remaining services records
+	pi.Log.Infof("Persist all changed records")
+	l.services.flushTickerRecords() // mark all for immediate learn and persist
+	for len(l.services.records) > 0 {
+		pi.Log.Infof("mainEventLoop completion - persisting %d remaining services records", len(l.services.records))
+		<-l.pileLearnTicker.Ch()
+		l.services.tick()
+	}
+	pi.Log.Infof("mainEventLoop done")
+	flushed <- true
 }
 
 // initialization of the lerner + prepare the web service
-func (l *learner) init(minimumInterval time.Duration) (srv *http.Server, quit chan string) {
+func (l *learner) init() (srv *http.Server, quit chan bool, flushed chan bool) {
 	utils.CreateLogger(l.env.GuardServiceLogLevel)
 
-	l.pileLearnTicker = utils.NewTicker(minimumInterval)
-	err := l.pileLearnTicker.Parse(l.env.GuardServiceInterval, serviceIntervalDefault)
-	if err != nil {
-		pi.Log.Infof("Failed to set GuardServiceInterval - %s", err.Error())
-	}
+	l.pileLearnTicker = utils.NewTicker(time.Second)
 	l.pileLearnTicker.Start()
 
 	l.services = newServices()
@@ -261,7 +280,8 @@ func (l *learner) init(minimumInterval time.Duration) (srv *http.Server, quit ch
 		Handler: mux,
 	}
 
-	quit = make(chan string)
+	quit = make(chan bool)
+	flushed = make(chan bool)
 
 	pi.Log.Infof("Starting guard-service on %s", target)
 	if l.env.GuardServiceAuth != "false" {
@@ -280,6 +300,10 @@ func (l *learner) init(minimumInterval time.Duration) (srv *http.Server, quit ch
 
 func main() {
 	var err error
+	kill := make(chan os.Signal, 1)
+	// catch SIGETRM or SIGINTERRUPT
+	signal.Notify(kill, syscall.SIGTERM, syscall.SIGINT)
+
 	l := new(learner)
 	// affected by env
 	if err := envconfig.Process("", &l.env); err != nil {
@@ -288,12 +312,14 @@ func main() {
 	}
 
 	// move all initialization which can be tested using unit tests to init
-	srv, quit := l.init(utils.MinimumInterval)
+	srv, quit, flushed := l.init()
+
+	l.srv = srv
 
 	// cant be tested due to KubeMgr
 	l.services.start()
 	// start a mainLoop
-	go l.mainEventLoop(quit)
+	go l.mainEventLoop(quit, flushed, kill)
 
 	// affected by file system
 	// starts a web service
@@ -314,7 +340,12 @@ func main() {
 	} else {
 		err = srv.ListenAndServe()
 	}
-
-	pi.Log.Infof("Http service failed to start %v", err)
-	quit <- "ListenAndServe failed"
+	if errors.Is(err, http.ErrServerClosed) {
+		pi.Log.Infof("Http service orderly shutdown")
+	} else {
+		pi.Log.Infof("Http service error while starting server: %v", err)
+	}
+	quit <- true
+	<-flushed
+	pi.Log.Infof("guard-service done")
 }

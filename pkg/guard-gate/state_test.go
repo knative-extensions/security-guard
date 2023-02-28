@@ -44,7 +44,7 @@ func Test_gateState_sync(t *testing.T) {
 
 		gs := fakeGateState()
 
-		gs.sync()
+		gs.sync(true, false)
 		if gs.criteria == nil || gs.ctrl == nil {
 			t.Error("nil after load")
 		}
@@ -152,7 +152,7 @@ func Test_gateState_sync(t *testing.T) {
 			t.Error("expected alert")
 		}
 
-		gs.sync()
+		gs.sync(true, false)
 		if gs.srv.pile.Count != 0 {
 			t.Error("expected pile too have 1")
 		}
@@ -161,7 +161,7 @@ func Test_gateState_sync(t *testing.T) {
 		if gs.srv.pile.Count != 1 {
 			t.Error("expected pile too have 1")
 		}
-		gs.sync()
+		gs.sync(true, false)
 		if gs.srv.pile.Count != 0 {
 			t.Error("expected pile too have 0")
 		}

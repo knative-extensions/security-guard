@@ -88,9 +88,40 @@ See [guard-gate](pkg/guard-gate) for more details on the different Guard working
 
 Additionally, [guard-service](cmd/guard-service) cache Guardians and serve [guard-gate](pkg/guard-gate) requests to get a copy of the Guardian. This is done to reduce the load on KubeApi since any deployed Knative pod requires to access a copy of the Guardian on startup.
 
+
 [guard-service](cmd/guard-service) also serve as a central service for all alerts found by all services.
 
 Last, [guard-service](cmd/guard-service) may accept an indication from a [guard-gate](pkg/guard-gate) that the Pod is compromised and will restart the Pod consequently.
+
+### Learning policy for guard-gates
+
+Sync with guard-service if any of the following occur:
+
+- If we aggregated 1000 samples or more
+- If we aggregated 1000 alerts
+- One minute passed (or as defined in GURDIAN_SYNC_INTERVAL env variable):
+  - And we aggregated 10% or more of all samples learned so far
+  - Or that we have alerts
+- 5 minutes passed (or 5 times what is defined in GURDIAN_SYNC_INTERVAL env variable)
+
+Notes:
+
+- During normal operation, we avoid syncing with guard-service if we already synced in the last 5 seconds.
+- During guard-gate Shutdown(), after all sessions and all services were closed, if we have samples or alerts we enforce a sync before we terminate.
+
+### Learning and persisting policy for guard-service
+
+When a sync message arrives from a guard-gate, we first merge the pile to the guard-service maintained pile;
+Then, if we have no learned criteria in guardian for this service, we create one and persist the guardian.
+
+If we already have a guardian with a learned critiria:
+
+- We learn and update the critiria if
+  - We have more than 1000 new samples accumulated from guard-gates
+  - We have more than 10% new samples from all samples learned
+  - 30 seconds passed since we last learned
+
+We persist the guardian if 5 min passed since we last persisted it and we have an updated the critiria that was learned.
 
 ## Guard User Interface
 

@@ -29,17 +29,20 @@ func logAlert(alert string) {
 }
 
 type gateState struct {
-	analyzeBody bool
-	ctrl        *spec.Ctrl              // gate Ctrl
-	criteria    *spec.SessionDataConfig // gate Criteria
-	stat        utils.Stat              // gate stats
-	alert       string                  // gate alert
-	decision    *spec.Decision          // gate alert decision
-	monitorPod  bool                    // should gate profile the pod?
-	pod         spec.PodProfile         // pod profile
-	srv         *gateClient             // maintainer of the pile, include client to the guard-service & kubeApi
-	certPool    *x509.CertPool          // rootCAs
-	prevAlert   string                  // previous gate alert
+	analyzeBody  bool
+	ctrl         *spec.Ctrl              // gate Ctrl
+	criteria     *spec.SessionDataConfig // gate Criteria
+	numSamples   uint32                  // number of samples used to create the Guardian
+	stat         utils.Stat              // gate stats
+	alert        string                  // gate alert
+	decision     *spec.Decision          // gate alert decision
+	monitorPod   bool                    // should gate profile the pod?
+	pod          spec.PodProfile         // pod profile
+	srv          *gateClient             // maintainer of the pile, include client to the guard-service & kubeApi
+	certPool     *x509.CertPool          // rootCAs
+	prevAlert    string                  // previous gate alert
+	skippedSyncs int                     // how many times we skipped sync?
+	lastSync     time.Time               // last time we synced
 }
 
 func (gs *gateState) init(monitorPod bool, guardServiceUrl string, podname string, sid string, ns string, useCm bool, rootCA string) {
@@ -57,6 +60,7 @@ func (gs *gateState) init(monitorPod bool, guardServiceUrl string, podname strin
 
 	if rootCA != "" {
 		if ok := gs.certPool.AppendCertsFromPEM([]byte(rootCA)); ok {
+
 			pi.Log.Infof("TLS: Success adding ROOT_CA")
 		} else {
 			pi.Log.Infof("TLS: Failed to AppendCertsFromPEM from ROOT_CA, ROOT_CA is: %s", rootCA)
@@ -81,11 +85,21 @@ func (gs gateState) start() {
 }
 
 // sync is called periodically to send pile and alerts and to load from the updated Guardian
-func (gs *gateState) sync() {
+func (gs *gateState) sync(shouldLoad bool, forceSync bool) {
+	if !forceSync && time.Since(gs.lastSync) < MIN_TIME_BETWEEN_SYNCS {
+		return
+	}
+
+	gs.skippedSyncs = 0
 	// send pile and alerts and get Guardian - never returns nil!
-	g := gs.srv.syncWithServiceAndKubeApi()
+	g := gs.srv.syncWithServiceAndKubeApi(shouldLoad)
+	if !shouldLoad {
+		return
+	}
 
 	// load guardian
+	gs.numSamples = g.NumSamples
+
 	// Set the correct Control
 	if gs.ctrl = g.Control; gs.ctrl == nil {
 		pi.Log.Infof("Loading Guardian  - without Control")
@@ -108,15 +122,35 @@ func (gs *gateState) sync() {
 	pi.Log.Infof("Loading Guardian  - Active %t Auto %t Block %t", gs.criteria.Active, gs.ctrl.Auto, gs.ctrl.Block)
 }
 
-// addProfile is called every time we have a new profile ready to be added to a pile
-func (gs *gateState) addProfile(profile *spec.SessionDataProfile) {
+func (gs *gateState) syncIfNeeded() {
+	// if we have 10% new samples or more (otherwise wait till we get to 1000 samples)
+	if gs.numSamples < gs.srv.pile.Count*10 || len(gs.srv.alerts) > 0 {
+		gs.sync(true, false)
+	}
 
-	if gs.srv.addToPile(profile) > PILE_LIMIT {
-		gs.profileAndDecidePod()
+	// if we skipped 4 times, then this time we will sync
+	// 5 min for the default 1 min syncInterval
+	gs.skippedSyncs++
+	if gs.skippedSyncs >= 5 {
+		gs.sync(true, false)
 	}
 }
 
-// Methods to profile and decide base don pod data.
+// addProfile is called every time we have a new profile ready to be added to a pile
+func (gs *gateState) addProfile(profile *spec.SessionDataProfile) {
+	if gs.srv.addToPile(profile) >= PILE_LIMIT {
+		gs.sync(true, false)
+	}
+}
+
+// addAlert is called every time we have a new alert
+func (gs *gateState) addAlert(decision *spec.Decision, level string) {
+	if gs.srv.addAlert(decision, level) >= ALERTS_LIMIT {
+		gs.sync(true, false)
+	}
+}
+
+// Methods to profile and decide based on pod data.
 // Enables the POD profile to be copied to the sessio  profile for reporting to pile.
 
 // profileAndDecidePod is called periodically to profile the pod and decide if to raise an alert
@@ -158,7 +192,7 @@ func (gs *gateState) logAlert() {
 	gs.prevAlert = gs.alert
 	logAlert(gs.alert)
 	gs.addStat("GateLevelAlert")
-	gs.srv.addAlert(gs.decision, "Gate")
+	gs.addAlert(gs.decision, "Gate")
 }
 
 // if pod is monitored, copy its profile to the session profile

@@ -19,9 +19,11 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -30,61 +32,91 @@ import (
 	utils "knative.dev/security-guard/pkg/guard-utils"
 )
 
-func addToPile(s *services) {
+func addSample(s *services) {
 	profile1 := &spec.SessionDataProfile{}
 	profile1.Req.Method.ProfileString("Get")
 	pile1 := spec.SessionDataPile{}
 	pile1.Add(profile1)
 	r1 := s.get("ns", "sid1", false)
-	s.merge(r1, &pile1)
+	s.mergeAndLearnAndPersistGuardian(r1, &pile1)
+}
+
+func testStatus(txt string, s *services, t *testing.T, pile uint32, guardian uint32, meregd uint, learned uint, persisted uint) {
+	if s.cache["sid1.ns"].pile.Count != pile {
+		t.Errorf("During %s - pile.Count Expected %d in pile have %d", txt, pile, s.cache["sid1.ns"].pile.Count)
+	}
+	if s.cache["sid1.ns"].guardianSpec.NumSamples != guardian {
+		t.Errorf("During %s - guardianSpec.NumSamples Expected %d in guardianSpec have %d", txt, guardian, s.cache["sid1.ns"].guardianSpec.NumSamples)
+	}
+	if s.cache["sid1.ns"].pileMergeCounter != meregd {
+		t.Errorf("During %s -pileMergeCounter Expected %d in pileMergeCounter have %d", txt, meregd, s.cache["sid1.ns"].pileMergeCounter)
+	}
+	if s.cache["sid1.ns"].guardianLearnCounter != learned {
+		t.Errorf("During %s - guardianLearnCounter Expected %d in guardianLearnCounter have %d", txt, learned, s.cache["sid1.ns"].guardianLearnCounter)
+	}
+	if s.cache["sid1.ns"].guardianPersistCounter != persisted {
+		t.Errorf("During %s - guardianPersistCounter Expected %d in guardianPersistCounter have %d", txt, persisted, s.cache["sid1.ns"].guardianPersistCounter)
+	}
 }
 
 func Test_learner_mainEventLoop(t *testing.T) {
-	quit := make(chan string)
-
-	// services
-	s := new(services)
-	s.cache = make(map[string]*serviceRecord, 64)
-	s.namespaces = make(map[string]bool, 4)
-	s.kmgr = new(fakeKmgr)
-
-	ticker := utils.NewTicker(100000)
-	ticker.Parse("", 100000)
-	ticker.Start()
-
-	addToPile(s)
-
 	t.Run("simple", func(t *testing.T) {
+		quit := make(chan bool, 1)
+		flushed := make(chan bool, 1)
+
+		// services
+		s := new(services)
+		s.cache = make(map[string]*serviceRecord, 64)
+		s.namespaces = make(map[string]bool, 4)
+		s.kmgr = new(fakeKmgr)
+
+		ticker := utils.NewTicker(100000)
+		ticker.Parse("", 100000)
+		ticker.Start()
+		kill := make(chan os.Signal, 1)
 		l := &learner{
 			services:        s,
 			pileLearnTicker: ticker,
 		}
-		if s.cache["sid1.ns"].pile.Count != 1 {
-			t.Errorf("Expected 1 in pile  have %d", s.cache["sid1.ns"].pile.Count)
+		for i := uint(1); i <= 10; i++ {
+			addSample(s)
+			// 10% rule - immediate learning
+			testStatus(fmt.Sprintf("sample #%d", i), s, t, 0, uint32(i), i, i, 1)
 		}
 
-		// Start event loop
-		go l.mainEventLoop(quit)
+		// no longer 10% rule
+		addSample(s)
+		testStatus("11th sample", s, t, 1, 10, 11, 10, 1)
 
-		<-time.After(100 * time.Millisecond)
+		// Start event loop - no longer 10% rule
+		l.mainEventProcessing(quit, kill)
+		testStatus("Main Loop", s, t, 1, 10, 11, 10, 1)
 
-		if s.cache["sid1.ns"].pile.Count != 0 {
-			t.Errorf("Expected 0 in pile  have %d", s.cache["sid1.ns"].pile.Count)
-		}
-		quit <- "test done"
-		// Asked event loop to quit
-		<-time.After(100 * time.Millisecond)
+		// Start event loop - no longer 10% rule, but 30 seconds passed since we learned
+		s.cache["sid1.ns"].pileLastLearn = time.Unix(0, 0)
+		l.mainEventProcessing(quit, kill)
+		testStatus("Main Loop with pileLastLearn reset", s, t, 0, 11, 11, 11, 1)
 
-		addToPile(s)
-		if s.cache["sid1.ns"].pile.Count != 1 {
-			t.Errorf("Expected 1 in pile  have %d", s.cache["sid1.ns"].pile.Count)
-		}
+		// Start event loop - 5 min passed since we persisted
+		s.cache["sid1.ns"].guardianLastPersist = time.Unix(0, 0)
+		l.mainEventProcessing(quit, kill)
+		// blocked by lastCreatedRecords
+		testStatus("Main Loop with guardianLastPersist reset", s, t, 0, 11, 11, 11, 1)
 
-		<-time.After(100 * time.Millisecond)
+		// Start event loop - also 5 min passed since we reviewed all records - first tick, build records
+		s.lastCreatedRecords = time.Unix(0, 0)
+		l.mainEventProcessing(quit, kill)
+		testStatus("Main Loop with guardianLastPersist reset - first time", s, t, 0, 11, 11, 11, 1)
 
-		if s.cache["sid1.ns"].pile.Count != 1 {
-			t.Errorf("Expected 1 in pile  have %d", s.cache["sid1.ns"].pile.Count)
-		}
+		// Start event loop - also 5 min passed since we reviewed all records - second tick, persist
+		l.mainEventProcessing(quit, kill)
+		testStatus("Main Loop with lastCreatedRecords reset - second time", s, t, 0, 11, 11, 11, 2)
+
+		// Ask event loop to quit
+		addSample(s)
+		quit <- true
+		l.mainEventLoop(quit, flushed, kill)
+		testStatus("Main Loop with quit", s, t, 0, 12, 12, 12, 3)
 	})
 
 }
@@ -308,12 +340,13 @@ func TestNOTLS_SyncHandler_main(t *testing.T) {
 		services:        s,
 		pileLearnTicker: ticker,
 	}
+
 	l.env.GuardServiceAuth = "false"
 	l.env.GuardServiceTls = "false"
 	l.env.GuardServiceInterval = "30s"
 	l.env.GuardServiceLabels = []string{"aaa", "bbb"}
 
-	srv, _ := l.init(100000)
+	srv, _, _ := l.init()
 
 	if srv.Addr != ":8888" {
 		t.Errorf("handler returned wrong default target code: got %s want %s", srv.Addr, ":8888")
@@ -331,12 +364,13 @@ func TestTLS_SyncHandler_main(t *testing.T) {
 		services:        s,
 		pileLearnTicker: ticker,
 	}
+
 	l.env.GuardServiceAuth = "anything"
 	l.env.GuardServiceTls = "anything"
 	l.env.GuardServiceInterval = "asdkasg"
 	l.env.GuardServiceLabels = []string{}
 
-	srv, _ := l.init(100000)
+	srv, _, _ := l.init()
 
 	if srv.Addr != ":8888" {
 		t.Errorf("handler returned wrong default target code: got %s want %s", srv.Addr, ":555")
@@ -512,10 +546,10 @@ func TestTLS_SyncHandler_EmptyPileAndAlert(t *testing.T) {
 	}
 
 	// Check the response body is what we expect.
-	//expected := `null`
 	var syncResp spec.SyncMessageResp
 	syncResp.Guardian = new(spec.GuardianSpec)
 	syncResp.Guardian.SetToMaximalAutomation()
+	syncResp.Guardian.Learned = &spec.SessionDataConfig{}
 	buf, _ := json.Marshal(syncResp)
 	if !bytes.Equal(rr.Body.Bytes(), buf) {
 		t.Errorf("handler returned unexpected body: got %v want %v",
@@ -619,10 +653,15 @@ func TestTLS_SyncHandler_WithGoodReq(t *testing.T) {
 	}
 
 	// Check the response body is what we expect.
-	//expected := `null`
 	var syncResp spec.SyncMessageResp
 	syncResp.Guardian = new(spec.GuardianSpec)
+	syncResp.Guardian.NumSamples = 1
 	syncResp.Guardian.SetToMaximalAutomation()
+	syncResp.Guardian.Learned = &spec.SessionDataConfig{Active: true}
+	syncResp.Guardian.Learned.Req.Method.List = []string{"Get"}
+	syncResp.Guardian.Learned.Req.ContentLength = append(syncResp.Guardian.Learned.Req.ContentLength, spec.CountRange{Min: 0, Max: 0})
+	syncResp.Guardian.Learned.Req.Url.Segments = append(syncResp.Guardian.Learned.Req.Url.Segments, spec.CountRange{Min: 0, Max: 0})
+	syncResp.Guardian.Learned.Resp.ContentLength = append(syncResp.Guardian.Learned.Resp.ContentLength, spec.CountRange{Min: 0, Max: 0})
 	buf, _ := json.Marshal(syncResp)
 	if !bytes.Equal(rr.Body.Bytes(), buf) {
 		t.Errorf("handler returned unexpected body: got %v want %v",
@@ -679,10 +718,16 @@ func TestNOTLS_SyncHandler_WithGoodReq(t *testing.T) {
 	}
 
 	// Check the response body is what we expect.
-	//expected := `null`
 	var syncResp spec.SyncMessageResp
 	syncResp.Guardian = new(spec.GuardianSpec)
+	syncResp.Guardian.NumSamples = 1
 	syncResp.Guardian.SetToMaximalAutomation()
+	syncResp.Guardian.Learned = &spec.SessionDataConfig{Active: true}
+	syncResp.Guardian.Learned.Req.Method.List = []string{"Get"}
+	syncResp.Guardian.Learned.Req.ContentLength = append(syncResp.Guardian.Learned.Req.ContentLength, spec.CountRange{Min: 0, Max: 0})
+	syncResp.Guardian.Learned.Req.Url.Segments = append(syncResp.Guardian.Learned.Req.Url.Segments, spec.CountRange{Min: 0, Max: 0})
+	syncResp.Guardian.Learned.Resp.ContentLength = append(syncResp.Guardian.Learned.Resp.ContentLength, spec.CountRange{Min: 0, Max: 0})
+
 	buf, _ := json.Marshal(syncResp)
 	if !bytes.Equal(rr.Body.Bytes(), buf) {
 		t.Errorf("handler returned unexpected body: got %v want %v",
