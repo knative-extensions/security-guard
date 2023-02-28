@@ -36,8 +36,9 @@ import (
 )
 
 const (
-	MAX_ALERTS = 1000
-	PILE_LIMIT = 1000
+	ALERTS_LIMIT           = 1000
+	PILE_LIMIT             = 1000
+	MIN_TIME_BETWEEN_SYNCS = 5 * time.Second // 5s
 )
 
 type httpClientInterface interface {
@@ -220,12 +221,15 @@ func (srv *gateClient) syncWithService() *spec.GuardianSpec {
 	return syncResp.Guardian
 }
 
-func (srv *gateClient) addAlert(decision *spec.Decision, level string) {
+func (srv *gateClient) addAlert(decision *spec.Decision, level string) uint32 {
 	srv.alerts = spec.AddAlert(srv.alerts, decision, level)
 
-	if numAlerts := len(srv.alerts); numAlerts > MAX_ALERTS {
+	numAlerts := len(srv.alerts)
+	if numAlerts > ALERTS_LIMIT {
 		srv.alerts = srv.alerts[:numAlerts-1]
+		numAlerts = numAlerts - 1
 	}
+	return uint32(numAlerts)
 }
 
 func (srv *gateClient) addToPile(profile *spec.SessionDataProfile) uint32 {
@@ -240,9 +244,9 @@ func (srv *gateClient) addToPile(profile *spec.SessionDataProfile) uint32 {
 	return srv.pile.Count
 }
 
-func (srv *gateClient) syncWithServiceAndKubeApi() *spec.GuardianSpec {
+func (srv *gateClient) syncWithServiceAndKubeApi(shouldLoad bool) *spec.GuardianSpec {
 	wsGate := srv.syncWithService()
-	if wsGate == nil {
+	if wsGate == nil && shouldLoad {
 		// never return nil!
 		wsGate = srv.kubeMgr.GetGuardian(srv.ns, srv.sid, srv.useCm, true)
 	}

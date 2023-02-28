@@ -111,7 +111,7 @@ func IpNetFromProc(protocol string) (ips []net.IP) {
 	procfile := procNet + protocol
 	data, err := os.ReadFile(procfile)
 	if err != nil {
-		pi.Log.Infof("error while reading %s: %s\n", procfile, err.Error())
+		pi.LogOnce.Infof("error while reading %s: %s\n", procfile, err.Error())
 		return
 	}
 

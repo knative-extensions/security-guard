@@ -57,13 +57,13 @@ func (pile *CountPile) Merge(otherPile CountPile) {
 }
 
 // ////////////////// CountConfig ////////////////
-type countRange struct {
+type CountRange struct {
 	Min uint8 `json:"min"`
 	Max uint8 `json:"max"`
 }
 
 // Exposes ValueConfig interface
-type CountConfig []countRange
+type CountConfig []CountRange
 
 func (config *CountConfig) decideI(valProfile ValueProfile) *Decision {
 	return config.Decide(*valProfile.(*CountProfile))
@@ -118,7 +118,7 @@ func (config *CountConfig) Learn(pile CountPile) {
 	}
 
 	if *config == nil {
-		*config = append(*config, countRange{min, max})
+		*config = append(*config, CountRange{min, max})
 		return
 	}
 

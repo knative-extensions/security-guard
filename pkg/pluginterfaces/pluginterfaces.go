@@ -18,8 +18,10 @@ package pluginterfaces
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 
 	"go.uber.org/zap"
 )
@@ -35,6 +37,7 @@ type Logger interface {
 
 // The logger for the rtplugs and all connected plugs
 var Log Logger
+var LogOnce Logger
 
 // A plugin based on the newer RoundTripPlug supports offers this interface
 //
@@ -53,6 +56,13 @@ type RoundTripPlug interface {
 func init() {
 	logger, _ := zap.NewDevelopment()
 	Log = logger.Sugar()
+
+	lo := new(LogOnce_type)
+	lo.known = make([]map[string]uint, 4)
+	for level := 0; level < 4; level++ {
+		lo.known[level] = make(map[string]uint)
+	}
+	LogOnce = lo
 }
 
 var roundTripPlugs []RoundTripPlug
@@ -87,4 +97,52 @@ func GetPlug() RoundTripPlug {
 // RegisterPlug() is called from init() function of plugs
 func RegisterPlug(p RoundTripPlug) {
 	roundTripPlugs = append(roundTripPlugs, p)
+}
+
+type LogOnce_type struct {
+	known []map[string]uint
+	mutex sync.Mutex
+}
+
+func (lo *LogOnce_type) Debugf(format string, args ...interface{}) {
+	str := fmt.Sprintf(format, args...)
+	if lo.once(0, str) {
+		Log.Debugf(str)
+	}
+}
+
+func (lo *LogOnce_type) Infof(format string, args ...interface{}) {
+	str := fmt.Sprintf(format, args...)
+	if lo.once(1, str) {
+		Log.Infof(str)
+	}
+}
+
+func (lo *LogOnce_type) Warnf(format string, args ...interface{}) {
+	str := fmt.Sprintf(format, args...)
+	if lo.once(2, str) {
+		Log.Warnf(str)
+	}
+}
+
+func (lo *LogOnce_type) Errorf(format string, args ...interface{}) {
+	str := fmt.Sprintf(format, args...)
+	if lo.once(3, str) {
+		Log.Errorf(str)
+	}
+}
+
+func (lo *LogOnce_type) Sync() error {
+	return Log.Sync()
+}
+
+func (lo *LogOnce_type) once(level int, str string) (firstTime bool) {
+	lo.mutex.Lock()
+	defer lo.mutex.Unlock()
+	if _, ok := lo.known[level][str]; !ok {
+		lo.known[level][str] = 0
+		firstTime = true
+	}
+	lo.known[level][str]++
+	return
 }
