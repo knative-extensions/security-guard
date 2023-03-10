@@ -165,9 +165,9 @@ func (p *plug) preInit(c map[string]string, sid string, ns string, logger pi.Log
 	var rootCA string
 
 	// Defaults used without config when used as a qpoption
-	useCm := false
+	useCrd := true
 	monitorPod := true
-	analyzeBody := false
+	analyzeBody := true
 
 	guardServiceUrl := "https://guard-service.knative-serving"
 
@@ -179,8 +179,8 @@ func (p *plug) preInit(c map[string]string, sid string, ns string, logger pi.Log
 			guardServiceUrl = v
 		}
 
-		if v, ok = c["use-cm"]; ok && strings.EqualFold(v, "true") {
-			useCm = true
+		if v, ok = c["use-crd"]; ok && strings.EqualFold(v, "false") {
+			useCrd = false
 		}
 
 		if v, ok = c["monitor-pod"]; ok && !strings.EqualFold(v, "true") {
@@ -214,8 +214,8 @@ func (p *plug) preInit(c map[string]string, sid string, ns string, logger pi.Log
 		}
 	}
 
-	pi.Log.Infof("guard-gate configuration: podname=%s, sid=%s, ns=%s, useCm=%t, guardUrl=%s, p.monitorPod=%t, guardian-sync-interval %v,  pod-monitor-interval %v",
-		podname, sid, ns, useCm, guardServiceUrl, monitorPod, syncInterval, monitorInterval)
+	pi.Log.Infof("guard-gate configuration: podname=%s, sid=%s, ns=%s, useCrd=%t, guardUrl=%s, p.monitorPod=%t, guardian-sync-interval %v,  pod-monitor-interval %v",
+		podname, sid, ns, useCrd, guardServiceUrl, monitorPod, syncInterval, monitorInterval)
 
 	// serviceName should never be "ns.{namespace}" as this is a reserved name
 	if strings.HasPrefix(sid, "ns.") {
@@ -225,7 +225,9 @@ func (p *plug) preInit(c map[string]string, sid string, ns string, logger pi.Log
 
 	p.gateState = new(gateState)
 	p.gateState.analyzeBody = analyzeBody
-	p.gateState.init(monitorPod, guardServiceUrl, podname, sid, ns, useCm, rootCA)
+
+	// p.gateState.init uses a `useCm` flag
+	p.gateState.init(monitorPod, guardServiceUrl, podname, sid, ns, !useCrd, rootCA)
 
 	pi.Log.Infof("guard-gate: Secured Communication %t (CERT Verification %t AUTH Token %t)", p.gateState.srv.certVerifyActive && p.gateState.srv.tokenActive, p.gateState.srv.certVerifyActive, p.gateState.srv.tokenActive)
 }

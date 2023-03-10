@@ -92,9 +92,8 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/", ServeHTTP)
-	fmt.Printf("Starting SampleServer at port 8082\n")
-	if err := http.ListenAndServe(":8082", nil); err != nil {
+	fmt.Printf("Starting SampleServer at  127.0.0.1:8080\n")
+	if err := http.ListenAndServe("127.0.0.1:8080", nil); err != nil {
 		log.Fatal(err)
 	}
-
 }

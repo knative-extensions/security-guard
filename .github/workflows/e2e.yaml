@@ -89,11 +89,11 @@ jobs:
            --annotation features.knative.dev/queueproxy-podinfo=enabled \
            --annotation qpoption.knative.dev/guard-activate=enable
         URL=`kn service list|grep httptest1|awk '{print $2}'`   
-        echo "SERVICE_URL=$URL" >> $GITHUB_ENV
+        echo "PROTECTED_SERVICE=$URL" >> $GITHUB_ENV
 
     - name: Run e2e Tests "httptest1"
       run: |
-        ./test/e2e/e2e-tests.sh $SERVICE_URL "httptest1"
+        ./test/e2e/e2e-tests.sh $PROTECTED_SERVICE "httptest1"
 
     - uses: chainguard-dev/actions/kind-diag@main
       # Only upload logs on failure.

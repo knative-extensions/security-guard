@@ -41,11 +41,11 @@ func Test_preMain(t *testing.T) {
 		},
 		{
 			name: "missing service_sid",
-			env:  map[string]string{"SERVICE_URL": "http://127.0.0.1:80", "NAMESPACE": "ns"},
+			env:  map[string]string{"PROTECTED_SERVICE": "http://127.0.0.1:80", "NAMESPACE": "ns"},
 		},
 		{
 			name: "missing service_ns",
-			env:  map[string]string{"SERVICE_NAME": "sid", "SERVICE_URL": "http://127.0.0.1:80"},
+			env:  map[string]string{"SERVICE_NAME": "sid", "PROTECTED_SERVICE": "http://127.0.0.1:80"},
 		},
 		{
 			name: "illegal service_sid",
@@ -53,20 +53,20 @@ func Test_preMain(t *testing.T) {
 		},
 		{
 			name:   "envok",
-			env:    map[string]string{"SERVICE_NAME": "sid", "NAMESPACE": "ns", "SERVICE_URL": "http://127.0.0.1:80"},
+			env:    map[string]string{"SERVICE_NAME": "sid", "NAMESPACE": "ns", "PROTECTED_SERVICE": "http://127.0.0.1:80"},
 			mux:    true,
 			target: ":22000",
 		},
 		{
 			name: "fullenv",
 			env: map[string]string{
-				"SERVICE_NAME":     "sid",
-				"NAMESPACE":        "ns",
-				"SERVICE_URL":      "http://127.0.0.1:81",
-				"GUARD_URL":        "http://127.0.0.1:82",
-				"MONITOR_POD":      "true",
-				"USE_CRD":          "true",
-				"GUARD_PROXY_PORT": "8888",
+				"SERVICE_NAME":      "sid",
+				"NAMESPACE":         "ns",
+				"PROTECTED_SERVICE": "http://127.0.0.1:81",
+				"GUARD_SERVICE_URL": "http://127.0.0.1:82",
+				"MONITOR_POD":       "true",
+				"USE_CRD":           "true",
+				"PORT":              "8888",
 			},
 			mux:    true,
 			target: ":8888",
@@ -74,13 +74,13 @@ func Test_preMain(t *testing.T) {
 		{
 			name: "wrongenv",
 			env: map[string]string{
-				"SERVICE_NAME":     "sid",
-				"NAMESPACE":        "ns",
-				"SERVICE_URL":      "http://user:abc{DEf1=ghi@example.com:5432",
-				"GUARD_URL":        "http://user:abc{DEf1=ghi@example.com:5432",
-				"MONITOR_POD":      "true",
-				"USE_CRD":          "true",
-				"GUARD_PROXY_PORT": "88881",
+				"SERVICE_NAME":      "sid",
+				"NAMESPACE":         "ns",
+				"PROTECTED_SERVICE": "http://user:abc{DEf1=ghi@example.com:5432",
+				"GUARD_SERVICE_URL": "http://user:abc{DEf1=ghi@example.com:5432",
+				"MONITOR_POD":       "true",
+				"USE_CRD":           "true",
+				"PORT":              "88881",
 			},
 		},
 	}
@@ -93,16 +93,16 @@ func Test_preMain(t *testing.T) {
 					env.ServiceName = v
 				case "NAMESPACE":
 					env.Namespace = v
-				case "SERVICE_URL":
-					env.ServiceUrl = v
-				case "GUARD_URL":
-					env.GuardUrl = v
+				case "PROTECTED_SERVICE":
+					env.ProtectedPort = v
+				case "GUARD_SERVICE_URL":
+					env.GuardServiceUrl = v
 				case "MONITOR_POD":
-					env.MonitorPod = (v == "true")
+					env.MonitorPod = v
 				case "USE_CRD":
-					env.UseCrd = (v == "true")
-				case "GUARD_PROXY_PORT":
-					env.GuardProxyPort = v
+					env.UseCrd = v
+				case "PORT":
+					env.Port = v
 				}
 			}
 			//guardGate, mux, target, plugConfig, sid, ns, log := preMain()

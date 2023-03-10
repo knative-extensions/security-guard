@@ -41,14 +41,15 @@ import (
 type config struct {
 	ServiceName          string `split_words:"true" required:"true"`
 	Namespace            string `split_words:"true" required:"true"`
-	ServiceUrl           string `split_words:"true" required:"true"`
-	UseCrd               bool   `split_words:"true" required:"false"`
-	MonitorPod           bool   `split_words:"true" required:"false"`
-	GuardUrl             string `split_words:"true" required:"false"`
-	LogLevel             string `split_words:"true" required:"false"`
-	GuardProxyPort       string `split_words:"true" required:"false"`
+	ProtectedService     string `split_words:"true" required:"false"`
+	GuardServiceUrl      string `split_words:"true" required:"false"`
+	Port                 string `split_words:"true" required:"false"`
+	UseCrd               string `split_words:"true" required:"false"`
+	MonitorPod           string `split_words:"true" required:"false"`
+	AnalyzeBody          string `split_words:"true" required:"false"`
 	PodMonitorInterval   string `split_words:"true" required:"false"`
 	GuardianSyncInterval string `split_words:"true" required:"false"`
+	LogLevel             string `split_words:"true" required:"false"`
 }
 
 type GuardGate struct {
@@ -103,20 +104,23 @@ func preMain(env *config) (guardGate *GuardGate, mux *http.ServeMux, target stri
 		plugConfig["rootca"] = string(buf)
 	}
 
-	if env.GuardUrl != "" {
-		plugConfig["guard-url"] = env.GuardUrl
+	if env.GuardServiceUrl != "" {
+		plugConfig["guard-url"] = env.GuardServiceUrl
 	}
 
-	// When using a Reverse Proxy, it has a default to not use pod monitoring
-	plugConfig["monitor-pod"] = "false" // default when used as a standalone
-	if env.MonitorPod {
-		plugConfig["monitor-pod"] = "true"
+	plugConfig["monitor-pod"] = "true" // default when used as a standalone
+	if env.MonitorPod == "false" {
+		plugConfig["monitor-pod"] = "false"
 	}
 
-	// When using a Reverse Proxy, it has a default to work with CM
-	plugConfig["use-cm"] = "true"
-	if env.UseCrd {
-		plugConfig["use-cm"] = "false"
+	plugConfig["analyze-body"] = "true" // default when used as a standalone
+	if env.AnalyzeBody == "false" {
+		plugConfig["analyze-body"] = "false"
+	}
+
+	plugConfig["use-crd"] = "true" // default when used as a standalone
+	if env.UseCrd == "false" {
+		plugConfig["use-crd"] = "false"
 	}
 
 	plugConfig["guardian-sync-interval"] = env.GuardianSyncInterval
@@ -130,14 +134,36 @@ func preMain(env *config) (guardGate *GuardGate, mux *http.ServeMux, target stri
 		return
 	}
 
-	pi.Log.Infof("guard-proxy serving serviceName: %s, namespace: %s, serviceUrl: %s", sid, ns, env.ServiceUrl)
-	parsedUrl, err := url.Parse(env.ServiceUrl)
+	var protectedPort int
+	var protectedUrl string
+
+	// we support env.ProtectedService of three types:
+	// - <empty string> - signifying to use the default url http://127.0.0.1:8080
+	// - :<port number> - default url with modified port http://127.0.0.1:<port>
+	// - Any legal url
+	if env.ProtectedService == "" {
+		protectedUrl = "http://127.0.0.1:8080"
+	} else {
+		if n, err := fmt.Sscanf(env.ProtectedService, ":%d", &protectedPort); err == nil && n == 1 && protectedPort > 0 && protectedPort < 0x10000 {
+			// note we ignored all runes after the integer, they will also not effect us later
+			protectedUrl = fmt.Sprintf("http://127.0.0.1:%d", protectedPort)
+		} else {
+			protectedUrl = env.ProtectedService
+		}
+	}
+
+	// now we should have a url in protectedUrl, we parse it to ensure it is really a url
+	parsedUrl, err := url.Parse(protectedUrl)
 	if err != nil {
 		pi.Log.Errorf("Failed to parse serviceUrl: %s", err.Error())
 		return
 	}
-	pi.Log.Infof("guard-proxy parsedUrl: %v", parsedUrl)
+	if parsedUrl.Scheme != "http" {
+		pi.Log.Errorf("Failed to parse serviceUrl - Use only urls that start with 'http://'")
+		return
+	}
 
+	pi.Log.Infof("guard-proxy serving serviceName: %s, namespace: %s, serviceUrl: %s", sid, ns, parsedUrl.String())
 	proxy := httputil.NewSingleHostReverseProxy(parsedUrl)
 
 	// Hook using RoundTripper
@@ -148,8 +174,8 @@ func preMain(env *config) (guardGate *GuardGate, mux *http.ServeMux, target stri
 	proxy.Transport = guardGate.Transport(proxy.Transport)
 
 	target = ":22000"
-	if env.GuardProxyPort != "" {
-		target = fmt.Sprintf(":%s", env.GuardProxyPort)
+	if env.Port != "" {
+		target = fmt.Sprintf(":%s", env.Port)
 	}
 
 	mux = http.NewServeMux()
