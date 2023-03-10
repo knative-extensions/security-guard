@@ -40,4 +40,4 @@ ko apply -Rf ./config/deploy/ -B
 kubectl patch configmap config-network -n knative-serving --type=merge -p '{"data": {"internal-encryption": "true"}}'
 
 # Restart activator pod
-kubectl rollout restart deployment activator -n knative-serving 
+kubectl rollout restart deployment activator -n knative-serving
