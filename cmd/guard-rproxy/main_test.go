@@ -94,7 +94,7 @@ func Test_preMain(t *testing.T) {
 				case "NAMESPACE":
 					env.Namespace = v
 				case "PROTECTED_SERVICE":
-					env.ProtectedPort = v
+					env.ProtectedService = v
 				case "GUARD_SERVICE_URL":
 					env.GuardServiceUrl = v
 				case "MONITOR_POD":

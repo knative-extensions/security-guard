@@ -206,7 +206,9 @@ func (l *learner) processSync(w http.ResponseWriter, req *http.Request) {
 
 	// merge if needed, learn if needed and persist if needed
 	l.services.mergeAndLearnAndPersistGuardian(record, syncReq.Pile)
-	pi.Log.Debugf("Sync %s.%s pod %s Pile %d Alerts %d Compromised %t => mergeCounter %d learnCounter %d persistCounter %d", record.ns, record.sid, podname, syncReq.Pile.Count, len(syncReq.Alerts), syncReq.IamCompromised, record.pileMergeCounter, record.guardianLearnCounter, record.guardianPersistCounter)
+	if syncReq.Pile != nil {
+		pi.Log.Debugf("Sync %s.%s pod %s Pile %d Alerts %d Compromised %t => mergeCounter %d learnCounter %d persistCounter %d", record.ns, record.sid, podname, syncReq.Pile.Count, len(syncReq.Alerts), syncReq.IamCompromised, record.pileMergeCounter, record.guardianLearnCounter, record.guardianPersistCounter)
+	}
 
 	if syncReq.Alerts != nil {
 		pi.Log.Infof("Pod %s ns %s sent %d Alerts", podname, record.ns, len(syncReq.Alerts))

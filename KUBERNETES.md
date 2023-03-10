@@ -238,7 +238,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        
+
 ---
 apiVersion: v1
 kind: Service
