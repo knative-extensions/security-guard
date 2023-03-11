@@ -120,7 +120,7 @@ func (gs *gateState) sync(shouldLoad bool, forceSync bool) {
 	}
 	criteria.Prepare()
 	gs.criteria = criteria
-	pi.Log.Infof("Loading Guardian  - Active %t Auto %t Block %t", gs.criteria.Active, gs.ctrl.Auto, gs.ctrl.Block)
+	pi.Log.Debugf("Loading Guardian  - Active %t Auto %t Block %t", gs.criteria.Active, gs.ctrl.Auto, gs.ctrl.Block)
 }
 
 func (gs *gateState) syncIfNeeded() {

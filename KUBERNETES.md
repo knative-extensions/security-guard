@@ -25,7 +25,7 @@ The installation script installs guard components and two example services:
 
 By default, [guard-service](cmd/guard-service/README.md) is installed in the `knative-serving` namespace. Therefore, [guard-rproxy](./cmd/guard-rproxy/README.md) will by default look for [guard-service](cmd/guard-service/README.md) in the url `"https://guard-service.knative-serving"`.
 
-If you are using a different namespace, you need to setup [guard-rproxy](./cmd/guard-rproxy/README.md)'s GUARD_URL env variable to ensure it can access [guard-service](cmd/guard-service/README.md).
+If you are using a different namespace, you need to setup [guard-rproxy](./cmd/guard-rproxy/README.md)'s GUARD_SERVICE_URL env variable to ensure it can access [guard-service](cmd/guard-service/README.md).
 
 ### Using guard-rproxy as a sidecar
 
@@ -124,7 +124,7 @@ Hello World!
 
 kubectl logs deployment/myapp-guard
 ...
-info	SECURITY ALERT! Session ->[HttpRequest:[QueryString:[KeyVal:[Key a is not known,],],],]
+info  SECURITY ALERT! Session ->[HttpRequest:[QueryString:[KeyVal:[Key a is not known,],],],]
 ...
 ```
 
@@ -147,7 +147,6 @@ knative-serving-certs          Opaque   6      12h
 serving-certs-ctrl-ca          Opaque   4      12h
 ```
 
-
 After the secrets were created, you should copy the `knative-serving-certs` secret to any namespace where protected services are deployed. You may use [the `copyCerts` script] (./hack/copyCerts.sh) to ease your work. The Kind installation already use this script to copy the secrets to the default namespace.
 
 ```sh
@@ -156,7 +155,6 @@ kubectl get secrets
 NAME                           TYPE     DATA   AGE
 default-serving-certs          Opaque   6      11h
 ```
-
 
 When using in production, it is necessary to ensure that:
 
@@ -230,22 +228,17 @@ spec:
           name: certificate-volume
           readOnly:  true
         env:
-        - name: GUARD_URL
-          value: "https://guard-service.knative-serving"
+        - name: SERVICE_NAME
+          value: <A unique name of the service>
+        - name: PROTECTED_SERVICE
+          value: <The :port or url of the protected service container inside the pod, default is :8080>
         - name: LOG_LEVEL
           value: "info"
-        - name: SERVICE_NAME
-          value: <unique name you give to your service>
         - name: NAMESPACE
-          value: "default"
-        - name: SERVICE_URL
-          value: <The url of your service container inside the pod>
-        - name: USE_CRD
-          value: "true"
-        - name: MONITOR_POD
-          value: "true"
-        - name: GUARDIAN_SYNC_INTERVAL
-          value: "60s"
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+
 ---
 apiVersion: v1
 kind: Service

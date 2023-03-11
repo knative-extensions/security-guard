@@ -198,4 +198,13 @@ spec:
           - text/plain
     respbody:
       structured: null
-      unstructured: null
+      unstructured:
+        digits: 0
+        flags: 1
+        letters: 16
+        nonreadables: 1
+        schars: 1
+        sequences: 7
+        spaces: 2
+        unicodeFlags: []
+        unicodes: 0

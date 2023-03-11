@@ -53,22 +53,12 @@ spec:
           name: certificate-volume
           readOnly:  true
         env:
-        - name: GUARD_URL
-          value: "https://guard-service.knative-serving"
-        - name: LOG_LEVEL
-          value: "info"
         - name: SERVICE_NAME
           value: "secured-helloworld"
         - name: NAMESPACE
-          value: "default"
-        - name: SERVICE_URL
-          value: "http://127.0.0.1:8080"
-        - name: USE_CRD
-          value: "true"
-        - name: MONITOR_POD
-          value: "true"
-        - name: GUARDIAN_SYNC_INTERVAL
-          value: "60s"
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
 ---
 apiVersion: v1
 kind: Service

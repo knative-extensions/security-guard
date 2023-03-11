@@ -170,7 +170,6 @@ func (l *learner) baseHandler(w http.ResponseWriter, req *http.Request) (record 
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	pi.Log.Debugf("Request record found ns %s, sid %s, pod %s, cmFlag %t", ns, sid, podname, cmFlag)
 	return
 }
 
@@ -198,6 +197,8 @@ func (l *learner) processSync(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	record.recordMutex.Lock()
 	if syncReq.IamCompromised {
 		pi.Log.Infof("Gate %s ns %s reported Pod is Compromised!!", podname, record.ns)
 		l.services.deletePod(record, podname)
@@ -205,6 +206,9 @@ func (l *learner) processSync(w http.ResponseWriter, req *http.Request) {
 
 	// merge if needed, learn if needed and persist if needed
 	l.services.mergeAndLearnAndPersistGuardian(record, syncReq.Pile)
+	if syncReq.Pile != nil {
+		pi.Log.Debugf("Sync %s.%s pod %s Pile %d Alerts %d Compromised %t => mergeCounter %d learnCounter %d persistCounter %d", record.ns, record.sid, podname, syncReq.Pile.Count, len(syncReq.Alerts), syncReq.IamCompromised, record.pileMergeCounter, record.guardianLearnCounter, record.guardianPersistCounter)
+	}
 
 	if syncReq.Alerts != nil {
 		pi.Log.Infof("Pod %s ns %s sent %d Alerts", podname, record.ns, len(syncReq.Alerts))
@@ -215,6 +219,8 @@ func (l *learner) processSync(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 	syncResp.Guardian = record.guardianSpec
+	record.recordMutex.Unlock()
+
 	buf, err := json.Marshal(syncResp)
 	if err != nil {
 		// should never happen
@@ -222,7 +228,6 @@ func (l *learner) processSync(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "Failed to marshal data", http.StatusInternalServerError)
 		return
 	}
-	pi.Log.Debugf("Servicing processSync success")
 	w.Write(buf)
 }
 
@@ -263,8 +268,6 @@ func (l *learner) mainEventLoop(quit <-chan bool, flushed chan<- bool, kill <-ch
 
 // initialization of the lerner + prepare the web service
 func (l *learner) init() (srv *http.Server, quit chan bool, flushed chan bool) {
-	utils.CreateLogger(l.env.GuardServiceLogLevel)
-
 	l.pileLearnTicker = utils.NewTicker(time.Second)
 	l.pileLearnTicker.Start()
 
@@ -300,6 +303,7 @@ func (l *learner) init() (srv *http.Server, quit chan bool, flushed chan bool) {
 
 func main() {
 	var err error
+
 	kill := make(chan os.Signal, 1)
 	// catch SIGETRM or SIGINTERRUPT
 	signal.Notify(kill, syscall.SIGTERM, syscall.SIGINT)
@@ -310,6 +314,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Failed to process environment: %s\n", err.Error())
 		os.Exit(1)
 	}
+	utils.CreateLogger(l.env.GuardServiceLogLevel)
 
 	// move all initialization which can be tested using unit tests to init
 	srv, quit, flushed := l.init()

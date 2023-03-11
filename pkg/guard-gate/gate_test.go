@@ -46,7 +46,7 @@ func testInit(c map[string]string) *plug {
 	if c == nil {
 		c = make(map[string]string)
 		c["guard-url"] = "url"
-		c["use-cm"] = "true"
+		c["use-crd"] = "false"
 		c["monitor-pod"] = "x"
 	}
 
@@ -64,7 +64,7 @@ func initTickerTest() *plug {
 
 	c := make(map[string]string)
 	c["guard-url"] = "url"
-	c["use-cm"] = "true"
+	c["use-crd"] = "false"
 	c["monitor-pod"] = "x"
 
 	pi.RegisterPlug(p)
@@ -138,7 +138,7 @@ func Test_plug_Initialize(t *testing.T) {
 			name: "default",
 			c: map[string]string{
 				"guard-url":   "url",
-				"use-cm":      "x",
+				"use-crd":     "x",
 				"monitor-pod": "x",
 			},
 			monitorPod:      false,
@@ -148,7 +148,7 @@ func Test_plug_Initialize(t *testing.T) {
 			name: "alternative",
 			c: map[string]string{
 				"guard-url":   "url1",
-				"use-cm":      "true",
+				"use-crd":     "false",
 				"monitor-pod": "true",
 			},
 			monitorPod:      true,

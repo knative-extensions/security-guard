@@ -12,12 +12,11 @@ guard-rproxy is a reverse proxy embedded with a guard-gate and packed as a conta
 | -------- | ------- | --------|
 | SERVICE_NAME | Unique name given to the service  - used also as the guardian name | (required) |
 | NAMESPACE | namespace used | (required)  |
-| SERVICE_URL | The url where the service we protect can be reached | (required) |
+| PROTECTED_SERVICE | The :port (for example ":8080") or url (for example "http://127.0.0.1:8080") where the service we protect can be reached | (required) |
 | USE_CRD | if true crd is used, if false configmap is used instead | false |
 | MONITOR_POD | if true the pod is monitored (sidecar use case) | false |
-| GUARD_URL | the url of the guard-service | "https://guard-service.knative-serving" |
+| GUARD_SERVICE_URL | the url of the guard-service | "https://guard-service.knative-serving" |
 | LOG_LEVEL | the log level | info |
-| GUARD_PROXY_PORT | meaning | default |
-| GuardProxyPort | the port exposed by the pod | 22000 |
+| PORT | the port exposed by the pod | 22000 |
 | POD_MONITOR_INTERVAL | time interval for monitoring the pod | 5s |
 | GUARDIAN_SYNC_INTERVAL | tim interval to sync with guard-service | 60s |

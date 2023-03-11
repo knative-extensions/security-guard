@@ -28,8 +28,8 @@ import (
 const (
 	pileMergeLimit         = uint32(1000)
 	numSamplesLimit        = uint32(1000000)
-	pileLearnMinTime       = 30 * 1000000000     // 30sec
-	guardianPersistMinTime = 5 * 60 * 1000000000 // 5min
+	pileLearnMinTime       = 30 * time.Second     // 30sec
+	guardianPersistMinTime = 5 * 60 * time.Second // 5min
 )
 
 // A cached record kept by guard-service for each deployed service
@@ -44,7 +44,7 @@ type serviceRecord struct {
 	guardianPersistCounter uint                 // Counter guardian peristed
 	guardianLearnCounter   uint                 // Counter guardian learned
 	pileMergeCounter       uint                 // Counter pile merged
-	pileMutex              sync.Mutex           // protect access to the pile
+	recordMutex            sync.Mutex           // protect access to the record
 	alerts                 uint                 // num of alerts
 	deleted                bool                 // mark that record was deleted
 }
@@ -221,8 +221,10 @@ func (s *services) set(ns string, sid string, cmFlag bool, guardianSpec *spec.Gu
 	if !exists {
 		record = new(serviceRecord)
 		record.pile.Clear()
-		record.pileLastLearn = time.Now()
-		record.guardianLastPersist = time.Now()
+		//record.pileLastLearn = time.Now()
+		//record.guardianLastPersist = time.Now()
+		record.pileLastLearn = time.UnixMicro(0)
+		record.guardianLastPersist = time.UnixMicro(0)
 		record.ns = ns
 		record.sid = sid
 		record.cmFlag = cmFlag
@@ -230,13 +232,14 @@ func (s *services) set(ns string, sid string, cmFlag bool, guardianSpec *spec.Gu
 	}
 
 	record.guardianSpec = guardianSpec
-	pi.Log.Debugf("cache record for %s.%s", ns, sid)
 	return record
 }
 
 // update cache
 // delete if guardianSpec is nil, set otherwise
 func (s *services) update(ns string, sid string, cmFlag bool, guardianSpec *spec.GuardianSpec) {
+	pi.Log.Debugf("Update cache using watch: %s.%s", ns, sid)
+
 	if guardianSpec == nil {
 		s.delete(ns, sid, cmFlag)
 	} else {
@@ -248,9 +251,7 @@ func (s *services) update(ns string, sid string, cmFlag bool, guardianSpec *spec
 func (s *services) mergeAndLearnAndPersistGuardian(record *serviceRecord, pile *spec.SessionDataPile) {
 	if pile != nil && pile.Count > 0 {
 		// Must unlock pileMutex before s.learnPile
-		record.pileMutex.Lock()
 		record.pile.Merge(pile)
-		record.pileMutex.Unlock()
 		record.pileMergeCounter++
 	}
 
@@ -283,7 +284,6 @@ func (s *services) learnAndPersistGuardian(record *serviceRecord) bool {
 
 	if shouldLearn && record.pile.Count > 0 {
 		// ok, lets learn
-		record.pileMutex.Lock()
 		record.guardianSpec.Learned.Learn(&record.pile)
 		record.guardianSpec.NumSamples += record.pile.Count
 		if record.guardianSpec.NumSamples > numSamplesLimit {
@@ -291,7 +291,6 @@ func (s *services) learnAndPersistGuardian(record *serviceRecord) bool {
 		}
 		record.pileLastLearn = time.Now()
 		record.pile.Clear()
-		record.pileMutex.Unlock()
 		record.guardianLearnCounter++
 		// Must unlock record.pileMutex before s.persist
 
