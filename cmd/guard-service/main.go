@@ -268,8 +268,6 @@ func (l *learner) mainEventLoop(quit <-chan bool, flushed chan<- bool, kill <-ch
 
 // initialization of the lerner + prepare the web service
 func (l *learner) init() (srv *http.Server, quit chan bool, flushed chan bool) {
-	utils.CreateLogger(l.env.GuardServiceLogLevel)
-
 	l.pileLearnTicker = utils.NewTicker(time.Second)
 	l.pileLearnTicker.Start()
 
@@ -305,6 +303,7 @@ func (l *learner) init() (srv *http.Server, quit chan bool, flushed chan bool) {
 
 func main() {
 	var err error
+
 	kill := make(chan os.Signal, 1)
 	// catch SIGETRM or SIGINTERRUPT
 	signal.Notify(kill, syscall.SIGTERM, syscall.SIGINT)
@@ -315,6 +314,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Failed to process environment: %s\n", err.Error())
 		os.Exit(1)
 	}
+	utils.CreateLogger(l.env.GuardServiceLogLevel)
 
 	// move all initialization which can be tested using unit tests to init
 	srv, quit, flushed := l.init()
