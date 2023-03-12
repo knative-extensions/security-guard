@@ -51,6 +51,7 @@ rm -fr ${YAML_OUTPUT_DIR}/*.yaml
 # Generated Knative component YAML files
 readonly SECURED_HELLO_YAML=${YAML_OUTPUT_DIR}/secured-helloworld.yaml
 readonly SECURED_LAYERED_MYAPP_YAML=${YAML_OUTPUT_DIR}/secured-layered-myapp.yaml
+readonly TESTSRV_YAML=${YAML_OUTPUT_DIR}/testsrv.yaml
 readonly CREATE_SECRETS_YAML=${YAML_OUTPUT_DIR}/create-secrets.yaml
 readonly CONFIG_FEATURES_YAML=${YAML_OUTPUT_DIR}/config-features.yaml
 readonly GUARD_SERVICE_YAML=${YAML_OUTPUT_DIR}/guard-service.yaml
@@ -58,6 +59,8 @@ readonly QUEUE_PROXY_YAML=${YAML_OUTPUT_DIR}/queue-proxy.yaml
 readonly GATE_ACCOUNT_YAML=${YAML_OUTPUT_DIR}/gate-account.yaml
 readonly SERVICE_ACCOUNT_YAML=${YAML_OUTPUT_DIR}/service-account.yaml
 readonly GUARDIAN_CRD_YAML=${YAML_OUTPUT_DIR}/guardian-crd.yaml
+readonly DEPLOY_KIND=${YAML_OUTPUT_DIR}/deploy-kind.sh
+readonly DEPLOY_KNATIVE_KIND=${YAML_OUTPUT_DIR}/deploy-knative-kind.sh
 
 # Flags for all ko commands
 KO_YAML_FLAGS="-P"
@@ -85,6 +88,7 @@ echo "Building Knative Secuity-Guard"
 echo KO_YAML_FLAGS: ${KO_YAML_FLAGS}
 ko resolve ${KO_YAML_FLAGS} -f config-kubernetes/deploy/secured-helloworld.yaml | "${LABEL_YAML_CMD[@]}" > "${SECURED_HELLO_YAML}"
 ko resolve ${KO_YAML_FLAGS} -f config-kubernetes/deploy/secured-layered-myapp.yaml | "${LABEL_YAML_CMD[@]}" > "${SECURED_LAYERED_MYAPP_YAML}"
+ko resolve ${KO_YAML_FLAGS} -f test/e2e/services/httptest/deploy.yaml | "${LABEL_YAML_CMD[@]}" > "${TESTSRV_YAML}"
 ko resolve ${KO_YAML_FLAGS} -f config-kubernetes/deploy/create-secrets.yaml | "${LABEL_YAML_CMD[@]}" > "${CREATE_SECRETS_YAML}"
 ko resolve ${KO_YAML_FLAGS} -f config/deploy/config-features.yaml | "${LABEL_YAML_CMD[@]}" > "${CONFIG_FEATURES_YAML}"
 ko resolve ${KO_YAML_FLAGS} -f config/deploy/guard-service.yaml | "${LABEL_YAML_CMD[@]}" > "${GUARD_SERVICE_YAML}"
@@ -92,6 +96,8 @@ ko resolve ${KO_YAML_FLAGS} -f config/deploy/queue-proxy.yaml | "${LABEL_YAML_CM
 ko resolve ${KO_YAML_FLAGS} -f config/resources/gateAccount.yaml | "${LABEL_YAML_CMD[@]}" > "${GATE_ACCOUNT_YAML}"
 ko resolve ${KO_YAML_FLAGS} -f config/resources/serviceAccount.yaml | "${LABEL_YAML_CMD[@]}" > "${SERVICE_ACCOUNT_YAML}"
 ko resolve ${KO_YAML_FLAGS} -f config/resources/guardiansCrd.yaml | "${LABEL_YAML_CMD[@]}" > "${GUARDIAN_CRD_YAML}"
+cp hack/kind/deployKind.sh "${DEPLOY_KIND}"
+cp hack/kind/deployKnativeKind.sh "${DEPLOY_KNATIVE_KIND}"
 echo "All manifests generated"
 
 # List generated YAML files
@@ -99,6 +105,7 @@ echo "All manifests generated"
 cat << EOF > ${YAML_LIST_FILE}
 ${SECURED_HELLO_YAML}
 ${SECURED_LAYERED_MYAPP_YAML}
+${TESTSRV_YAML}
 ${CREATE_SECRETS_YAML}
 ${CONFIG_FEATURES_YAML}
 ${GUARD_SERVICE_YAML}
@@ -106,12 +113,14 @@ ${QUEUE_PROXY_YAML}
 ${GATE_ACCOUNT_YAML}
 ${SERVICE_ACCOUNT_YAML}
 ${GUARDIAN_CRD_YAML}
-
+${DEPLOY_KIND}
+${DEPLOY_KNATIVE_KIND}
 EOF
 
 cat << EOF > "${YAML_ENV_FILE}"
 export SECURED_HELLO_YAML=${SECURED_HELLO_YAML}
 export SECURED_LAYERED_MYAPP_YAML=${SECURED_LAYERED_MYAPP_YAML}
+export TESTSRV_YAML=${TESTSRV_YAML}
 export CREATE_SECRETS_YAML=${CREATE_SECRETS_YAML}
 export CONFIG_FEATURES_YAML=${CONFIG_FEATURES_YAML}
 export GUARD_SERVICE_YAML=${GUARD_SERVICE_YAML}
@@ -119,4 +128,6 @@ export QUEUE_PROXY_YAML=${QUEUE_PROXY_YAML}
 export GATE_ACCOUNT_YAML=${GATE_ACCOUNT_YAML}
 export SERVICE_ACCOUNT_YAML=${SERVICE_ACCOUNT_YAML}
 export GUARDIAN_CRD_YAML=${GUARDIAN_CRD_YAML}
+export DEPLOY_KIND=${DEPLOY_KIND}
+export DEPLOY_KNATIVE_KIND=${DEPLOY_KNATIVE_KIND}
 EOF

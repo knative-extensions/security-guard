@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: testsrv
+  labels:
+    app: testsrv
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: testsrv
+  template:
+    metadata:
+      labels:
+        app: testsrv
+    spec:
+      containers:
+      - name: testsrv
+        image: ko://knative.dev/security-guard/test/e2e/services/httptest
+        imagePullPolicy: IfNotPresent
+        ports:
+          - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: testsrv
+  namespace: knative-serving
+spec:
+  selector:
+    app: testsrv
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8080
+      
