@@ -33,4 +33,3 @@ spec:
     - name: http
       protocol: TCP
       port: 8080
-      
