@@ -14,9 +14,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+CONFIG="$(mktemp)"
+cat <<EOF > $CONFIG
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: k8s
+nodes:
+- role: control-plane
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "ingress-ready=true"
+  extraPortMappings:
+  - containerPort: 80
+    hostPort: 80
+    protocol: TCP
+  - containerPort: 443
+    hostPort: 443
+    protocol: TCP
+EOF
+
+
+
 # Create Kind cluster
 kind delete cluster --name k8s
-kind create cluster --config ./hack/kind/kind-config.yaml
+kind create cluster --config $CONFIG
 kubectl cluster-info --context kind-k8s
 kubectl create namespace knative-serving
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
@@ -48,3 +72,6 @@ kubectl apply -f https://github.com/knative-sandbox/security-guard/releases/down
 
 #add myapp - protected using a separate guard pod (non-recommended pattern)
 kubectl apply -f https://github.com/knative-sandbox/security-guard/releases/download/v0.5.0/secured-layered-myapp.yaml
+
+#cleanup
+rm $CONFIG
