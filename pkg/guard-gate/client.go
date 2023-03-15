@@ -68,8 +68,8 @@ func (hc *httpClient) ReadToken(audience string) (tokenActive bool) {
 	if hc.tokenRefreshTime.After(now) {
 		return
 	}
-	// refresh in 100 minuets
-	hc.tokenRefreshTime = now.Add(100 * time.Minute)
+	// refresh in 5 minuets
+	hc.tokenRefreshTime = now.Add(5 * time.Minute)
 
 	// TODO: replace  "/var/run/secrets/tokens" with sharedMain.QPOptionTokenDirPath once merged.
 	b, err := os.ReadFile(path.Join("/var/run/secrets/tokens", audience))
