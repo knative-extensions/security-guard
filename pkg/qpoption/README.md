@@ -29,8 +29,8 @@ import "os"
 
 import (
     "knative.dev/serving/pkg/queue/sharedmain"
-    "github.com/knative-sandbox/security-guard/pkg/qpoption"
-    _ "github.com/knative-sandbox/security-guard/pkg/guard-gate"
+    "github.com/knative-extensions/security-guard/pkg/qpoption"
+    _ "github.com/knative-extensions/security-guard/pkg/guard-gate"
 )
 
 func main() {
@@ -54,8 +54,8 @@ import "os"
 
 import (
     "knative.dev/serving/pkg/queue/sharedmain"
-    "github.com/knative-sandbox/security-guard/pkg/qpoption"
-    _ "github.com/knative-sandbox/security-guard/pkg/test-gate"
+    "github.com/knative-extensions/security-guard/pkg/qpoption"
+    _ "github.com/knative-extensions/security-guard/pkg/test-gate"
 )
 
 func main() {
