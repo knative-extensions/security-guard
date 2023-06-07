@@ -27,7 +27,7 @@ import (
 	"strings"
 
 	"go.uber.org/zap"
-	"knative.dev/control-protocol/pkg/certificates"
+	"knative.dev/networking/pkg/certificates"
 	"knative.dev/serving/pkg/queue"
 	"knative.dev/serving/pkg/queue/sharedmain"
 

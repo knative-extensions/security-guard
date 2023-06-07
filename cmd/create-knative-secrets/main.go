@@ -36,7 +36,7 @@ import (
 	pkglogging "knative.dev/pkg/logging"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/control-protocol/pkg/certificates"
+	"knative.dev/networking/pkg/certificates"
 )
 
 const (

@@ -29,7 +29,7 @@ import (
 	"path"
 	"time"
 
-	"knative.dev/control-protocol/pkg/certificates"
+	"knative.dev/networking/pkg/certificates"
 	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
 	guardKubeMgr "knative.dev/security-guard/pkg/guard-kubemgr"
 	pi "knative.dev/security-guard/pkg/pluginterfaces"
