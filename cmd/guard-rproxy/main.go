@@ -30,7 +30,7 @@ import (
 
 	"github.com/kelseyhightower/envconfig"
 
-	"knative.dev/control-protocol/pkg/certificates"
+	"knative.dev/networking/pkg/certificates"
 	"knative.dev/pkg/signals"
 	_ "knative.dev/security-guard/pkg/guard-gate"
 	utils "knative.dev/security-guard/pkg/guard-utils"

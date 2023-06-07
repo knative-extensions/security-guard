@@ -36,7 +36,7 @@ import (
 	pkglogging "knative.dev/pkg/logging"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/control-protocol/pkg/certificates"
+	"knative.dev/networking/pkg/certificates"
 )
 
 const (
@@ -101,7 +101,7 @@ func main() {
 		fmt.Printf("serving-certs-ctrl-ca secret is missing the required keypair - lets add it\n")
 
 		// We need to generate a new CA cert, then shortcircuit the reconciler
-		keyPair, err := certificates.CreateCACerts(ctx, caExpirationInterval)
+		keyPair, err := certificates.CreateCACerts(caExpirationInterval)
 		if err != nil {
 			fmt.Printf("Cannot generate the keypair for the serving-certs-ctrl-ca secret: %v\n", err)
 			return
@@ -196,7 +196,7 @@ func parseAndValidateSecret(secret *corev1.Secret, shouldContainCaCert bool) (*x
 	if err != nil {
 		return nil, nil, err
 	}
-	if err := certificates.ValidateCert(caCert, rotationThreshold); err != nil {
+	if err := certificates.CheckExpiry(caCert, rotationThreshold); err != nil {
 		return nil, nil, err
 	}
 	return caCert, caPk, nil
