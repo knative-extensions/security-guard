@@ -250,7 +250,7 @@ func main() {
 	}
 	err = kubeMgr.CreateMutatingWebhookConfiguration(caKeyPair.CertBytes())
 	if err != nil {
-		Log.Fatal("CreateMutatingWebhookConfiguration", err)
+		Log.Fatal("CreateMutatingWebhookConfiguration ", err)
 	}
 	cm, err := kubeMgr.ReadGuardConfig()
 	if err != nil {

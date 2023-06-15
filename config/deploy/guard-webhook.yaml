@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: guard-webhook
+  namespace: knative-serving
+  labels:
+    app: guard-webhook
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: guard-webhook
+  template:
+    metadata:
+      labels:
+        app: guard-webhook
+    spec:
+      serviceAccountName: guard-webhook-account
+      containers:
+      - name: webhook
+        image: ko://knative.dev/security-guard/cmd/guard-webhook
+        imagePullPolicy: IfNotPresent
+        ports:
+          - containerPort: 8443
+# image: ko://knative.dev/security-guard/cmd/guard-webhook
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: guard-webhook
+  namespace: knative-serving
+spec:
+  selector:
+    app: guard-webhook
+  ports:
+    - name: https
+      protocol: TCP
+      port: 443
+      targetPort: 8443
+
+

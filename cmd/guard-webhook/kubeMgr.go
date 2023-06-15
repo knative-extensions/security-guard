@@ -97,7 +97,9 @@ func (k *KubeMgr) CreateMutatingWebhookConfiguration(caBundle []byte) error {
 	failurePolicy := v1.Fail
 	sideEffects := v1.SideEffectClassNone
 	timeout := int32(10)
+	port := int32(443)
 	scope := v1.NamespacedScope
+	path := "/mutate"
 	webhookName := "webhook.services.guard.security.knative.dev"
 	configuredWebhook := &v1.MutatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
@@ -128,6 +130,8 @@ func (k *KubeMgr) CreateMutatingWebhookConfiguration(caBundle []byte) error {
 				Service: &v1.ServiceReference{
 					Namespace: "knative-serving",
 					Name:      "guard-webhook",
+					Port:      &port,
+					Path:      &path,
 				},
 				CABundle: caBundle,
 			},
@@ -137,7 +141,7 @@ func (k *KubeMgr) CreateMutatingWebhookConfiguration(caBundle []byte) error {
 	_, err := k.client.AdmissionregistrationV1().MutatingWebhookConfigurations().Create(context.TODO(), configuredWebhook, metav1.CreateOptions{})
 	if err != nil {
 		// can't create MutatingWebhookConfigurations
-		return fmt.Errorf("MutatingWebhookConfigurations create error %w", err)
+		return fmt.Errorf("create error %w", err)
 	}
 	return nil
 }
