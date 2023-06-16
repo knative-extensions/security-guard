@@ -1,0 +1,68 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: guard-webhook-cluster-role
+  labels:
+    rbac.authorization.k8s.io/guardian: 'true'
+rules:
+  - apiGroups:
+      - admissionregistration.k8s.io
+    resources:
+      - mutatingwebhookconfigurations
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: guard-webhook-role
+  labels:
+    rbac.authorization.k8s.io/guardian: 'true'
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: guard-webhook-account
+  namespace: knative-serving
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: guard-webhook-cluster-role-binding
+subjects:
+  - kind: ServiceAccount
+    name: guard-webhook-account
+    namespace: knative-serving
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: guard-webhook-cluster-role
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: guard-webhook-role-binding
+  namespace: knative-serving
+subjects:
+  - kind: ServiceAccount
+    name: guard-webhook-account
+    namespace: knative-serving
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: guard-webhook-role
