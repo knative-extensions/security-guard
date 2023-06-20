@@ -42,13 +42,14 @@ func TestSessionData(t *testing.T) {
 
 	cip := net.IPv4(1, 2, 3, 5)
 	cip2 := net.IPv4(1, 22, 3, 5)
+	now := time.Now().Unix()
 	arguments := [][]interface{}{
-		{req, cip, resp, nil, nil, time.Now(), time.Now(), time.Now()},
-		{req2, cip2, resp2, nil, nil, time.Now(), time.Now(), time.Now()},
-		{req2, cip, resp2, nil, nil, time.Now(), time.Now(), time.Now()},
-		{req, cip, resp2, nil, nil, time.Now(), time.Now(), time.Now()},
-		{req, cip, resp2, nil, nil, time.Now(), time.Now(), time.Now()},
-		{req, cip, resp2, nil, nil, time.Now(), time.Now(), time.Now()},
+		{req, cip, resp, nil, nil, now, now, now},
+		{req2, cip2, resp2, nil, nil, now, now, now},
+		{req2, cip, resp2, nil, nil, now, now, now},
+		{req, cip, resp2, nil, nil, now, now, now},
+		{req, cip, resp2, nil, nil, now, now, now},
+		{req, cip, resp2, nil, nil, now, now, now},
 	}
 	var args []interface{}
 	var profiles []ValueProfile
