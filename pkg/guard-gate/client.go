@@ -27,7 +27,6 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"time"
 
 	"knative.dev/networking/pkg/certificates"
 	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
@@ -38,7 +37,7 @@ import (
 const (
 	ALERTS_LIMIT           = 1000
 	PILE_LIMIT             = 1000
-	MIN_TIME_BETWEEN_SYNCS = 5 * time.Second // 5s
+	MIN_TIME_BETWEEN_SYNCS = 5 // 5s
 )
 
 type httpClientInterface interface {
@@ -47,10 +46,9 @@ type httpClientInterface interface {
 }
 
 type httpClient struct {
-	client           http.Client
-	token            string
-	tokenRefreshTime time.Time
-	missingToken     bool
+	client       http.Client
+	token        string
+	missingToken bool
 }
 
 func (hc *httpClient) Do(req *http.Request) (*http.Response, error) {
@@ -63,14 +61,6 @@ func (hc *httpClient) Do(req *http.Request) (*http.Response, error) {
 }
 
 func (hc *httpClient) ReadToken(audience string) (tokenActive bool) {
-	// If not yet tokenRefreshTime, skip reading
-	now := time.Now()
-	if hc.tokenRefreshTime.After(now) {
-		return
-	}
-	// refresh in 5 minuets
-	hc.tokenRefreshTime = now.Add(5 * time.Minute)
-
 	// TODO: replace  "/var/run/secrets/tokens" with sharedMain.QPOptionTokenDirPath once merged.
 	b, err := os.ReadFile(path.Join("/var/run/secrets/tokens", audience))
 
@@ -82,8 +72,6 @@ func (hc *httpClient) ReadToken(audience string) (tokenActive bool) {
 	hc.token = string(b)
 	hc.missingToken = false
 	tokenActive = true
-
-	pi.Log.Debugf("Refreshing client token - next refresh at %s", hc.tokenRefreshTime.String())
 	return
 }
 
@@ -101,6 +89,7 @@ type gateClient struct {
 	alerts           []spec.Alert
 	IamCompromised   bool
 	kubeMgr          guardKubeMgr.KubeMgrInterface
+	tokenRefreshTime int64
 }
 
 func NewGateClient(guardServiceUrl string, podname string, sid string, ns string, useCm bool) *gateClient {
@@ -131,7 +120,7 @@ func (srv *gateClient) initHttpClient(certPool *x509.CertPool, insecureSkipVerif
 		MaxIdleConnsPerHost: 0,
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: insecureSkipVerify,
-			ServerName:         certificates.FakeDnsName,
+			ServerName:         certificates.LegacyFakeDnsName,
 			RootCAs:            certPool,
 		},
 	}
@@ -139,18 +128,25 @@ func (srv *gateClient) initHttpClient(certPool *x509.CertPool, insecureSkipVerif
 	srv.tokenActive = srv.httpClient.ReadToken(guardKubeMgr.ServiceAudience)
 }
 
-func (srv *gateClient) signalCompromised() {
+func (srv *gateClient) signalCompromised(ticks int64) {
 	if !srv.IamCompromised {
 		srv.IamCompromised = true
-		srv.syncWithService()
+		srv.syncWithService(ticks)
 	}
 }
 
-func (srv *gateClient) syncWithService() *spec.GuardianSpec {
+func (srv *gateClient) syncWithService(ticks int64) *spec.GuardianSpec {
 	var syncReq spec.SyncMessageReq
 	var syncResp spec.SyncMessageResp
 
-	srv.httpClient.ReadToken(guardKubeMgr.ServiceAudience)
+	// If not yet tokenRefreshTime, skip reading
+
+	if srv.tokenRefreshTime <= ticks {
+		// refresh in 5 minuets
+		srv.tokenRefreshTime = ticks + 300 // 5 minuetes
+		srv.httpClient.ReadToken(guardKubeMgr.ServiceAudience)
+		pi.Log.Debugf("Refreshing client token - next refresh at 5 min")
+	}
 
 	syncReq.IamCompromised = srv.IamCompromised
 	syncReq.Alerts = srv.alerts
@@ -220,7 +216,12 @@ func (srv *gateClient) syncWithService() *spec.GuardianSpec {
 
 	// We clear only when we know pile and alerts were delivered
 	srv.alerts = nil
+
+	// We clear pile event if we dont know if the pile is sent to the service - to avoid accumulating forever
+	srv.pileMutex.Lock()
 	srv.pile.Clear()
+	srv.pileMutex.Unlock()
+
 	return syncResp.Guardian
 }
 
@@ -248,7 +249,7 @@ func (srv *gateClient) addToPile(profile *spec.SessionDataProfile) uint32 {
 }
 
 func (srv *gateClient) syncWithServiceAndKubeApi(shouldLoad bool) *spec.GuardianSpec {
-	wsGate := srv.syncWithService()
+	wsGate := srv.syncWithService(0)
 	if wsGate == nil && shouldLoad {
 		// never return nil!
 		wsGate = srv.kubeMgr.GetGuardian(srv.ns, srv.sid, srv.useCm, true)

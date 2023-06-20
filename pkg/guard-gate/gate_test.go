@@ -51,7 +51,7 @@ func testInit(c map[string]string) *plug {
 	}
 
 	pi.RegisterPlug(p)
-	p.preInit(c, "svcName", "myns", defaultLog)
+	p.preInit(context.Background(), c, "svcName", "myns", defaultLog)
 	p.gateState = fakeGateState()
 	p.gateState.sync(true, false)
 	return p
@@ -69,7 +69,7 @@ func initTickerTest() *plug {
 
 	pi.RegisterPlug(p)
 
-	p.preInit(c, "svcName", "myns", defaultLog)
+	p.preInit(context.Background(), c, "svcName", "myns", defaultLog)
 	p.gateState = fakeGateState()
 	p.gateState.sync(true, true)
 	p.gateState.stat.Init()
@@ -171,7 +171,7 @@ func Test_plug_Initialize(t *testing.T) {
 			p.syncTicker = utils.NewTicker(utils.MinimumInterval)
 
 			pi.RegisterPlug(p)
-			p.preInit(tt.c, "svcName", "myns", defaultLog)
+			p.preInit(context.Background(), tt.c, "svcName", "myns", defaultLog)
 
 			if tt.monitorPod != p.gateState.monitorPod {
 				t.Errorf("extected monitorPod %t got %t", tt.monitorPod, p.gateState.monitorPod)
@@ -191,7 +191,7 @@ func Test_plug_initPanic(t *testing.T) {
 	t.Run("panic on sid", func(t *testing.T) {
 		defer func() { _ = recover() }()
 		p := new(plug)
-		p.preInit(nil, "ns.svcName", "myns", defaultLog)
+		p.preInit(context.Background(), nil, "ns.svcName", "myns", defaultLog)
 		t.Error("extected to panic")
 	})
 }

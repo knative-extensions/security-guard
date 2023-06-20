@@ -17,11 +17,13 @@ limitations under the License.
 package guardgate
 
 import (
+	"context"
 	"crypto/x509"
 	"time"
 
 	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
 	utils "knative.dev/security-guard/pkg/guard-utils"
+	"knative.dev/security-guard/pkg/iodup"
 	pi "knative.dev/security-guard/pkg/pluginterfaces"
 )
 
@@ -42,14 +44,34 @@ type gateState struct {
 	srv          *gateClient             // maintainer of the pile, include client to the guard-service & kubeApi
 	certPool     *x509.CertPool          // rootCAs
 	prevAlert    string                  // previous gate alert
-	skippedSyncs int                     // how many times we skipped sync?
-	lastSync     time.Time               // last time we synced
+	skippedSyncs uint32                  // how many times we skipped sync?
+	lastSync     int64                   // last time we synced
+	iodups       *iodup.IoDups
+	ticks        int64
+}
+
+func NewGateState(ctx context.Context) *gateState {
+	gs := new(gateState)
+	gs.ticks = time.Now().Unix()
+	ticker := time.NewTicker(time.Second)
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case t := <-ticker.C:
+				gs.ticks = t.Unix()
+			}
+		}
+	}()
+	return gs
 }
 
 func (gs *gateState) init(monitorPod bool, guardServiceUrl string, podname string, sid string, ns string, useCm bool, rootCA string) {
 	var err error
 	var skipVerify bool
 
+	gs.iodups = iodup.NewIoDups(2, 128, 8192)
 	gs.stat.Init()
 	gs.monitorPod = monitorPod
 	gs.srv = NewGateClient(guardServiceUrl, podname, sid, ns, useCm)
@@ -87,7 +109,7 @@ func (gs gateState) start() {
 
 // sync is called periodically to send pile and alerts and to load from the updated Guardian
 func (gs *gateState) sync(shouldLoad bool, forceSync bool) {
-	if !forceSync && time.Since(gs.lastSync) < MIN_TIME_BETWEEN_SYNCS {
+	if !forceSync && (gs.ticks-gs.lastSync) < MIN_TIME_BETWEEN_SYNCS {
 		return
 	}
 
@@ -173,7 +195,7 @@ func (gs *gateState) profileAndDecidePod() {
 		if gs.decision != nil {
 			gs.logAlert()
 			if gs.shouldBlock() {
-				gs.srv.signalCompromised()
+				gs.srv.signalCompromised(gs.ticks)
 				// Terminate the reverse proxy since all requests will block from now on
 				pi.Log.Infof("Terminating")
 				gs.addStat("BlockOnPod")

@@ -23,13 +23,10 @@ import (
 	"mime"
 	"net"
 	"net/http"
-	"time"
 
 	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
 	utils "knative.dev/security-guard/pkg/guard-utils"
 	pi "knative.dev/security-guard/pkg/pluginterfaces"
-
-	"knative.dev/security-guard/pkg/iodup"
 )
 
 const (
@@ -43,8 +40,8 @@ type session struct {
 	sessionTicker *utils.Ticker
 	gotResponse   bool
 	decision      *spec.Decision          // session alert decision
-	reqTime       time.Time               // time when session was started
-	respTime      time.Time               // time when session response came
+	reqTime       int64                   // time when session was started
+	respTime      int64                   // time when session response came
 	cancelFunc    context.CancelFunc      // cancel the session
 	profile       spec.SessionDataProfile // maintainer of the session profile
 	gateState     *gateState              // maintainer of the criteria and ctrl, include pod profile, gate stats and gate level alert
@@ -52,7 +49,7 @@ type session struct {
 
 func newSession(state *gateState, cancel context.CancelFunc) *session {
 	s := new(session)
-	s.reqTime = time.Now()
+	s.reqTime = state.ticks
 	s.respTime = s.reqTime // indicates that we do not know the response time
 	s.gateState = state
 	s.cancelFunc = cancel
@@ -102,6 +99,7 @@ func (s *session) logAlert() {
 }
 
 func (s *session) sessionEventLoop(ctx context.Context) {
+
 	s.sessionTicker.Start()
 
 	defer func() {
@@ -190,8 +188,8 @@ func (s *session) screenResponseBody(resp *http.Response) {
 		}
 	}
 
-	dup := iodup.New(resp.Body, 2, 128, 8192)
-	resp.Body = dup.Output[0]
+	dup := s.gateState.iodups.NewIoDup(resp.Body)
+	resp.Body = dup[0]
 
 	switch body_type {
 	case json_type:
@@ -213,7 +211,7 @@ func (s *session) screenResponseBody(resp *http.Response) {
 			s.profile.RespBody.ProfileUnstructured(string(bytes))
 		}
 	}
-	resp.Body = dup.Output[1]
+	resp.Body = dup[1]
 	s.gateState.decideRespBody(&s.decision, &s.profile.RespBody)
 }
 
@@ -253,8 +251,8 @@ func (s *session) screenRequestBody(req *http.Request) {
 		}
 	}
 
-	dup := iodup.New(req.Body, 2, 128, 8192)
-	req.Body = dup.Output[0]
+	dup := s.gateState.iodups.NewIoDup(req.Body)
+	req.Body = dup[0]
 
 	switch body_type {
 	case json_type:
@@ -291,18 +289,17 @@ func (s *session) screenRequestBody(req *http.Request) {
 			s.profile.ReqBody.ProfileUnstructured(string(bytes))
 		}
 	}
-	req.Body = dup.Output[1]
+	req.Body = dup[1]
 	s.gateState.decideReqBody(&s.decision, &s.profile.ReqBody)
 }
 
 func (s *session) screenEnvelop() {
-	now := time.Now()
 	respTime := s.respTime
-	if !s.respTime.After(s.reqTime) {
+	if s.reqTime <= s.gateState.ticks {
 		// we do not know the response time, lets assume it is now
-		respTime = now
+		respTime = s.gateState.ticks
 	}
-	s.profile.Envelop.Profile(s.reqTime, respTime, now)
+	s.profile.Envelop.Profile(s.reqTime, respTime, s.gateState.ticks)
 
 	s.gateState.decideEnvelop(&s.decision, &s.profile.Envelop)
 }
@@ -327,7 +324,7 @@ func (s *session) screenRequest(req *http.Request) {
 }
 
 func (s *session) screenResponse(resp *http.Response) {
-	s.respTime = time.Now()
+	s.respTime = s.gateState.ticks
 	s.profile.Resp.Profile(resp)
 
 	s.gateState.decideResp(&s.decision, &s.profile.Resp)

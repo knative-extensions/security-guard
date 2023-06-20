@@ -25,6 +25,8 @@ import (
 	"strings"
 	"time"
 
+	_ "net/http/pprof"
+
 	pi "knative.dev/security-guard/pkg/pluginterfaces"
 
 	utils "knative.dev/security-guard/pkg/guard-utils"
@@ -116,6 +118,7 @@ func (p *plug) ApproveRequest(req *http.Request) (*http.Request, error) {
 }
 
 func (p *plug) ApproveResponse(req *http.Request, resp *http.Response) (*http.Response, error) {
+
 	s := getSessionFromContext(req.Context())
 	if s == nil { // This should never happen!
 		pi.Log.Infof("%s ........... Blocked During Response! Missing context!", p.name)
@@ -123,10 +126,10 @@ func (p *plug) ApproveResponse(req *http.Request, resp *http.Response) (*http.Re
 	}
 
 	s.gotResponse = true
-
 	s.screenResponse(resp)
 	s.screenResponseBody(resp)
 	s.screenEnvelop()
+
 	if p.gateState.shouldBlock() && (s.hasAlert() || p.gateState.hasAlert()) {
 		p.gateState.addStat("BlockOnResponse")
 		pi.Log.Debugf("Response blocked")
@@ -158,7 +161,7 @@ func (p *plug) guardMainEventLoop(ctx context.Context) {
 		}
 	}
 }
-func (p *plug) preInit(c map[string]string, sid string, ns string, logger pi.Logger) {
+func (p *plug) preInit(ctx context.Context, c map[string]string, sid string, ns string, logger pi.Logger) {
 	var ok bool
 	var v string
 	var syncInterval, monitorInterval string
@@ -223,7 +226,7 @@ func (p *plug) preInit(c map[string]string, sid string, ns string, logger pi.Log
 		panic("Ileal serviceName - ns.{Namespace} is reserved")
 	}
 
-	p.gateState = new(gateState)
+	p.gateState = NewGateState(ctx)
 	p.gateState.analyzeBody = analyzeBody
 
 	// p.gateState.init uses a `useCm` flag
@@ -233,7 +236,7 @@ func (p *plug) preInit(c map[string]string, sid string, ns string, logger pi.Log
 }
 
 func (p *plug) Init(ctx context.Context, c map[string]string, sid string, ns string, logger pi.Logger) context.Context {
-	p.preInit(c, sid, ns, logger)
+	p.preInit(ctx, c, sid, ns, logger)
 
 	// cant be tested as depend on KubeMgr
 	p.gateState.start()

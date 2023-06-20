@@ -17,12 +17,12 @@ limitations under the License.
 package guardgate
 
 import (
+	"context"
 	"encoding/json"
 	"net"
 	"net/http"
 	"reflect"
 	"testing"
-	"time"
 
 	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
 )
@@ -30,7 +30,7 @@ import (
 var gateCanceled int
 
 func fakeGateState() *gateState {
-	gs := new(gateState)
+	gs := NewGateState(context.Background())
 	gs.init(false, "myurl", "mypodname", "mysid", "myns", true, "")
 	bytes, _ := json.Marshal(spec.Guardian{})
 	srv, _ := fakeClient(http.StatusOK, string(bytes))
@@ -86,14 +86,14 @@ func Test_gateState_sync(t *testing.T) {
 
 		// envelop
 		ep := new(spec.EnvelopProfile)
-		now := time.Now()
+		now := int64(1000)
 		ep.Profile(now, now, now)
 		decision = nil
 		if gs.decideEnvelop(&decision, ep); decision != nil {
 			t.Error("expected no alert")
 		}
 		decision = nil
-		ep.Profile(time.Unix(1, 1), time.Unix(3, 3), time.Unix(5, 5))
+		ep.Profile(1, 3, 2)
 		if gs.decideEnvelop(&decision, ep); decision == nil {
 			t.Error("expected alert")
 		}
