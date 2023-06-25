@@ -27,6 +27,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -44,12 +45,32 @@ type config struct {
 	GuardServiceLabels   []string `split_words:"true" required:"false"`
 	GuardServiceTls      string   `split_words:"true" required:"false"`
 }
-
+type tokenData struct {
+	podname string
+	sid     string
+	ns      string
+}
 type learner struct {
 	services        *services
 	pileLearnTicker *utils.Ticker
 	env             config
 	srv             *http.Server
+
+	// Tokens
+	tokenMutex sync.Mutex
+	tokens     map[string]*tokenData
+}
+
+func (l *learner) getToken(token string) *tokenData {
+	l.tokenMutex.Lock()
+	defer l.tokenMutex.Unlock()
+	return l.tokens[token]
+}
+
+func (l *learner) setToken(token string, td *tokenData) {
+	l.tokenMutex.Lock()
+	defer l.tokenMutex.Unlock()
+	l.tokens[token] = td
 }
 
 func (l *learner) authenticate(req *http.Request) (podname string, sid string, ns string, err error) {
@@ -59,6 +80,12 @@ func (l *learner) authenticate(req *http.Request) (podname string, sid string, n
 		return
 	}
 	token = token[7:]
+
+	// Check token cache
+	if tokenData := l.getToken(token); tokenData != nil {
+		return tokenData.podname, tokenData.sid, tokenData.ns, nil
+	}
+
 	podname, sid, ns, err = l.services.kmgr.TokenData(token, l.env.GuardServiceLabels)
 	if err != nil {
 		err = fmt.Errorf("cant verify token %w", err)
@@ -68,6 +95,11 @@ func (l *learner) authenticate(req *http.Request) (podname string, sid string, n
 		err = fmt.Errorf("token of a service with illegal name %s", sid)
 		return
 	}
+	l.setToken(token, &tokenData{
+		podname: podname,
+		sid:     sid,
+		ns:      ns,
+	})
 	return
 }
 
@@ -268,6 +300,8 @@ func (l *learner) mainEventLoop(quit <-chan bool, flushed chan<- bool, kill <-ch
 
 // initialization of the lerner + prepare the web service
 func (l *learner) init() (srv *http.Server, quit chan bool, flushed chan bool) {
+	l.tokens = make(map[string]*tokenData)
+
 	l.pileLearnTicker = utils.NewTicker(time.Second)
 	l.pileLearnTicker.Start()
 

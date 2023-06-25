@@ -28,8 +28,6 @@ import (
 	_ "net/http/pprof"
 
 	pi "knative.dev/security-guard/pkg/pluginterfaces"
-
-	utils "knative.dev/security-guard/pkg/guard-utils"
 )
 
 const plugVersion string = "0.5"
@@ -54,17 +52,14 @@ type plug struct {
 	version string
 
 	// guard gate plug specifics
-	gateState        *gateState    // maintainer of the criteria and ctrl, include pod profile, gate stats and gate level alert
-	podMonitorTicker *utils.Ticker // tick to gateState.profileAndDecidePod()
-	syncTicker       *utils.Ticker // tick to gateState.sync()
+	gateState *gateState // maintainer of the criteria and ctrl, include pod profile, gate stats and gate level alert
 }
 
 func (p *plug) Shutdown() {
 	pi.Log.Infof("%s Shutdown - performing final Sync!", p.name)
-	p.syncTicker.Stop()
-	p.podMonitorTicker.Stop()
+	ticks := p.gateState.getTicks()
 	if p.gateState.srv.pile.Count > 0 || len(p.gateState.srv.alerts) > 0 {
-		p.gateState.sync(false, true)
+		p.gateState.sync(false, true, ticks)
 	}
 	pi.Log.Infof("%s - Done with the following statistics: %s", p.name, p.gateState.stat.Log())
 	pi.Log.Sync()
@@ -79,12 +74,13 @@ func (p *plug) PlugVersion() string {
 }
 
 func (p *plug) ApproveRequest(req *http.Request) (*http.Request, error) {
+	ticks := p.gateState.getTicks()
 	ctx, cancelFunction := context.WithCancel(req.Context())
 
-	s := newSession(p.gateState, cancelFunction) // maintainer of the profile
+	s := newSession(p.gateState, cancelFunction, ticks) // maintainer of the profile
 
 	// Req
-	s.screenEnvelop()
+	s.screenEnvelop(ticks)
 	s.screenRequest(req)
 	s.screenRequestBody(req)
 
@@ -111,8 +107,7 @@ func (p *plug) ApproveRequest(req *http.Request) (*http.Request, error) {
 
 	req = req.WithContext(ctx)
 
-	//goroutine to accompany the request
-	go s.sessionEventLoop(ctx)
+	p.gateState.Add(ctx, s)
 
 	return req, nil
 }
@@ -124,11 +119,11 @@ func (p *plug) ApproveResponse(req *http.Request, resp *http.Response) (*http.Re
 		pi.Log.Infof("%s ........... Blocked During Response! Missing context!", p.name)
 		return nil, errors.New("missing context")
 	}
-
+	ticks := p.gateState.getTicks()
 	s.gotResponse = true
-	s.screenResponse(resp)
+	s.screenResponse(resp, ticks)
 	s.screenResponseBody(resp)
-	s.screenEnvelop()
+	s.screenEnvelop(ticks)
 
 	if p.gateState.shouldBlock() && (s.hasAlert() || p.gateState.hasAlert()) {
 		p.gateState.addStat("BlockOnResponse")
@@ -140,27 +135,6 @@ func (p *plug) ApproveResponse(req *http.Request, resp *http.Response) (*http.Re
 	return resp, nil
 }
 
-func (p *plug) guardMainEventLoop(ctx context.Context) {
-	p.syncTicker.Start()
-	p.podMonitorTicker.Start()
-	for {
-		select {
-		// Always finish guard here!
-		case <-ctx.Done():
-			pi.Log.Debugf("Terminating the guardMainEventLoop")
-			p.syncTicker.Stop()
-			p.podMonitorTicker.Stop()
-			return
-		// Periodically send pile and alerts and get an updated Guardian
-		case <-p.syncTicker.Ch():
-			p.gateState.syncIfNeeded()
-
-		// Periodically profile of the pod
-		case <-p.podMonitorTicker.Ch():
-			p.gateState.profileAndDecidePod()
-		}
-	}
-}
 func (p *plug) preInit(ctx context.Context, c map[string]string, sid string, ns string, logger pi.Logger) {
 	var ok bool
 	var v string
@@ -200,12 +174,6 @@ func (p *plug) preInit(ctx context.Context, c map[string]string, sid string, ns 
 		pi.Log.Infof("guard-gate missing configuration")
 	}
 
-	p.syncTicker = utils.NewTicker(utils.MinimumInterval)
-	p.podMonitorTicker = utils.NewTicker(utils.MinimumInterval)
-
-	p.syncTicker.Parse(syncInterval, syncIntervalDefault)
-	p.podMonitorTicker.Parse(monitorInterval, podMonitorIntervalDefault)
-
 	podname := "unknown"
 	if v, ok = c["podname"]; ok {
 		podname = v
@@ -226,7 +194,24 @@ func (p *plug) preInit(ctx context.Context, c map[string]string, sid string, ns 
 		panic("Ileal serviceName - ns.{Namespace} is reserved")
 	}
 
-	p.gateState = NewGateState(ctx)
+	var syncServiceSecs, podMonitorSecs int64
+	d, err := time.ParseDuration(syncInterval)
+	if err == nil {
+		syncServiceSecs = int64(d.Seconds())
+	} else {
+		syncServiceSecs = 60
+		pi.Log.Errorf("interval illegal value %s - using default value instead (err: %v)", syncInterval, err)
+	}
+
+	d, err = time.ParseDuration(monitorInterval)
+	if err == nil {
+		podMonitorSecs = int64(d.Seconds())
+	} else {
+		podMonitorSecs = 5
+		pi.Log.Errorf("interval illegal value %s - using default value instead (err: %v)", monitorInterval, err)
+	}
+
+	p.gateState = NewGateState(ctx, syncServiceSecs, podMonitorSecs)
 	p.gateState.analyzeBody = analyzeBody
 
 	// p.gateState.init uses a `useCm` flag
@@ -241,11 +226,9 @@ func (p *plug) Init(ctx context.Context, c map[string]string, sid string, ns str
 	// cant be tested as depend on KubeMgr
 	p.gateState.start()
 
-	p.gateState.sync(true, true)
-	p.gateState.profileAndDecidePod()
-
-	//goroutine for Guard instance
-	go p.guardMainEventLoop(ctx)
+	ticks := time.Now().Unix()
+	p.gateState.sync(true, true, ticks)
+	p.gateState.profileAndDecidePod(ticks)
 
 	return ctx
 }

@@ -77,6 +77,7 @@ func Test_learner_mainEventLoop(t *testing.T) {
 		l := &learner{
 			services:        s,
 			pileLearnTicker: ticker,
+			tokens:          make(map[string]*tokenData),
 		}
 		for i := uint(1); i <= 10; i++ {
 			addSample(s)
@@ -203,6 +204,7 @@ func Test_NOTLS_learner_baseHandler(t *testing.T) {
 			l := &learner{
 				services:        s,
 				pileLearnTicker: ticker,
+				tokens:          make(map[string]*tokenData),
 			}
 			l.env.GuardServiceAuth = "false"
 			gotCmFlag, gotPod, gotSid, gotNs, gotErr := l.queryDataNoAuth(tt.query)
@@ -270,6 +272,7 @@ func Test_TLS_learner_baseHandler(t *testing.T) {
 			l := &learner{
 				services:        s,
 				pileLearnTicker: ticker,
+				tokens:          make(map[string]*tokenData),
 			}
 			l.env.GuardServiceAuth = "anything"
 			gotCmFlag, gotErr := l.queryDataAuth(tt.query)
@@ -302,6 +305,7 @@ func TestTLS_SyncHandler_MissingToken(t *testing.T) {
 	l := &learner{
 		services:        s,
 		pileLearnTicker: ticker,
+		tokens:          make(map[string]*tokenData),
 	}
 	l.env.GuardServiceAuth = "anything"
 
@@ -339,6 +343,7 @@ func TestNOTLS_SyncHandler_main(t *testing.T) {
 	l := &learner{
 		services:        s,
 		pileLearnTicker: ticker,
+		tokens:          make(map[string]*tokenData),
 	}
 
 	l.env.GuardServiceAuth = "false"
@@ -363,6 +368,7 @@ func TestTLS_SyncHandler_main(t *testing.T) {
 	l := &learner{
 		services:        s,
 		pileLearnTicker: ticker,
+		tokens:          make(map[string]*tokenData),
 	}
 
 	l.env.GuardServiceAuth = "anything"
@@ -387,6 +393,7 @@ func TestTLS_SyncHandler_NotPOST(t *testing.T) {
 	l := &learner{
 		services:        s,
 		pileLearnTicker: ticker,
+		tokens:          make(map[string]*tokenData),
 	}
 	l.env.GuardServiceAuth = "anything"
 
@@ -430,6 +437,7 @@ func TestTLS_badUrl(t *testing.T) {
 	l := &learner{
 		services:        s,
 		pileLearnTicker: ticker,
+		tokens:          make(map[string]*tokenData),
 	}
 	l.env.GuardServiceAuth = "anything"
 
@@ -473,6 +481,7 @@ func TestTLS_SyncHandler_NoReqBody(t *testing.T) {
 	l := &learner{
 		services:        s,
 		pileLearnTicker: ticker,
+		tokens:          make(map[string]*tokenData),
 	}
 	l.env.GuardServiceAuth = "anything"
 
@@ -516,6 +525,7 @@ func TestTLS_SyncHandler_EmptyPileAndAlert(t *testing.T) {
 	l := &learner{
 		services:        s,
 		pileLearnTicker: ticker,
+		tokens:          make(map[string]*tokenData),
 	}
 	l.env.GuardServiceAuth = "anything"
 
@@ -567,6 +577,7 @@ func TestTLS_SyncHandler_WithBadReq(t *testing.T) {
 	l := &learner{
 		services:        s,
 		pileLearnTicker: ticker,
+		tokens:          make(map[string]*tokenData),
 	}
 	l.env.GuardServiceAuth = "anything"
 
@@ -613,6 +624,7 @@ func TestTLS_SyncHandler_WithGoodReq(t *testing.T) {
 	l := &learner{
 		services:        s,
 		pileLearnTicker: ticker,
+		tokens:          make(map[string]*tokenData),
 	}
 	l.env.GuardServiceAuth = "anything"
 
@@ -678,6 +690,7 @@ func TestNOTLS_SyncHandler_WithGoodReq(t *testing.T) {
 	l := &learner{
 		services:        s,
 		pileLearnTicker: ticker,
+		tokens:          make(map[string]*tokenData),
 	}
 	l.env.GuardServiceAuth = "false"
 
@@ -745,6 +758,7 @@ func TestNOTLS_SyncHandler_WithBadQuery(t *testing.T) {
 	l := &learner{
 		services:        s,
 		pileLearnTicker: ticker,
+		tokens:          make(map[string]*tokenData),
 	}
 	l.env.GuardServiceAuth = "false"
 
@@ -833,6 +847,7 @@ func Test_learner_authenticate(t *testing.T) {
 			l := &learner{
 				services:        s,
 				pileLearnTicker: ticker,
+				tokens:          make(map[string]*tokenData),
 			}
 			l.env.GuardServiceAuth = "anything"
 

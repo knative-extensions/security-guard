@@ -30,6 +30,7 @@ func TestEnvelop_V1(t *testing.T) {
 		{time.Now().Unix(), time.Now().Unix(), time.Now().Unix()},
 		{time.Now().Unix(), time.Now().Unix(), time.Now().Unix()},
 		{time.Now().Unix(), time.Now().Unix(), time.Now().Unix()},
+		{time.Now().Unix(), time.Now().Unix(), time.Now().Unix()},
 	}
 	var args []interface{}
 	var profiles []ValueProfile

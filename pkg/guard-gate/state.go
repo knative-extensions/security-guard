@@ -19,9 +19,11 @@ package guardgate
 import (
 	"context"
 	"crypto/x509"
+	"sync"
 	"time"
 
 	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
+	"knative.dev/security-guard/pkg/dselect"
 	utils "knative.dev/security-guard/pkg/guard-utils"
 	"knative.dev/security-guard/pkg/iodup"
 	pi "knative.dev/security-guard/pkg/pluginterfaces"
@@ -32,39 +34,61 @@ func logAlert(alert string) {
 }
 
 type gateState struct {
-	analyzeBody  bool
-	ctrl         *spec.Ctrl              // gate Ctrl
-	criteria     *spec.SessionDataConfig // gate Criteria
-	numSamples   uint32                  // number of samples used to create the Guardian
-	stat         utils.Stat              // gate stats
-	alert        string                  // gate alert
-	decision     *spec.Decision          // gate alert decision
-	monitorPod   bool                    // should gate profile the pod?
-	pod          spec.PodProfile         // pod profile
-	srv          *gateClient             // maintainer of the pile, include client to the guard-service & kubeApi
-	certPool     *x509.CertPool          // rootCAs
-	prevAlert    string                  // previous gate alert
-	skippedSyncs uint32                  // how many times we skipped sync?
-	lastSync     int64                   // last time we synced
-	iodups       *iodup.IoDups
-	ticks        int64
+	analyzeBody     bool
+	ctrl            *spec.Ctrl              // gate Ctrl
+	criteria        *spec.SessionDataConfig // gate Criteria
+	numSamples      uint32                  // number of samples used to create the Guardian
+	stat            utils.Stat              // gate stats
+	alert           string                  // gate alert
+	decision        *spec.Decision          // gate alert decision
+	monitorPod      bool                    // should gate profile the pod?
+	pod             spec.PodProfile         // pod profile
+	srv             *gateClient             // maintainer of the pile, include client to the guard-service & kubeApi
+	certPool        *x509.CertPool          // rootCAs
+	prevAlert       string                  // previous gate alert
+	skippedSyncs    uint32                  // how many times we skipped sync?
+	lastSync        int64                   // last time we synced
+	iodups          *iodup.IoDups
+	ticks           int64
+	ticksMutex      sync.Mutex
+	dselect         *dselect.DSelect
+	syncServiceSecs int64
+	podMonitorSecs  int64
 }
 
-func NewGateState(ctx context.Context) *gateState {
+func NewGateState(ctx context.Context, syncServiceSecs int64, podMonitorSecs int64) *gateState {
 	gs := new(gateState)
 	gs.ticks = time.Now().Unix()
-	ticker := time.NewTicker(time.Second)
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case t := <-ticker.C:
-				gs.ticks = t.Unix()
-			}
-		}
-	}()
+	gs.syncServiceSecs = syncServiceSecs
+	gs.podMonitorSecs = podMonitorSecs
+	gs.dselect = dselect.NewDSelect(ctx, gs.setTicks)
 	return gs
+}
+
+func (gs *gateState) getTicks() int64 {
+	gs.ticksMutex.Lock()
+	defer gs.ticksMutex.Unlock()
+	return gs.ticks
+}
+
+func (gs *gateState) setTicks(ticks int64) {
+	gs.ticksMutex.Lock()
+	gs.ticks = ticks
+	gs.ticksMutex.Unlock()
+
+	// Periodically sync to guard-service
+	if ticks%gs.syncServiceSecs == 0 {
+		gs.syncIfNeeded(ticks)
+	}
+
+	// Periodically profile of the pod
+	if ticks%gs.podMonitorSecs == 1 {
+		gs.profileAndDecidePod(ticks)
+	}
+}
+
+func (gs *gateState) Add(ctx context.Context, s *session) {
+	gs.dselect.Add(ctx, s.tick, s.complete, 5)
 }
 
 func (gs *gateState) init(monitorPod bool, guardServiceUrl string, podname string, sid string, ns string, useCm bool, rootCA string) {
@@ -99,7 +123,7 @@ func (gs *gateState) init(monitorPod bool, guardServiceUrl string, podname strin
 	gs.srv.initHttpClient(gs.certPool, skipVerify)
 }
 
-func (gs gateState) start() {
+func (gs *gateState) start() {
 	// Skip during simulations
 	if len(gs.srv.ns) > 0 {
 		// initializtion that cant be tested due to use of KubeAMgr
@@ -108,14 +132,14 @@ func (gs gateState) start() {
 }
 
 // sync is called periodically to send pile and alerts and to load from the updated Guardian
-func (gs *gateState) sync(shouldLoad bool, forceSync bool) {
-	if !forceSync && (gs.ticks-gs.lastSync) < MIN_TIME_BETWEEN_SYNCS {
+func (gs *gateState) sync(shouldLoad bool, forceSync bool, ticks int64) {
+	if !forceSync && (ticks-gs.lastSync) < MIN_TIME_BETWEEN_SYNCS {
 		return
 	}
 
 	gs.skippedSyncs = 0
 	// send pile and alerts and get Guardian - never returns nil!
-	g := gs.srv.syncWithServiceAndKubeApi(shouldLoad)
+	g := gs.srv.syncWithServiceAndKubeApi(ticks, shouldLoad)
 	if !shouldLoad {
 		return
 	}
@@ -145,31 +169,32 @@ func (gs *gateState) sync(shouldLoad bool, forceSync bool) {
 	pi.Log.Debugf("Loading Guardian  - Active %t Auto %t Block %t", gs.criteria.Active, gs.ctrl.Auto, gs.ctrl.Block)
 }
 
-func (gs *gateState) syncIfNeeded() {
+func (gs *gateState) syncIfNeeded(ticks int64) {
 	// if we have 10% new samples or more (otherwise wait till we get to 1000 samples)
 	if gs.numSamples < gs.srv.pile.Count*10 || len(gs.srv.alerts) > 0 {
-		gs.sync(true, false)
+		gs.sync(true, false, ticks)
+		return
 	}
 
 	// if we skipped 4 times, then this time we will sync
 	// 5 min for the default 1 min syncInterval
 	gs.skippedSyncs++
 	if gs.skippedSyncs >= 5 {
-		gs.sync(true, false)
+		gs.sync(true, false, ticks)
 	}
 }
 
 // addProfile is called every time we have a new profile ready to be added to a pile
-func (gs *gateState) addProfile(profile *spec.SessionDataProfile) {
+func (gs *gateState) addProfile(profile *spec.SessionDataProfile, ticks int64) {
 	if gs.srv.addToPile(profile) >= PILE_LIMIT {
-		gs.sync(true, false)
+		gs.sync(true, false, ticks)
 	}
 }
 
 // addAlert is called every time we have a new alert
 func (gs *gateState) addAlert(decision *spec.Decision, level string) {
 	if gs.srv.addAlert(decision, level) >= ALERTS_LIMIT {
-		gs.sync(true, false)
+		gs.sync(true, false, gs.getTicks())
 	}
 }
 
@@ -177,15 +202,15 @@ func (gs *gateState) addAlert(decision *spec.Decision, level string) {
 // Enables the POD profile to be copied to the sessio  profile for reporting to pile.
 
 // profileAndDecidePod is called periodically to profile the pod and decide if to raise an alert
-func (gs *gateState) profileAndDecidePod() {
+func (gs *gateState) profileAndDecidePod(ticks int64) {
 	if !gs.monitorPod {
 		return
 	}
-	//First profile
+	// First profile
 	gs.pod.Profile()
 
 	// Now decide
-	// Current behaviour is latching the alert forever
+	// Current behavior is latching the alert forever
 	// This makes sense from security standpoint as the pod is now considered contaminated
 	// If we are blocking, this means we will simply keep blocking all requests forever
 	// Therefore we terminate the reverse proxy
@@ -195,7 +220,7 @@ func (gs *gateState) profileAndDecidePod() {
 		if gs.decision != nil {
 			gs.logAlert()
 			if gs.shouldBlock() {
-				gs.srv.signalCompromised(gs.ticks)
+				gs.srv.signalCompromised(ticks)
 				// Terminate the reverse proxy since all requests will block from now on
 				pi.Log.Infof("Terminating")
 				gs.addStat("BlockOnPod")

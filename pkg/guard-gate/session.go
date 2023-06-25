@@ -47,9 +47,9 @@ type session struct {
 	gateState     *gateState              // maintainer of the criteria and ctrl, include pod profile, gate stats and gate level alert
 }
 
-func newSession(state *gateState, cancel context.CancelFunc) *session {
+func newSession(state *gateState, cancel context.CancelFunc, ticks int64) *session {
 	s := new(session)
-	s.reqTime = state.ticks
+	s.reqTime = ticks
 	s.respTime = s.reqTime // indicates that we do not know the response time
 	s.gateState = state
 	s.cancelFunc = cancel
@@ -98,62 +98,52 @@ func (s *session) logAlert() {
 	s.gateState.addAlert(s.decision, "Session")
 }
 
-func (s *session) sessionEventLoop(ctx context.Context) {
+func (s *session) complete(ticks int64) {
+	s.sessionTicker.Stop()
 
-	s.sessionTicker.Start()
-
-	defer func() {
-		s.sessionTicker.Stop()
-
-		// Should we learn?
-		if s.gateState.shouldLearn(s.hasAlert()) && s.gotResponse {
-			s.gateState.addProfile(&s.profile)
-		}
-
-		// Should we alert?
-		if s.gateState.hasAlert() {
-			s.gateState.addStat("BlockOnPod")
-			return
-		}
-		if s.hasAlert() {
-			s.logAlert()
-			return
-		}
-		// no alert
-		if !s.gotResponse {
-			pi.Log.Debugf("No Alert but completed before receiving a response!")
-			s.gateState.addStat("NoResponse")
-			return
-		}
-		if s.gateState.criteria == nil {
-			pi.Log.Debugf("No Alert since no criteria")
-			s.gateState.addStat("NoAlertNoCriteria")
-			return
-		}
-		if !s.gateState.criteria.Active {
-			pi.Log.Debugf("No Alert since criteria is not active")
-			s.gateState.addStat("NoAlertCriteriaNotActive")
-			return
-		}
-		pi.Log.Debugf("No Alert!")
-		s.gateState.addStat("NoAlert")
-	}()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-s.sessionTicker.Ch():
-			s.screenEnvelop()
-			s.screenPod()
-			if s.gateState.shouldBlock() && (s.hasAlert() || s.gateState.hasAlert()) {
-				pi.Log.Debugf("Request processing canceled during sessionTicker")
-				s.cancel()
-				return
-			}
-			pi.Log.Debugf("Session Tick")
-		}
+	// Should we learn?
+	if s.gateState.shouldLearn(s.hasAlert()) && s.gotResponse {
+		s.gateState.addProfile(&s.profile, ticks)
 	}
+
+	// Should we alert?
+	if s.gateState.hasAlert() {
+		s.gateState.addStat("BlockOnPod")
+		return
+	}
+	if s.hasAlert() {
+		s.logAlert()
+		return
+	}
+	// no alert
+	if !s.gotResponse {
+		pi.Log.Debugf("No Alert but completed before receiving a response!")
+		s.gateState.addStat("NoResponse")
+		return
+	}
+	if s.gateState.criteria == nil {
+		pi.Log.Debugf("No Alert since no criteria")
+		s.gateState.addStat("NoAlertNoCriteria")
+		return
+	}
+	if !s.gateState.criteria.Active {
+		pi.Log.Debugf("No Alert since criteria is not active")
+		s.gateState.addStat("NoAlertCriteriaNotActive")
+		return
+	}
+	pi.Log.Debugf("No Alert!")
+	s.gateState.addStat("NoAlert")
+}
+
+func (s *session) tick(ticks int64) {
+	s.screenEnvelop(ticks)
+	s.screenPod()
+	if s.gateState.shouldBlock() && (s.hasAlert() || s.gateState.hasAlert()) {
+		pi.Log.Debugf("Request processing canceled during sessionTicker")
+		s.cancel()
+		return
+	}
+	pi.Log.Debugf("Session Tick")
 }
 
 func (s *session) screenResponseBody(resp *http.Response) {
@@ -293,13 +283,13 @@ func (s *session) screenRequestBody(req *http.Request) {
 	s.gateState.decideReqBody(&s.decision, &s.profile.ReqBody)
 }
 
-func (s *session) screenEnvelop() {
+func (s *session) screenEnvelop(ticks int64) {
 	respTime := s.respTime
-	if s.reqTime <= s.gateState.ticks {
+	if s.reqTime <= ticks {
 		// we do not know the response time, lets assume it is now
-		respTime = s.gateState.ticks
+		respTime = ticks
 	}
-	s.profile.Envelop.Profile(s.reqTime, respTime, s.gateState.ticks)
+	s.profile.Envelop.Profile(s.reqTime, respTime, ticks)
 
 	s.gateState.decideEnvelop(&s.decision, &s.profile.Envelop)
 }
@@ -323,8 +313,8 @@ func (s *session) screenRequest(req *http.Request) {
 	s.gateState.decideReq(&s.decision, &s.profile.Req)
 }
 
-func (s *session) screenResponse(resp *http.Response) {
-	s.respTime = s.gateState.ticks
+func (s *session) screenResponse(resp *http.Response, ticks int64) {
+	s.respTime = ticks
 	s.profile.Resp.Profile(resp)
 
 	s.gateState.decideResp(&s.decision, &s.profile.Resp)
