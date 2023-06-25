@@ -200,7 +200,9 @@ func (p *plug) preInit(ctx context.Context, c map[string]string, sid string, ns 
 		syncServiceSecs = int64(d.Seconds())
 	} else {
 		syncServiceSecs = 60
-		pi.Log.Errorf("interval illegal value %s - using default value instead (err: %v)", syncInterval, err)
+		if syncInterval != "" {
+			pi.Log.Errorf("interval illegal value %s - using default value instead (err: %v)", syncInterval, err)
+		}
 	}
 
 	d, err = time.ParseDuration(monitorInterval)
@@ -208,7 +210,9 @@ func (p *plug) preInit(ctx context.Context, c map[string]string, sid string, ns 
 		podMonitorSecs = int64(d.Seconds())
 	} else {
 		podMonitorSecs = 5
-		pi.Log.Errorf("interval illegal value %s - using default value instead (err: %v)", monitorInterval, err)
+		if monitorInterval == "" {
+			pi.Log.Errorf("interval illegal value %s - using default value instead (err: %v)", monitorInterval, err)
+		}
 	}
 
 	p.gateState = NewGateState(ctx, syncServiceSecs, podMonitorSecs, monitorPod, guardServiceUrl, podname, sid, ns, !useCrd, rootCA)
