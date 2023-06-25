@@ -38,11 +38,6 @@ const (
 	maxBody    = int64(1048576)
 )
 
-const (
-	syncIntervalDefault       = 60 * time.Second
-	podMonitorIntervalDefault = 5 * time.Second
-)
-
 var errSecurity error = errors.New("security blocked by guard")
 
 type ctxKey string
