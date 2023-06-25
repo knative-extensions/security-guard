@@ -25,7 +25,6 @@ import (
 	"net/http"
 
 	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
-	utils "knative.dev/security-guard/pkg/guard-utils"
 	pi "knative.dev/security-guard/pkg/pluginterfaces"
 )
 
@@ -37,14 +36,13 @@ const (
 )
 
 type session struct {
-	sessionTicker *utils.Ticker
-	gotResponse   bool
-	decision      *spec.Decision          // session alert decision
-	reqTime       int64                   // time when session was started
-	respTime      int64                   // time when session response came
-	cancelFunc    context.CancelFunc      // cancel the session
-	profile       spec.SessionDataProfile // maintainer of the session profile
-	gateState     *gateState              // maintainer of the criteria and ctrl, include pod profile, gate stats and gate level alert
+	gotResponse bool
+	decision    *spec.Decision          // session alert decision
+	reqTime     int64                   // time when session was started
+	respTime    int64                   // time when session response came
+	cancelFunc  context.CancelFunc      // cancel the session
+	profile     spec.SessionDataProfile // maintainer of the session profile
+	gateState   *gateState              // maintainer of the criteria and ctrl, include pod profile, gate stats and gate level alert
 }
 
 func newSession(state *gateState, cancel context.CancelFunc, ticks int64) *session {
@@ -53,10 +51,6 @@ func newSession(state *gateState, cancel context.CancelFunc, ticks int64) *sessi
 	s.respTime = s.reqTime // indicates that we do not know the response time
 	s.gateState = state
 	s.cancelFunc = cancel
-	s.sessionTicker = utils.NewTicker(utils.MinimumInterval)
-	if err := s.sessionTicker.Parse("", podMonitorIntervalDefault); err != nil {
-		pi.Log.Debugf("Error on Ticker Parse: %v", err)
-	}
 	state.addStat("Total")
 	return s
 }
@@ -99,8 +93,6 @@ func (s *session) logAlert() {
 }
 
 func (s *session) complete(ticks int64) {
-	s.sessionTicker.Stop()
-
 	// Should we learn?
 	if s.gateState.shouldLearn(s.hasAlert()) && s.gotResponse {
 		s.gateState.addProfile(&s.profile, ticks)
