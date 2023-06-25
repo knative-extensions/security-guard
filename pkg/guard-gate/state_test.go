@@ -31,8 +31,7 @@ import (
 var gateCanceled int
 
 func fakeGateState() *gateState {
-	gs := NewGateState(context.Background(), 1, 1)
-	gs.init(false, "myurl", "mypodname", "mysid", "myns", true, "")
+	gs := NewGateState(context.Background(), 1, 1, false, "myurl", "mypodname", "mysid", "myns", true, "")
 	bytes, _ := json.Marshal(spec.Guardian{})
 	srv, _ := fakeClient(http.StatusOK, string(bytes))
 	gs.srv = srv

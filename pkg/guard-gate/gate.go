@@ -211,11 +211,8 @@ func (p *plug) preInit(ctx context.Context, c map[string]string, sid string, ns 
 		pi.Log.Errorf("interval illegal value %s - using default value instead (err: %v)", monitorInterval, err)
 	}
 
-	p.gateState = NewGateState(ctx, syncServiceSecs, podMonitorSecs)
+	p.gateState = NewGateState(ctx, syncServiceSecs, podMonitorSecs, monitorPod, guardServiceUrl, podname, sid, ns, !useCrd, rootCA)
 	p.gateState.analyzeBody = analyzeBody
-
-	// p.gateState.init uses a `useCm` flag
-	p.gateState.init(monitorPod, guardServiceUrl, podname, sid, ns, !useCrd, rootCA)
 
 	pi.Log.Infof("guard-gate: Secured Communication %t (CERT Verification %t AUTH Token %t)", p.gateState.srv.certVerifyActive && p.gateState.srv.tokenActive, p.gateState.srv.certVerifyActive, p.gateState.srv.tokenActive)
 }

@@ -56,11 +56,12 @@ type gateState struct {
 	podMonitorSecs  int64
 }
 
-func NewGateState(ctx context.Context, syncServiceSecs int64, podMonitorSecs int64) *gateState {
+func NewGateState(ctx context.Context, syncServiceSecs int64, podMonitorSecs int64, monitorPod bool, guardServiceUrl string, podname string, sid string, ns string, useCm bool, rootCA string) *gateState {
 	gs := new(gateState)
 	gs.ticks = time.Now().Unix()
 	gs.syncServiceSecs = syncServiceSecs
 	gs.podMonitorSecs = podMonitorSecs
+	gs.init(monitorPod, guardServiceUrl, podname, sid, ns, useCm, rootCA)
 	gs.dselect = dselect.NewDSelect(ctx, gs.setTicks)
 	return gs
 }
@@ -72,13 +73,20 @@ func (gs *gateState) getTicks() int64 {
 }
 
 func (gs *gateState) setTicks(ticks int64) {
+	shouldSync := false
+
 	gs.ticksMutex.Lock()
 	gs.ticks = ticks
+
+	gs.skippedSyncs++
+	if gs.numSamples < gs.srv.pile.Count*10 || len(gs.srv.alerts) > 0 || gs.skippedSyncs >= 5 {
+		shouldSync = true
+	}
 	gs.ticksMutex.Unlock()
 
 	// Periodically sync to guard-service
-	if ticks%gs.syncServiceSecs == 0 {
-		gs.syncIfNeeded(ticks)
+	if shouldSync && (ticks%gs.syncServiceSecs == 0) {
+		gs.sync(true, false, ticks)
 	}
 
 	// Periodically profile of the pod
@@ -136,8 +144,9 @@ func (gs *gateState) sync(shouldLoad bool, forceSync bool, ticks int64) {
 	if !forceSync && (ticks-gs.lastSync) < MIN_TIME_BETWEEN_SYNCS {
 		return
 	}
-
+	gs.ticksMutex.Lock()
 	gs.skippedSyncs = 0
+	gs.ticksMutex.Unlock()
 	// send pile and alerts and get Guardian - never returns nil!
 	g := gs.srv.syncWithServiceAndKubeApi(ticks, shouldLoad)
 	if !shouldLoad {
@@ -145,7 +154,9 @@ func (gs *gateState) sync(shouldLoad bool, forceSync bool, ticks int64) {
 	}
 
 	// load guardian
+	gs.ticksMutex.Lock()
 	gs.numSamples = g.NumSamples
+	gs.ticksMutex.Unlock()
 
 	// Set the correct Control
 	if gs.ctrl = g.Control; gs.ctrl == nil {
@@ -169,8 +180,10 @@ func (gs *gateState) sync(shouldLoad bool, forceSync bool, ticks int64) {
 	pi.Log.Debugf("Loading Guardian  - Active %t Auto %t Block %t", gs.criteria.Active, gs.ctrl.Auto, gs.ctrl.Block)
 }
 
+/*
 func (gs *gateState) syncIfNeeded(ticks int64) {
 	// if we have 10% new samples or more (otherwise wait till we get to 1000 samples)
+
 	if gs.numSamples < gs.srv.pile.Count*10 || len(gs.srv.alerts) > 0 {
 		gs.sync(true, false, ticks)
 		return
@@ -183,7 +196,7 @@ func (gs *gateState) syncIfNeeded(ticks int64) {
 		gs.sync(true, false, ticks)
 	}
 }
-
+*/
 // addProfile is called every time we have a new profile ready to be added to a pile
 func (gs *gateState) addProfile(profile *spec.SessionDataProfile, ticks int64) {
 	if gs.srv.addToPile(profile) >= PILE_LIMIT {
