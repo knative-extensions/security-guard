@@ -69,7 +69,7 @@ func (l *learner) getToken(token string) *tokenData {
 	l.tokenMutex.Lock()
 	defer l.tokenMutex.Unlock()
 	td := l.tokens[token]
-	if ticks-td.ticks > 3600 {
+	if td != nil && ticks-td.ticks > 3600 {
 		// 60 min  - cahce out
 		delete(l.tokens, token)
 		return nil
