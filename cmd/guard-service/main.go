@@ -49,12 +49,14 @@ type tokenData struct {
 	podname string
 	sid     string
 	ns      string
+	ticks   int64
 }
 type learner struct {
-	services        *services
-	pileLearnTicker *utils.Ticker
-	env             config
-	srv             *http.Server
+	services          *services
+	pileLearnTicker   *utils.Ticker
+	chacheTokenTicker *utils.Ticker
+	env               config
+	srv               *http.Server
 
 	// Tokens
 	tokenMutex sync.Mutex
@@ -62,15 +64,41 @@ type learner struct {
 }
 
 func (l *learner) getToken(token string) *tokenData {
+	ticks := time.Now().Unix()
+
 	l.tokenMutex.Lock()
 	defer l.tokenMutex.Unlock()
-	return l.tokens[token]
+	td := l.tokens[token]
+	if ticks-td.ticks > 3600 {
+		// 60 min  - cahce out
+		delete(l.tokens, token)
+		return nil
+	}
+	return td
 }
 
 func (l *learner) setToken(token string, td *tokenData) {
+	ticks := time.Now().Unix()
+	td.ticks = ticks
+
 	l.tokenMutex.Lock()
 	defer l.tokenMutex.Unlock()
 	l.tokens[token] = td
+
+}
+
+func (l *learner) chacheOutTokens() {
+	tokens := make(map[string]*tokenData)
+	ticks := time.Now().Unix()
+
+	l.tokenMutex.Lock()
+	defer l.tokenMutex.Unlock()
+	for token, td := range l.tokens {
+		if ticks-td.ticks < 3600 {
+			tokens[token] = td
+		}
+	}
+	l.tokens = tokens
 }
 
 func (l *learner) authenticate(req *http.Request) (podname string, sid string, ns string, err error) {
@@ -268,6 +296,8 @@ func (l *learner) mainEventProcessing(quit <-chan bool, kill <-chan os.Signal) b
 	case <-l.pileLearnTicker.Ch():
 		// no reenterncy! No need to protect tick() only data with mutex
 		l.services.tick()
+	case <-l.chacheTokenTicker.Ch():
+		l.chacheOutTokens()
 	case reason := <-kill:
 		pi.Log.Infof("mainEventLoop received kill signal: %s", reason.String())
 		shutdownCtx, shutdownRelease := context.WithTimeout(context.Background(), 10*time.Second)
@@ -304,6 +334,9 @@ func (l *learner) init() (srv *http.Server, quit chan bool, flushed chan bool) {
 
 	l.pileLearnTicker = utils.NewTicker(time.Second)
 	l.pileLearnTicker.Start()
+
+	l.chacheTokenTicker = utils.NewTicker(time.Minute * 10)
+	l.chacheTokenTicker.Start()
 
 	l.services = newServices()
 
