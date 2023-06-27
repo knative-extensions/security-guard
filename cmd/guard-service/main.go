@@ -27,6 +27,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -44,12 +45,60 @@ type config struct {
 	GuardServiceLabels   []string `split_words:"true" required:"false"`
 	GuardServiceTls      string   `split_words:"true" required:"false"`
 }
-
+type tokenData struct {
+	podname string
+	sid     string
+	ns      string
+	ticks   int64
+}
 type learner struct {
-	services        *services
-	pileLearnTicker *utils.Ticker
-	env             config
-	srv             *http.Server
+	services          *services
+	pileLearnTicker   *utils.Ticker
+	chacheTokenTicker *utils.Ticker
+	env               config
+	srv               *http.Server
+
+	// Tokens
+	tokenMutex sync.Mutex
+	tokens     map[string]*tokenData
+}
+
+func (l *learner) getToken(token string) *tokenData {
+	ticks := time.Now().Unix()
+
+	l.tokenMutex.Lock()
+	defer l.tokenMutex.Unlock()
+	td := l.tokens[token]
+	if td != nil && ticks-td.ticks > 3600 {
+		// 60 min  - cahce out
+		delete(l.tokens, token)
+		return nil
+	}
+	return td
+}
+
+func (l *learner) setToken(token string, td *tokenData) {
+	ticks := time.Now().Unix()
+	td.ticks = ticks
+
+	l.tokenMutex.Lock()
+	defer l.tokenMutex.Unlock()
+	l.tokens[token] = td
+
+}
+
+func (l *learner) chacheOutTokens() {
+	tokens := make(map[string]*tokenData)
+	ticks := time.Now().Unix()
+
+	l.tokenMutex.Lock()
+	defer l.tokenMutex.Unlock()
+	for token, td := range l.tokens {
+		if ticks-td.ticks < 3600 {
+			tokens[token] = td
+		}
+	}
+	l.tokens = tokens
 }
 
 func (l *learner) authenticate(req *http.Request) (podname string, sid string, ns string, err error) {
@@ -59,6 +108,12 @@ func (l *learner) authenticate(req *http.Request) (podname string, sid string, n
 		return
 	}
 	token = token[7:]
+
+	// Check token cache
+	if tokenData := l.getToken(token); tokenData != nil {
+		return tokenData.podname, tokenData.sid, tokenData.ns, nil
+	}
+
 	podname, sid, ns, err = l.services.kmgr.TokenData(token, l.env.GuardServiceLabels)
 	if err != nil {
 		err = fmt.Errorf("cant verify token %w", err)
@@ -68,6 +123,11 @@ func (l *learner) authenticate(req *http.Request) (podname string, sid string, n
 		err = fmt.Errorf("token of a service with illegal name %s", sid)
 		return
 	}
+	l.setToken(token, &tokenData{
+		podname: podname,
+		sid:     sid,
+		ns:      ns,
+	})
 	return
 }
 
@@ -236,6 +296,8 @@ func (l *learner) mainEventProcessing(quit <-chan bool, kill <-chan os.Signal) b
 	case <-l.pileLearnTicker.Ch():
 		// no reenterncy! No need to protect tick() only data with mutex
 		l.services.tick()
+	case <-l.chacheTokenTicker.Ch():
+		l.chacheOutTokens()
 	case reason := <-kill:
 		pi.Log.Infof("mainEventLoop received kill signal: %s", reason.String())
 		shutdownCtx, shutdownRelease := context.WithTimeout(context.Background(), 10*time.Second)
@@ -268,8 +330,13 @@ func (l *learner) mainEventLoop(quit <-chan bool, flushed chan<- bool, kill <-ch
 
 // initialization of the lerner + prepare the web service
 func (l *learner) init() (srv *http.Server, quit chan bool, flushed chan bool) {
+	l.tokens = make(map[string]*tokenData)
+
 	l.pileLearnTicker = utils.NewTicker(time.Second)
 	l.pileLearnTicker.Start()
+
+	l.chacheTokenTicker = utils.NewTicker(time.Minute * 10)
+	l.chacheTokenTicker.Start()
 
 	l.services = newServices()
 

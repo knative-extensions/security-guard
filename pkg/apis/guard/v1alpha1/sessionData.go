@@ -19,7 +19,6 @@ package v1alpha1
 import (
 	"net"
 	"net/http"
-	"time"
 )
 
 //////////////////// SessionDataProfile ////////////////
@@ -40,13 +39,13 @@ func (profile *SessionDataProfile) profileI(args ...interface{}) {
 	resp := args[2].(*http.Response)
 	reqData := args[3]
 	respData := args[4]
-	reqTime := args[5].(time.Time)
-	respTime := args[6].(time.Time)
-	endTime := args[7].(time.Time)
+	reqTime := args[5].(int64)
+	respTime := args[6].(int64)
+	endTime := args[7].(int64)
 	profile.Profile(req, cip, resp, reqData, respData, reqTime, respTime, endTime)
 }
 
-func (profile *SessionDataProfile) Profile(req *http.Request, cip net.IP, resp *http.Response, reqData interface{}, respData interface{}, reqTime time.Time, respTime time.Time, endTime time.Time) {
+func (profile *SessionDataProfile) Profile(req *http.Request, cip net.IP, resp *http.Response, reqData interface{}, respData interface{}, reqTime int64, respTime int64, endTime int64) {
 	// never used
 	profile.Req.Profile(req, cip)
 	profile.Resp.Profile(resp)

@@ -59,25 +59,34 @@ func testStatus(txt string, s *services, t *testing.T, pile uint32, guardian uin
 	}
 }
 
+func testLearner() *learner {
+	s := new(services)
+	s.cache = make(map[string]*serviceRecord, 64)
+	s.namespaces = make(map[string]bool, 4)
+	s.kmgr = new(fakeKmgr)
+
+	ticker := utils.NewTicker(100000)
+	ticker2 := utils.NewTicker(100000)
+	l := &learner{
+		services:          s,
+		pileLearnTicker:   ticker,
+		chacheTokenTicker: ticker2,
+		tokens:            make(map[string]*tokenData),
+	}
+	return l
+}
+
 func Test_learner_mainEventLoop(t *testing.T) {
 	t.Run("simple", func(t *testing.T) {
 		quit := make(chan bool, 1)
 		flushed := make(chan bool, 1)
 
 		// services
-		s := new(services)
-		s.cache = make(map[string]*serviceRecord, 64)
-		s.namespaces = make(map[string]bool, 4)
-		s.kmgr = new(fakeKmgr)
-
-		ticker := utils.NewTicker(100000)
-		ticker.Parse("", 100000)
-		ticker.Start()
+		l := testLearner()
+		l.pileLearnTicker.Start()
 		kill := make(chan os.Signal, 1)
-		l := &learner{
-			services:        s,
-			pileLearnTicker: ticker,
-		}
+		s := l.services
+
 		for i := uint(1); i <= 10; i++ {
 			addSample(s)
 			// 10% rule - immediate learning
@@ -192,18 +201,8 @@ func Test_NOTLS_learner_baseHandler(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		// services
-		s := new(services)
-		s.cache = make(map[string]*serviceRecord, 64)
-		s.namespaces = make(map[string]bool, 4)
-		s.kmgr = new(fakeKmgr)
-
-		ticker := utils.NewTicker(100000)
 		t.Run(tt.name, func(t *testing.T) {
-			l := &learner{
-				services:        s,
-				pileLearnTicker: ticker,
-			}
+			l := testLearner()
 			l.env.GuardServiceAuth = "false"
 			gotCmFlag, gotPod, gotSid, gotNs, gotErr := l.queryDataNoAuth(tt.query)
 			if tt.wantErr == (gotErr == nil) {
@@ -259,18 +258,8 @@ func Test_TLS_learner_baseHandler(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		// services
-		s := new(services)
-		s.cache = make(map[string]*serviceRecord, 64)
-		s.namespaces = make(map[string]bool, 4)
-		s.kmgr = new(fakeKmgr)
-
-		ticker := utils.NewTicker(100000)
 		t.Run(tt.name, func(t *testing.T) {
-			l := &learner{
-				services:        s,
-				pileLearnTicker: ticker,
-			}
+			l := testLearner()
 			l.env.GuardServiceAuth = "anything"
 			gotCmFlag, gotErr := l.queryDataAuth(tt.query)
 			if tt.wantErr == (gotErr == nil) {
@@ -293,16 +282,7 @@ func TestTLS_SyncHandler_MissingToken(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := new(services)
-	s.cache = make(map[string]*serviceRecord, 64)
-	s.namespaces = make(map[string]bool, 4)
-	s.kmgr = new(fakeKmgr)
-
-	ticker := utils.NewTicker(100000)
-	l := &learner{
-		services:        s,
-		pileLearnTicker: ticker,
-	}
+	l := testLearner()
 	l.env.GuardServiceAuth = "anything"
 
 	// We create a ResponseRecorder (which satisfies http.ResponseWriter) to record the response.
@@ -330,16 +310,7 @@ func TestTLS_SyncHandler_MissingToken(t *testing.T) {
 }
 
 func TestNOTLS_SyncHandler_main(t *testing.T) {
-	s := new(services)
-	s.cache = make(map[string]*serviceRecord, 64)
-	s.namespaces = make(map[string]bool, 4)
-	s.kmgr = new(fakeKmgr)
-
-	ticker := utils.NewTicker(100000)
-	l := &learner{
-		services:        s,
-		pileLearnTicker: ticker,
-	}
+	l := testLearner()
 
 	l.env.GuardServiceAuth = "false"
 	l.env.GuardServiceTls = "false"
@@ -354,16 +325,7 @@ func TestNOTLS_SyncHandler_main(t *testing.T) {
 }
 
 func TestTLS_SyncHandler_main(t *testing.T) {
-	s := new(services)
-	s.cache = make(map[string]*serviceRecord, 64)
-	s.namespaces = make(map[string]bool, 4)
-	s.kmgr = new(fakeKmgr)
-
-	ticker := utils.NewTicker(100000)
-	l := &learner{
-		services:        s,
-		pileLearnTicker: ticker,
-	}
+	l := testLearner()
 
 	l.env.GuardServiceAuth = "anything"
 	l.env.GuardServiceTls = "anything"
@@ -378,16 +340,7 @@ func TestTLS_SyncHandler_main(t *testing.T) {
 }
 
 func TestTLS_SyncHandler_NotPOST(t *testing.T) {
-	s := new(services)
-	s.cache = make(map[string]*serviceRecord, 64)
-	s.namespaces = make(map[string]bool, 4)
-	s.kmgr = new(fakeKmgr)
-
-	ticker := utils.NewTicker(100000)
-	l := &learner{
-		services:        s,
-		pileLearnTicker: ticker,
-	}
+	l := testLearner()
 	l.env.GuardServiceAuth = "anything"
 
 	// Create a request to pass to our handler. We don't have any query parameters for now, so we'll
@@ -421,16 +374,7 @@ func TestTLS_SyncHandler_NotPOST(t *testing.T) {
 }
 
 func TestTLS_badUrl(t *testing.T) {
-	s := new(services)
-	s.cache = make(map[string]*serviceRecord, 64)
-	s.namespaces = make(map[string]bool, 4)
-	s.kmgr = new(fakeKmgr)
-
-	ticker := utils.NewTicker(100000)
-	l := &learner{
-		services:        s,
-		pileLearnTicker: ticker,
-	}
+	l := testLearner()
 	l.env.GuardServiceAuth = "anything"
 
 	// Create a request to pass to our handler. We don't have any query parameters for now, so we'll
@@ -464,16 +408,7 @@ func TestTLS_badUrl(t *testing.T) {
 }
 
 func TestTLS_SyncHandler_NoReqBody(t *testing.T) {
-	s := new(services)
-	s.cache = make(map[string]*serviceRecord, 64)
-	s.namespaces = make(map[string]bool, 4)
-	s.kmgr = new(fakeKmgr)
-
-	ticker := utils.NewTicker(100000)
-	l := &learner{
-		services:        s,
-		pileLearnTicker: ticker,
-	}
+	l := testLearner()
 	l.env.GuardServiceAuth = "anything"
 
 	// Create a request to pass to our handler. We don't have any query parameters for now, so we'll
@@ -507,19 +442,10 @@ func TestTLS_SyncHandler_NoReqBody(t *testing.T) {
 }
 
 func TestTLS_SyncHandler_EmptyPileAndAlert(t *testing.T) {
-	s := new(services)
-	s.cache = make(map[string]*serviceRecord, 64)
-	s.namespaces = make(map[string]bool, 4)
-	s.kmgr = new(fakeKmgr)
-
-	ticker := utils.NewTicker(100000)
-	l := &learner{
-		services:        s,
-		pileLearnTicker: ticker,
-	}
+	l := testLearner()
 	l.env.GuardServiceAuth = "anything"
 
-	record := s.get("ns", "sid9", false)
+	record := l.services.get("ns", "sid9", false)
 	postBody, _ := json.Marshal(&record.pile)
 	reqBody := bytes.NewBuffer(postBody)
 
@@ -558,16 +484,7 @@ func TestTLS_SyncHandler_EmptyPileAndAlert(t *testing.T) {
 }
 
 func TestTLS_SyncHandler_WithBadReq(t *testing.T) {
-	s := new(services)
-	s.cache = make(map[string]*serviceRecord, 64)
-	s.namespaces = make(map[string]bool, 4)
-	s.kmgr = new(fakeKmgr)
-
-	ticker := utils.NewTicker(100000)
-	l := &learner{
-		services:        s,
-		pileLearnTicker: ticker,
-	}
+	l := testLearner()
 	l.env.GuardServiceAuth = "anything"
 
 	postBody, _ := json.Marshal("xx")
@@ -604,16 +521,7 @@ func TestTLS_SyncHandler_WithBadReq(t *testing.T) {
 }
 
 func TestTLS_SyncHandler_WithGoodReq(t *testing.T) {
-	s := new(services)
-	s.cache = make(map[string]*serviceRecord, 64)
-	s.namespaces = make(map[string]bool, 4)
-	s.kmgr = new(fakeKmgr)
-
-	ticker := utils.NewTicker(100000)
-	l := &learner{
-		services:        s,
-		pileLearnTicker: ticker,
-	}
+	l := testLearner()
 	l.env.GuardServiceAuth = "anything"
 
 	var syncReq spec.SyncMessageReq
@@ -668,17 +576,9 @@ func TestTLS_SyncHandler_WithGoodReq(t *testing.T) {
 			rr.Body.String(), string(buf))
 	}
 }
-func TestNOTLS_SyncHandler_WithGoodReq(t *testing.T) {
-	s := new(services)
-	s.cache = make(map[string]*serviceRecord, 64)
-	s.namespaces = make(map[string]bool, 4)
-	s.kmgr = new(fakeKmgr)
 
-	ticker := utils.NewTicker(100000)
-	l := &learner{
-		services:        s,
-		pileLearnTicker: ticker,
-	}
+func TestNOTLS_SyncHandler_WithGoodReq(t *testing.T) {
+	l := testLearner()
 	l.env.GuardServiceAuth = "false"
 
 	var syncReq spec.SyncMessageReq
@@ -736,16 +636,7 @@ func TestNOTLS_SyncHandler_WithGoodReq(t *testing.T) {
 }
 
 func TestNOTLS_SyncHandler_WithBadQuery(t *testing.T) {
-	s := new(services)
-	s.cache = make(map[string]*serviceRecord, 64)
-	s.namespaces = make(map[string]bool, 4)
-	s.kmgr = new(fakeKmgr)
-
-	ticker := utils.NewTicker(100000)
-	l := &learner{
-		services:        s,
-		pileLearnTicker: ticker,
-	}
+	l := testLearner()
 	l.env.GuardServiceAuth = "false"
 
 	var syncReq spec.SyncMessageReq
@@ -824,16 +715,7 @@ func Test_learner_authenticate(t *testing.T) {
 			}
 			req.Header.Add("Authorization", tt.authorization)
 
-			s := new(services)
-			s.cache = make(map[string]*serviceRecord, 64)
-			s.namespaces = make(map[string]bool, 4)
-			s.kmgr = new(fakeKmgr)
-
-			ticker := utils.NewTicker(100000)
-			l := &learner{
-				services:        s,
-				pileLearnTicker: ticker,
-			}
+			l := testLearner()
 			l.env.GuardServiceAuth = "anything"
 
 			gotPodname, gotSid, gotNs, err := l.authenticate(req)

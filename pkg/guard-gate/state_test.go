@@ -17,12 +17,13 @@ limitations under the License.
 package guardgate
 
 import (
+	"context"
+	"crypto/x509"
 	"encoding/json"
 	"net"
 	"net/http"
 	"reflect"
 	"testing"
-	"time"
 
 	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
 )
@@ -30,8 +31,7 @@ import (
 var gateCanceled int
 
 func fakeGateState() *gateState {
-	gs := new(gateState)
-	gs.init(false, "myurl", "mypodname", "mysid", "myns", true, "")
+	gs := NewGateState(context.Background(), 1, 1, false, "myurl", "mypodname", "mysid", "myns", true, "")
 	bytes, _ := json.Marshal(spec.Guardian{})
 	srv, _ := fakeClient(http.StatusOK, string(bytes))
 	gs.srv = srv
@@ -44,12 +44,12 @@ func Test_gateState_sync(t *testing.T) {
 
 		gs := fakeGateState()
 
-		gs.sync(true, false)
+		gs.sync(true, false, gs.getTicks())
 		if gs.criteria == nil || gs.ctrl == nil {
 			t.Error("nil after load")
 		}
 		gs.criteria.Active = false
-		gs.profileAndDecidePod()
+		gs.profileAndDecidePod(gs.getTicks())
 		if gateCanceled != 0 {
 			t.Error("expected no cancel")
 		}
@@ -59,7 +59,7 @@ func Test_gateState_sync(t *testing.T) {
 		gs.monitorPod = true
 		gs.criteria.Active = true
 		gateCanceled = 0
-		gs.profileAndDecidePod()
+		gs.profileAndDecidePod(gs.getTicks())
 
 		var pp spec.PodProfile
 		gs.monitorPod = false
@@ -86,14 +86,14 @@ func Test_gateState_sync(t *testing.T) {
 
 		// envelop
 		ep := new(spec.EnvelopProfile)
-		now := time.Now()
+		now := int64(1000)
 		ep.Profile(now, now, now)
 		decision = nil
 		if gs.decideEnvelop(&decision, ep); decision != nil {
 			t.Error("expected no alert")
 		}
 		decision = nil
-		ep.Profile(time.Unix(1, 1), time.Unix(3, 3), time.Unix(5, 5))
+		ep.Profile(1, 3, 2)
 		if gs.decideEnvelop(&decision, ep); decision == nil {
 			t.Error("expected alert")
 		}
@@ -152,16 +152,16 @@ func Test_gateState_sync(t *testing.T) {
 			t.Error("expected alert")
 		}
 
-		gs.sync(true, false)
+		gs.sync(true, false, gs.getTicks())
 		if gs.srv.pile.Count != 0 {
 			t.Error("expected pile too have 1")
 		}
 		profile := new(spec.SessionDataProfile)
-		gs.addProfile(profile)
+		gs.addProfile(profile, gs.getTicks())
 		if gs.srv.pile.Count != 1 {
 			t.Error("expected pile too have 1")
 		}
-		gs.sync(true, false)
+		gs.sync(true, false, gs.getTicks())
 		if gs.srv.pile.Count != 0 {
 			t.Error("expected pile too have 0")
 		}
@@ -192,15 +192,15 @@ func Test_gateState_init(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gs := new(gateState)
-			// certPool, _ := x509.SystemCertPool()
+			certPool, _ := x509.SystemCertPool()
 			gs.init(false, "myurl", "mypodname", "mysid", "myns", true, tt.cert)
 			// TBD will be added when we move to go 1.19
-			// if !certPool.Equal(gs.certPool) && !tt.newCA {
-			// 	 t.Errorf("expected no new cert to be added")
-			// }
-			// if certPool.Equal(gs.certPool) && tt.newCA {
-			//	 t.Errorf("expected new cert to be added")
-			// }
+			if !certPool.Equal(gs.certPool) && !tt.newCA {
+				t.Errorf("expected no new cert to be added")
+			}
+			if certPool.Equal(gs.certPool) && tt.newCA {
+				t.Errorf("expected new cert to be added")
+			}
 		})
 	}
 }

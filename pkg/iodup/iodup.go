@@ -19,6 +19,8 @@ package iodup
 import (
 	"fmt"
 	"io"
+	_ "net/http/pprof"
+	"sync"
 	"time"
 )
 
@@ -30,88 +32,113 @@ type Out struct {
 
 type Iodup struct {
 	inBuf      []byte
-	Output     []*Out
+	output     []*Out
 	bufs       [][]byte
 	inBufIndex uint
-	numBufs    uint
-	numOutputs uint
-	sizeBuf    uint
 	src        io.ReadCloser
 }
 
-// Create a New iodup to wrap an existing provider of an io.ReadCloser interface
-// The new iodup.out[] will expose an io.ReadCloser interface
+const (
+	numOutputs uint = 2
+	numBufs    uint = 128
+	sizeBuf    uint = 8192
+)
+
+type IoDups struct {
+	stashed []*Iodup   // Iodup cache
+	mutex   sync.Mutex //protects Iodup cahce
+
+	// the iodups defaults for this cache
+	numOutputs uint
+	numBufs    uint
+	sizeBuf    uint
+}
+
+// NewIoDups creates iodups cache and set the iodups defaults
 // The optional params may include 3 optional integers as parameters:
 // 1. The number of outputs (default is 2)
 // 2. The number of buffers which may be at least 3 (default is 1024)
 // 3. The size of the buffers (default is 8192)
-// A goroutine will be initiated to wait on the original provider Read interface
-// and deliver the data to the Readwer using an internal channel
-func New(src io.ReadCloser, params ...uint) (iod *Iodup) {
-	var numOutputs, numBufs, sizeBuf uint
+func NewIoDups(params ...uint) (iodups *IoDups) {
+	iodups = new(IoDups)
 	switch len(params) {
 	case 0:
-		numOutputs = 2
-		numBufs = 1024
-		sizeBuf = 8192
+		iodups.numOutputs = 2
+		iodups.numBufs = numBufs
+		iodups.sizeBuf = sizeBuf
 	case 1:
-		numOutputs = params[0]
-		if numOutputs < 2 {
-			numOutputs = 2
+		iodups.numOutputs = params[0]
+		if iodups.numOutputs < 2 {
+			iodups.numOutputs = 2
 		}
-		numBufs = 1024
-		sizeBuf = 8192
+		iodups.numBufs = numBufs
+		iodups.sizeBuf = sizeBuf
 	case 2:
-		numOutputs = params[0]
-		if numOutputs < 2 {
-			numOutputs = 2
+		iodups.numOutputs = params[0]
+		if iodups.numOutputs < 2 {
+			iodups.numOutputs = 2
 		}
-		numBufs = params[1]
-		if numBufs < 3 {
-			numBufs = 1024
+		iodups.numBufs = params[1]
+		if iodups.numBufs < 3 {
+			iodups.numBufs = numBufs
 		}
-		sizeBuf = 8192
+		iodups.sizeBuf = sizeBuf
 	case 3:
-		numOutputs = params[0]
-		if numOutputs < 2 {
-			numOutputs = 2
+		iodups.numOutputs = params[0]
+		if iodups.numOutputs < 2 {
+			iodups.numOutputs = 2
 		}
-		numBufs = params[1]
-		if numBufs < 3 {
-			numBufs = 1024
+		iodups.numBufs = params[1]
+		if iodups.numBufs < 3 {
+			iodups.numBufs = numBufs
 		}
-		sizeBuf = params[2]
-		if sizeBuf < 1 {
-			sizeBuf = 1
+		iodups.sizeBuf = params[2]
+		if iodups.sizeBuf < 1 {
+			iodups.sizeBuf = 1
 		}
 	default:
 		panic("too many params in newStream")
 	}
+	return
+}
 
-	iod = new(Iodup)
-	iod.numOutputs = numOutputs
-	iod.numBufs = numBufs
-	iod.sizeBuf = sizeBuf
-	iod.src = src
+// Create a New iodup to wrap an existing provider of an io.ReadCloser interface
+// The new iodup.out[] will expose an io.ReadCloser interface
+// A goroutine will be initiated to wait on the original provider Read interface
+// and deliver the data to the Readwer using an internal channel
+func (iodups *IoDups) NewIoDup(src io.ReadCloser) []*Out {
+	var iod *Iodup
+	output := make([]*Out, iodups.numOutputs)
+
+	if src == nil {
+		// all readers are nil
+		return output
+	}
+
+	iodups.mutex.Lock()
+	numIOds := len(iodups.stashed)
+	if numIOds > 0 {
+		iod = iodups.stashed[0]
+		iodups.stashed = iodups.stashed[1:]
+	} else {
+		iod = new(Iodup)
+		iod.bufs = make([][]byte, iodups.numBufs)
+		for i := uint(0); i < iodups.numBufs; i++ {
+			iod.bufs[i] = make([]byte, iodups.sizeBuf)
+		}
+	}
+	iodups.mutex.Unlock()
 
 	// create s.numOutputs outputs
-	iod.Output = make([]*Out, iod.numOutputs)
-
-	if iod.src == nil {
-		// all readers are nil
-		return
-	}
-
-	for j := uint(0); j < iod.numOutputs; j++ {
+	iod.output = output
+	for j := uint(0); j < iodups.numOutputs; j++ {
 		// we will maintain a maximum of s.numBufs-2 in s.bufChan + one buffer in s.inBuf + one buffer s.outBuf
-		iod.Output[j] = new(Out)
-		iod.Output[j].bufChan = make(chan []byte, iod.numBufs-2)
+		iod.output[j] = new(Out)
+		iod.output[j].bufChan = make(chan []byte, iodups.numBufs-2)
 	}
-	iod.bufs = make([][]byte, iod.numBufs)
-	for i := uint(0); i < iod.numBufs; i++ {
-		iod.bufs[i] = make([]byte, iod.sizeBuf)
-	}
+	iod.src = src
 	iod.inBuf = iod.bufs[0]
+	iod.inBufIndex = 0
 
 	// start serving the io
 	go func() {
@@ -124,7 +151,7 @@ func New(src io.ReadCloser, params ...uint) (iod *Iodup) {
 
 				// ok, we now have a maximum of s.numBufs-2 in s.bufChan + one buffer s.outBuf
 				// this means we have one free buffer to give to s.inBuf
-				iod.inBufIndex = (iod.inBufIndex + 1) % iod.numBufs
+				iod.inBufIndex = (iod.inBufIndex + 1) % iodups.numBufs
 				iod.inBuf = iod.bufs[iod.inBufIndex]
 			} else { // no data
 				if err == nil { // no data and no err.... bad, bad writer!!
@@ -141,12 +168,20 @@ func New(src io.ReadCloser, params ...uint) (iod *Iodup) {
 			fmt.Printf("(iof *iodup) Gorutine err %v\n", err)
 		}
 
-		for j := uint(0); j < iod.numOutputs; j++ {
-			iod.Output[j].closeChannel()
+		for j := uint(0); j < iodups.numOutputs; j++ {
+			iod.output[j].closeChannel()
 		}
+
+		iodups.stash(iod)
 	}()
 
-	return
+	return iod.output
+}
+
+func (iodups *IoDups) stash(iod *Iodup) {
+	iodups.mutex.Lock()
+	defer iodups.mutex.Unlock()
+	iodups.stashed = append(iodups.stashed, iod)
 }
 
 func (iod *Iodup) forwardToOut(buf []byte) {
@@ -159,8 +194,8 @@ func (iod *Iodup) forwardToOut(buf []byte) {
 		// closing the source is not a great idea...
 	}()
 
-	for j := uint(0); j < iod.numOutputs; j++ {
-		iod.Output[j].bufChan <- buf
+	for j := 0; j < len(iod.output); j++ {
+		iod.output[j].bufChan <- buf
 	}
 }
 func (iod *Iodup) readFromSrc() (n int, err error) {
@@ -169,8 +204,8 @@ func (iod *Iodup) readFromSrc() (n int, err error) {
 			fmt.Printf("(iof *iodup) readFromSrc recovering from panic... %v\n", recovered)
 
 			// We close the internal channel to signal from the src to readers that we are done
-			for j := uint(0); j < iod.numOutputs; j++ {
-				close(iod.Output[j].bufChan)
+			for j := 0; j < len(iod.output); j++ {
+				close(iod.output[j].bufChan)
 			}
 			n = 0
 			err = io.EOF

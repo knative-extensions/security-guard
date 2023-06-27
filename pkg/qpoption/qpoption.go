@@ -131,11 +131,15 @@ func (p *GateQPOption) ProcessAnnotations() bool {
 	var buf []byte
 	buf, err = os.ReadFile(path.Join(queue.CertDirectory, certificates.CaCertName))
 	if err != nil {
-		// lets try the older secret names
-		pi.Log.Debugf("RootCa (%s) is missing", path.Join(queue.CertDirectory, certificates.CaCertName))
-		buf, err = os.ReadFile(path.Join(queue.CertDirectory, certificates.SecretCaCertKey))
-		if err != nil {
-			pi.Log.Debugf("RootCa (%s) is missing - Insecure communication, working without TLS RootCA!", path.Join(queue.CertDirectory, certificates.SecretCaCertKey))
+		if rootCA := os.Getenv("ROOT_CA"); rootCA != "" {
+			p.config["rootca"] = rootCA
+		} else {
+			// lets try the older secret names
+			pi.Log.Debugf("RootCa (%s) is missing", path.Join(queue.CertDirectory, certificates.CaCertName))
+			buf, err = os.ReadFile(path.Join(queue.CertDirectory, certificates.SecretCaCertKey))
+			if err != nil {
+				pi.Log.Debugf("RootCa (%s) is missing - Insecure communication, working without TLS RootCA!", path.Join(queue.CertDirectory, certificates.SecretCaCertKey))
+			}
 		}
 	}
 	if err == nil {

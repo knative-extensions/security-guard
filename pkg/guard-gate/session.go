@@ -23,13 +23,9 @@ import (
 	"mime"
 	"net"
 	"net/http"
-	"time"
 
 	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
-	utils "knative.dev/security-guard/pkg/guard-utils"
 	pi "knative.dev/security-guard/pkg/pluginterfaces"
-
-	"knative.dev/security-guard/pkg/iodup"
 )
 
 const (
@@ -40,26 +36,21 @@ const (
 )
 
 type session struct {
-	sessionTicker *utils.Ticker
-	gotResponse   bool
-	decision      *spec.Decision          // session alert decision
-	reqTime       time.Time               // time when session was started
-	respTime      time.Time               // time when session response came
-	cancelFunc    context.CancelFunc      // cancel the session
-	profile       spec.SessionDataProfile // maintainer of the session profile
-	gateState     *gateState              // maintainer of the criteria and ctrl, include pod profile, gate stats and gate level alert
+	gotResponse bool
+	decision    *spec.Decision          // session alert decision
+	reqTime     int64                   // time when session was started
+	respTime    int64                   // time when session response came
+	cancelFunc  context.CancelFunc      // cancel the session
+	profile     spec.SessionDataProfile // maintainer of the session profile
+	gateState   *gateState              // maintainer of the criteria and ctrl, include pod profile, gate stats and gate level alert
 }
 
-func newSession(state *gateState, cancel context.CancelFunc) *session {
+func newSession(state *gateState, cancel context.CancelFunc, ticks int64) *session {
 	s := new(session)
-	s.reqTime = time.Now()
+	s.reqTime = ticks
 	s.respTime = s.reqTime // indicates that we do not know the response time
 	s.gateState = state
 	s.cancelFunc = cancel
-	s.sessionTicker = utils.NewTicker(utils.MinimumInterval)
-	if err := s.sessionTicker.Parse("", podMonitorIntervalDefault); err != nil {
-		pi.Log.Debugf("Error on Ticker Parse: %v", err)
-	}
 	state.addStat("Total")
 	return s
 }
@@ -101,61 +92,50 @@ func (s *session) logAlert() {
 	s.gateState.addAlert(s.decision, "Session")
 }
 
-func (s *session) sessionEventLoop(ctx context.Context) {
-	s.sessionTicker.Start()
-
-	defer func() {
-		s.sessionTicker.Stop()
-
-		// Should we learn?
-		if s.gateState.shouldLearn(s.hasAlert()) && s.gotResponse {
-			s.gateState.addProfile(&s.profile)
-		}
-
-		// Should we alert?
-		if s.gateState.hasAlert() {
-			s.gateState.addStat("BlockOnPod")
-			return
-		}
-		if s.hasAlert() {
-			s.logAlert()
-			return
-		}
-		// no alert
-		if !s.gotResponse {
-			pi.Log.Debugf("No Alert but completed before receiving a response!")
-			s.gateState.addStat("NoResponse")
-			return
-		}
-		if s.gateState.criteria == nil {
-			pi.Log.Debugf("No Alert since no criteria")
-			s.gateState.addStat("NoAlertNoCriteria")
-			return
-		}
-		if !s.gateState.criteria.Active {
-			pi.Log.Debugf("No Alert since criteria is not active")
-			s.gateState.addStat("NoAlertCriteriaNotActive")
-			return
-		}
-		pi.Log.Debugf("No Alert!")
-		s.gateState.addStat("NoAlert")
-	}()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-s.sessionTicker.Ch():
-			s.screenEnvelop()
-			s.screenPod()
-			if s.gateState.shouldBlock() && (s.hasAlert() || s.gateState.hasAlert()) {
-				pi.Log.Debugf("Request processing canceled during sessionTicker")
-				s.cancel()
-				return
-			}
-			pi.Log.Debugf("Session Tick")
-		}
+func (s *session) complete(ticks int64) {
+	// Should we learn?
+	if s.gateState.shouldLearn(s.hasAlert()) && s.gotResponse {
+		s.gateState.addProfile(&s.profile, ticks)
 	}
+
+	// Should we alert?
+	if s.gateState.hasAlert() {
+		s.gateState.addStat("BlockOnPod")
+		return
+	}
+	if s.hasAlert() {
+		s.logAlert()
+		return
+	}
+	// no alert
+	if !s.gotResponse {
+		pi.Log.Debugf("No Alert but completed before receiving a response!")
+		s.gateState.addStat("NoResponse")
+		return
+	}
+	if s.gateState.criteria == nil {
+		pi.Log.Debugf("No Alert since no criteria")
+		s.gateState.addStat("NoAlertNoCriteria")
+		return
+	}
+	if !s.gateState.criteria.Active {
+		pi.Log.Debugf("No Alert since criteria is not active")
+		s.gateState.addStat("NoAlertCriteriaNotActive")
+		return
+	}
+	pi.Log.Debugf("No Alert!")
+	s.gateState.addStat("NoAlert")
+}
+
+func (s *session) tick(ticks int64) {
+	s.screenEnvelop(ticks)
+	s.screenPod()
+	if s.gateState.shouldBlock() && (s.hasAlert() || s.gateState.hasAlert()) {
+		pi.Log.Debugf("Request processing canceled during sessionTicker")
+		s.cancel()
+		return
+	}
+	pi.Log.Debugf("Session Tick")
 }
 
 func (s *session) screenResponseBody(resp *http.Response) {
@@ -190,8 +170,8 @@ func (s *session) screenResponseBody(resp *http.Response) {
 		}
 	}
 
-	dup := iodup.New(resp.Body, 2, 128, 8192)
-	resp.Body = dup.Output[0]
+	dup := s.gateState.iodups.NewIoDup(resp.Body)
+	resp.Body = dup[0]
 
 	switch body_type {
 	case json_type:
@@ -213,7 +193,7 @@ func (s *session) screenResponseBody(resp *http.Response) {
 			s.profile.RespBody.ProfileUnstructured(string(bytes))
 		}
 	}
-	resp.Body = dup.Output[1]
+	resp.Body = dup[1]
 	s.gateState.decideRespBody(&s.decision, &s.profile.RespBody)
 }
 
@@ -253,8 +233,8 @@ func (s *session) screenRequestBody(req *http.Request) {
 		}
 	}
 
-	dup := iodup.New(req.Body, 2, 128, 8192)
-	req.Body = dup.Output[0]
+	dup := s.gateState.iodups.NewIoDup(req.Body)
+	req.Body = dup[0]
 
 	switch body_type {
 	case json_type:
@@ -291,18 +271,17 @@ func (s *session) screenRequestBody(req *http.Request) {
 			s.profile.ReqBody.ProfileUnstructured(string(bytes))
 		}
 	}
-	req.Body = dup.Output[1]
+	req.Body = dup[1]
 	s.gateState.decideReqBody(&s.decision, &s.profile.ReqBody)
 }
 
-func (s *session) screenEnvelop() {
-	now := time.Now()
+func (s *session) screenEnvelop(ticks int64) {
 	respTime := s.respTime
-	if !s.respTime.After(s.reqTime) {
+	if s.reqTime <= ticks {
 		// we do not know the response time, lets assume it is now
-		respTime = now
+		respTime = ticks
 	}
-	s.profile.Envelop.Profile(s.reqTime, respTime, now)
+	s.profile.Envelop.Profile(s.reqTime, respTime, ticks)
 
 	s.gateState.decideEnvelop(&s.decision, &s.profile.Envelop)
 }
@@ -326,8 +305,8 @@ func (s *session) screenRequest(req *http.Request) {
 	s.gateState.decideReq(&s.decision, &s.profile.Req)
 }
 
-func (s *session) screenResponse(resp *http.Response) {
-	s.respTime = time.Now()
+func (s *session) screenResponse(resp *http.Response, ticks int64) {
+	s.respTime = ticks
 	s.profile.Resp.Profile(resp)
 
 	s.gateState.decideResp(&s.decision, &s.profile.Resp)

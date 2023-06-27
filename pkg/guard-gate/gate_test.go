@@ -21,10 +21,8 @@ import (
 	"fmt"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
-	utils "knative.dev/security-guard/pkg/guard-utils"
 	pi "knative.dev/security-guard/pkg/pluginterfaces"
 )
 
@@ -51,77 +49,10 @@ func testInit(c map[string]string) *plug {
 	}
 
 	pi.RegisterPlug(p)
-	p.preInit(c, "svcName", "myns", defaultLog)
+	p.preInit(context.Background(), c, "svcName", "myns", defaultLog)
 	p.gateState = fakeGateState()
-	p.gateState.sync(true, false)
+	p.gateState.sync(true, false, p.gateState.getTicks())
 	return p
-}
-
-func initTickerTest() *plug {
-	p := new(plug)
-	p.version = plugVersion
-	p.name = plugName
-
-	c := make(map[string]string)
-	c["guard-url"] = "url"
-	c["use-crd"] = "false"
-	c["monitor-pod"] = "x"
-
-	pi.RegisterPlug(p)
-
-	p.preInit(c, "svcName", "myns", defaultLog)
-	p.gateState = fakeGateState()
-	p.gateState.sync(true, true)
-	p.gateState.stat.Init()
-	return p
-}
-
-func cancelLater(cancel context.CancelFunc) {
-	td, _ := time.ParseDuration("10ms")
-	<-time.After(td)
-	cancel()
-}
-
-func Test_plug_guardMainEventLoop_1(t *testing.T) {
-	t.Run("syncTicker", func(t *testing.T) {
-		p := initTickerTest()
-		p.syncTicker = utils.NewTicker(100000)
-		p.syncTicker.Parse("", 300000)
-		// lets rely on timeout
-		ctx, cancelFunction := context.WithCancel(context.Background())
-		go cancelLater(cancelFunction)
-		p.guardMainEventLoop(ctx)
-		if ret := p.gateState.stat.Log(); ret != "map[]" {
-			t.Errorf("expected stat %s received %s", "map[]", ret)
-		}
-	})
-}
-func Test_plug_guardMainEventLoop_2(t *testing.T) {
-	t.Run("podMonitorTicker", func(t *testing.T) {
-		p := initTickerTest()
-		ctx, cancelFunction := context.WithCancel(context.Background())
-
-		p.podMonitorTicker = utils.NewTicker(100000)
-		p.podMonitorTicker.Parse("", 300000)
-		// lets rely on timeout
-		go cancelLater(cancelFunction)
-		p.guardMainEventLoop(ctx)
-		if ret := p.gateState.stat.Log(); ret != "map[]" {
-			t.Errorf("expected stat %s received %s", "map[]", ret)
-		}
-	})
-}
-
-func Test_plug_guardMainEventLoop_4(t *testing.T) {
-	t.Run("reportPileTicker", func(t *testing.T) {
-		p := initTickerTest()
-		ctx, cancelFunction := context.WithCancel(context.Background())
-		cancelFunction()
-		p.guardMainEventLoop(ctx)
-		if ret := p.gateState.stat.Log(); ret != "map[]" {
-			t.Errorf("expected stat %s received %s", "map[]", ret)
-		}
-	})
 }
 
 func Test_plug_Initialize(t *testing.T) {
@@ -167,11 +98,9 @@ func Test_plug_Initialize(t *testing.T) {
 			p := new(plug)
 			p.version = plugVersion
 			p.name = plugName
-			p.podMonitorTicker = utils.NewTicker(utils.MinimumInterval)
-			p.syncTicker = utils.NewTicker(utils.MinimumInterval)
 
 			pi.RegisterPlug(p)
-			p.preInit(tt.c, "svcName", "myns", defaultLog)
+			p.preInit(context.Background(), tt.c, "svcName", "myns", defaultLog)
 
 			if tt.monitorPod != p.gateState.monitorPod {
 				t.Errorf("extected monitorPod %t got %t", tt.monitorPod, p.gateState.monitorPod)
@@ -191,7 +120,7 @@ func Test_plug_initPanic(t *testing.T) {
 	t.Run("panic on sid", func(t *testing.T) {
 		defer func() { _ = recover() }()
 		p := new(plug)
-		p.preInit(nil, "ns.svcName", "myns", defaultLog)
+		p.preInit(context.Background(), nil, "ns.svcName", "myns", defaultLog)
 		t.Error("extected to panic")
 	})
 }
@@ -264,7 +193,7 @@ func Test_plug_ApproveResponse(t *testing.T) {
 		}
 
 		ctx, cancelFunction := context.WithCancel(req.Context())
-		s := newSession(p.gateState, cancelFunction) // maintainer of the profile
+		s := newSession(p.gateState, cancelFunction, p.gateState.getTicks()) // maintainer of the profile
 		ctx = s.addSessionToContext(ctx)
 		ctx = context.WithValue(ctx, ctxKey("GuardSession"), s)
 

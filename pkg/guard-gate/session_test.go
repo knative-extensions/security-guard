@@ -25,8 +25,6 @@ import (
 	"time"
 
 	"github.com/emicklei/go-restful"
-	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
-	utils "knative.dev/security-guard/pkg/guard-utils"
 )
 
 var sessionCanceled int
@@ -38,10 +36,10 @@ func fakeSessionCancel() {
 func Test_SessionInContext(t *testing.T) {
 	ctx1 := context.Background()
 	gs := fakeGateState()
-	gs.sync(true, false)
+	gs.sync(true, false, gs.getTicks())
 
 	t.Run("simple", func(t *testing.T) {
-		s1 := newSession(gs, nil)
+		s1 := newSession(gs, nil, gs.getTicks())
 		s1.cancelFunc = fakeSessionCancel
 		ctx2 := s1.addSessionToContext(ctx1)
 		s2 := getSessionFromContext(ctx2)
@@ -82,12 +80,12 @@ func Test_SessionInContext(t *testing.T) {
 
 		td, _ := time.ParseDuration("1s")
 		time.Sleep(td)
-		s2.screenEnvelop()
+		s2.screenEnvelop(s2.gateState.getTicks())
 		if s2.hasAlert() {
 			t.Errorf("expected no alert")
 		}
 		s2.gateState.criteria.Active = true
-		s2.screenEnvelop()
+		s2.screenEnvelop(s2.gateState.getTicks())
 		if !s2.hasAlert() {
 			t.Errorf("expected alert")
 		}
@@ -95,12 +93,12 @@ func Test_SessionInContext(t *testing.T) {
 		s2.gateState.criteria.Active = false
 
 		resp := &http.Response{ContentLength: 20}
-		s2.screenResponse(resp)
+		s2.screenResponse(resp, s2.gateState.getTicks())
 		if s2.hasAlert() {
 			t.Errorf("expected no alert")
 		}
 		s2.gateState.criteria.Active = true
-		s2.screenResponse(resp)
+		s2.screenResponse(resp, s2.gateState.getTicks())
 		if !s2.hasAlert() {
 			t.Errorf("expected alert")
 		}
@@ -112,87 +110,6 @@ func Test_SessionInContext(t *testing.T) {
 			t.Errorf("expected no alert")
 		}
 
-	})
-
-}
-
-func Test_session_sessionEventLoop(t *testing.T) {
-	gs := fakeGateState()
-	gs.sync(true, false)
-	gs.stat.Init()
-	ctx, cancelFunction := context.WithCancel(context.Background())
-	t.Run("simple", func(t *testing.T) {
-		s := newSession(gs, nil)
-		s.cancelFunc = cancelFunction
-		gs.stat.Init()
-		s.cancel()
-		s.sessionEventLoop(ctx)
-		if ret := gs.stat.Log(); ret != "map[NoResponse:1]" {
-			t.Errorf("expected stat %s received %s", "map[NoResponse:1]", ret)
-		}
-		gs.stat.Init()
-		s.gotResponse = true
-		s.cancel()
-		s.sessionEventLoop(ctx)
-		if ret := gs.stat.Log(); ret != "map[NoAlertCriteriaNotActive:1]" {
-			t.Errorf("expected stat %s received %s", "map[NoAlertCriteriaNotActive:1]", ret)
-		}
-		gs.stat.Init()
-		s.gotResponse = true
-		s.gateState.criteria.Active = true
-		s.cancel()
-		s.sessionEventLoop(ctx)
-		if ret := gs.stat.Log(); ret != "map[NoAlert:1]" {
-			t.Errorf("expected stat %s received %s", "map[NoAlert:1]", ret)
-		}
-		gs.stat.Init()
-		gs.ctrl.Force = true
-		gs.ctrl.Learn = true
-		s.gotResponse = true
-		s.cancel()
-		s.sessionEventLoop(ctx)
-		if ret := gs.stat.Log(); ret != "map[NoAlert:1]" {
-			t.Errorf("expected stat %s received %s", "map[NoAlert:1]", ret)
-		}
-
-		gs.stat.Init()
-		s.decision = &spec.Decision{}
-		s.cancel()
-		s.sessionEventLoop(ctx)
-		if ret := gs.stat.Log(); ret != "map[SessionLevelAlert:1]" {
-			t.Errorf("expected stat %s received %s", "map[SessionLevelAlert:1]", ret)
-		}
-		gs.stat.Init()
-		gs.decision = &spec.Decision{}
-		s.cancel()
-		s.sessionEventLoop(ctx)
-		if ret := gs.stat.Log(); ret != "map[BlockOnPod:1]" {
-			t.Errorf("expected stat %s received %s", "map[BlockOnPod:1]", ret)
-		}
-	})
-
-}
-
-func Test_session_sessionEventLoopTicker(t *testing.T) {
-	t.Run("simple", func(t *testing.T) {
-		ctx, cancelFunction := context.WithCancel(context.Background())
-		gs := fakeGateState()
-		gs.sync(true, false)
-		gs.stat.Init()
-		s := newSession(gs, nil)
-		s.cancelFunc = cancelFunction
-
-		s.decision = &spec.Decision{}
-
-		// lets rely on timeout
-		s.sessionTicker = utils.NewTicker(100000)
-		s.sessionTicker.Parse("", 100000)
-		gs.stat.Init()
-		gs.ctrl.Block = true
-		s.sessionEventLoop(ctx)
-		if ret := gs.stat.Log(); ret != "map[SessionLevelAlert:1]" {
-			t.Errorf("expected stat %s received %s", "map[SessionLevelAlert:1]", ret)
-		}
 	})
 
 }

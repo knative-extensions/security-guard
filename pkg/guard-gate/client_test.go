@@ -122,7 +122,7 @@ func Test_guardClient_sync_pile(t *testing.T) {
 		srv.addAlert(decision, "Pod")
 		srv.addToPile(new(spec.SessionDataProfile))
 		srv.addToPile(new(spec.SessionDataProfile))
-		srv.syncWithService()
+		srv.syncWithService(0)
 		if client.count != 1 {
 			t.Error("Expected request")
 		}
@@ -139,7 +139,7 @@ func Test_guardClient_sync_pile(t *testing.T) {
 		client = &fakeHttpClient{statusCode: http.StatusBadRequest, json: bytes}
 		srv.httpClient = client
 
-		srv.syncWithService()
+		srv.syncWithService(0)
 		if client.count != 1 {
 			t.Error("Expected request")
 		}
@@ -151,7 +151,7 @@ func Test_guardClient_sync_pile(t *testing.T) {
 		}
 
 		srv.httpClient = &fakeHttpClient{statusCode: http.StatusOK, json: bytes, err: errors.New("Wow")}
-		srv.syncWithService()
+		srv.syncWithService(0)
 		if client.count != 1 {
 			t.Error("Expected request")
 		}
@@ -163,7 +163,7 @@ func Test_guardClient_sync_pile(t *testing.T) {
 		}
 
 		srv.httpClient = &fakeHttpClient{fail: true}
-		srv.syncWithService()
+		srv.syncWithService(0)
 		if client.count != 1 {
 			t.Error("Expected request")
 		}
@@ -174,7 +174,7 @@ func Test_guardClient_sync_pile(t *testing.T) {
 			t.Errorf("Expected 2 in alert received %d", len(srv.alerts))
 		}
 		srv.httpClient = &fakeHttpClient{statusCode: http.StatusOK, json: bytes}
-		srv.syncWithService()
+		srv.syncWithService(0)
 		if client.count != 1 {
 			t.Error("Expected request")
 		}
@@ -197,7 +197,7 @@ func Test_guardClient_sync_loadGuardian(t *testing.T) {
 		srv, _ := fakeClient(200, string(bytes))
 		g := new(spec.GuardianSpec)
 
-		if got := srv.syncWithService(); !reflect.DeepEqual(got, g) {
+		if got := srv.syncWithService(0); !reflect.DeepEqual(got, g) {
 			t.Errorf("guardClient.loadGuardian() = %v, want %v", got, g)
 		}
 	})

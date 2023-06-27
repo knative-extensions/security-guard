@@ -23,13 +23,14 @@ import (
 
 func TestEnvelop_V1(t *testing.T) {
 	interval, _ := time.ParseDuration("2h")
-	arguments := [][]time.Time{
-		{time.Now(), time.Now(), time.Now()},
-		{time.Now(), time.Now().Add(interval), time.Now().Add(interval)},
-		{time.Now(), time.Now().Add(interval), time.Now().Add(interval)},
-		{time.Now(), time.Now(), time.Now()},
-		{time.Now(), time.Now(), time.Now()},
-		{time.Now(), time.Now(), time.Now()},
+	arguments := [][]int64{
+		{time.Now().Unix(), time.Now().Unix(), time.Now().Unix()},
+		{time.Now().Unix(), time.Now().Add(interval).Unix(), time.Now().Add(interval).Unix()},
+		{time.Now().Unix(), time.Now().Add(interval).Unix(), time.Now().Add(interval).Unix()},
+		{time.Now().Unix(), time.Now().Unix(), time.Now().Unix()},
+		{time.Now().Unix(), time.Now().Unix(), time.Now().Unix()},
+		{time.Now().Unix(), time.Now().Unix(), time.Now().Unix()},
+		{time.Now().Unix(), time.Now().Unix(), time.Now().Unix()},
 	}
 	var args []interface{}
 	var profiles []ValueProfile

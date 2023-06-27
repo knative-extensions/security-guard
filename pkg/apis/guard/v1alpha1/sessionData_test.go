@@ -42,13 +42,14 @@ func TestSessionData(t *testing.T) {
 
 	cip := net.IPv4(1, 2, 3, 5)
 	cip2 := net.IPv4(1, 22, 3, 5)
+	now := time.Now().Unix()
 	arguments := [][]interface{}{
-		{req, cip, resp, nil, nil, time.Now(), time.Now(), time.Now()},
-		{req2, cip2, resp2, nil, nil, time.Now(), time.Now(), time.Now()},
-		{req2, cip, resp2, nil, nil, time.Now(), time.Now(), time.Now()},
-		{req, cip, resp2, nil, nil, time.Now(), time.Now(), time.Now()},
-		{req, cip, resp2, nil, nil, time.Now(), time.Now(), time.Now()},
-		{req, cip, resp2, nil, nil, time.Now(), time.Now(), time.Now()},
+		{req, cip, resp, nil, nil, now, now, now},
+		{req2, cip2, resp2, nil, nil, now, now, now},
+		{req2, cip, resp2, nil, nil, now, now, now},
+		{req, cip, resp2, nil, nil, now, now, now},
+		{req, cip, resp2, nil, nil, now, now, now},
+		{req, cip, resp2, nil, nil, now, now, now},
 	}
 	var args []interface{}
 	var profiles []ValueProfile
@@ -107,9 +108,9 @@ func TestSessionData_Decide(t *testing.T) {
 		resp      http.Response
 		reqData   interface{}
 		respData  interface{}
-		reqTime   time.Time
-		respTime  time.Time
-		endTime   time.Time
+		reqTime   int64
+		respTime  int64
+		endTime   int64
 	}
 	tests := []struct {
 		name     string
@@ -126,7 +127,7 @@ func TestSessionData_Decide(t *testing.T) {
 				reqMethod: "Post",
 				reqTarget: "/abc2/א",
 				reqData:   "abc",
-				reqTime:   time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC),
+				reqTime:   1000,
 			},
 			decision: "[Envelop:[CompletionTime:[Limit out of Range: 255,],ResponseTime:[Limit out of Range: 255,],],Req:[MediaType:[Type:[Unexpected key none in Set,],],Method:[Unexpected key Post in Set,],Proto:[Unexpected key HTTP/1.1 in Set,],Url:[Segments:[Value 2 Not Allowed!,],Val:[Digits:[Limit out of Range: 1,],Letters:[Limit out of Range: 3,],Sequences:[Limit out of Range: 3,],Unicode Blocks:[Unexpected Flags in FlagSlice 400 on Element 0,],Unicodes:[Limit out of Range: 1,],],],],ReqBody:[Structured Body not allowed,],Resp:[MediaType:[Type:[Unexpected key none in Set,],],],RespBody:[Structured Body not allowed,],]",
 		},

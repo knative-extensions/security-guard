@@ -16,10 +16,6 @@ limitations under the License.
 
 package v1alpha1
 
-import (
-	"time"
-)
-
 // Envelop dataType maintains session data that is collected beyond Req, ReqBody, Resp and RespBody
 
 //////////////////// EnvelopProfile ////////////////
@@ -31,15 +27,15 @@ type EnvelopProfile struct {
 }
 
 func (profile *EnvelopProfile) profileI(args ...interface{}) {
-	profile.Profile(args[0].(time.Time), args[1].(time.Time), args[2].(time.Time))
+	profile.Profile(args[0].(int64), args[1].(int64), args[2].(int64))
 }
 
-func (profile *EnvelopProfile) Profile(reqTime time.Time, respTime time.Time, endTime time.Time) {
+func (profile *EnvelopProfile) Profile(reqTime int64, respTime int64, endTime int64) {
 
-	completionTime := endTime.Sub(reqTime).Seconds()
+	completionTime := endTime - reqTime
 	profile.CompletionTime.Profile(uint(completionTime))
 
-	responseTime := respTime.Sub(reqTime).Seconds()
+	responseTime := respTime - reqTime
 	profile.ResponseTime.Profile(uint(responseTime))
 }
 
