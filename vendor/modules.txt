@@ -71,7 +71,7 @@ github.com/golang-jwt/jwt/v4
 # github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 ## explicit
 github.com/golang/groupcache/lru
-# github.com/golang/protobuf v1.5.2
+# github.com/golang/protobuf v1.5.3
 ## explicit; go 1.9
 github.com/golang/protobuf/jsonpb
 github.com/golang/protobuf/proto
@@ -222,15 +222,14 @@ go.uber.org/zap/internal/bufferpool
 go.uber.org/zap/internal/color
 go.uber.org/zap/internal/exit
 go.uber.org/zap/zapcore
-# golang.org/x/mod v0.8.0
+# golang.org/x/mod v0.9.0
 ## explicit; go 1.17
 golang.org/x/mod/internal/lazyregexp
 golang.org/x/mod/module
 golang.org/x/mod/semver
-# golang.org/x/net v0.8.0
+# golang.org/x/net v0.12.0
 ## explicit; go 1.17
 golang.org/x/net/context
-golang.org/x/net/context/ctxhttp
 golang.org/x/net/http/httpguts
 golang.org/x/net/http2
 golang.org/x/net/http2/h2c
@@ -238,25 +237,25 @@ golang.org/x/net/http2/hpack
 golang.org/x/net/idna
 golang.org/x/net/internal/timeseries
 golang.org/x/net/trace
-# golang.org/x/oauth2 v0.4.0
+# golang.org/x/oauth2 v0.8.0
 ## explicit; go 1.17
 golang.org/x/oauth2
 golang.org/x/oauth2/internal
-# golang.org/x/sync v0.1.0
+# golang.org/x/sync v0.2.0
 ## explicit
 golang.org/x/sync/errgroup
 golang.org/x/sync/semaphore
-# golang.org/x/sys v0.6.0
+# golang.org/x/sys v0.10.0
 ## explicit; go 1.17
 golang.org/x/sys/execabs
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/term v0.6.0
+# golang.org/x/term v0.10.0
 ## explicit; go 1.17
 golang.org/x/term
-# golang.org/x/text v0.8.0
+# golang.org/x/text v0.11.0
 ## explicit; go 1.17
 golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
@@ -265,7 +264,7 @@ golang.org/x/text/unicode/norm
 # golang.org/x/time v0.3.0
 ## explicit
 golang.org/x/time/rate
-# golang.org/x/tools v0.6.0
+# golang.org/x/tools v0.7.0
 ## explicit; go 1.18
 golang.org/x/tools/go/ast/astutil
 golang.org/x/tools/imports
@@ -281,7 +280,7 @@ golang.org/x/tools/internal/typeparams
 # gomodules.xyz/jsonpatch/v2 v2.2.0
 ## explicit; go 1.12
 gomodules.xyz/jsonpatch/v2
-# google.golang.org/api v0.108.0
+# google.golang.org/api v0.124.0
 ## explicit; go 1.19
 google.golang.org/api/support/bundler
 # google.golang.org/appengine v1.6.7
@@ -293,12 +292,16 @@ google.golang.org/appengine/internal/log
 google.golang.org/appengine/internal/remote_api
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
-# google.golang.org/genproto v0.0.0-20230127162408-596548ed4efa
+# google.golang.org/genproto v0.0.0-20230525234025-438c736192d0
+## explicit; go 1.19
+google.golang.org/genproto/protobuf/field_mask
+# google.golang.org/genproto/googleapis/api v0.0.0-20230525234020-1aefcd67740a
 ## explicit; go 1.19
 google.golang.org/genproto/googleapis/api/httpbody
+# google.golang.org/genproto/googleapis/rpc v0.0.0-20230629202037-9506855d4529
+## explicit; go 1.19
 google.golang.org/genproto/googleapis/rpc/status
-google.golang.org/genproto/protobuf/field_mask
-# google.golang.org/grpc v1.52.3
+# google.golang.org/grpc v1.56.1
 ## explicit; go 1.17
 google.golang.org/grpc
 google.golang.org/grpc/attributes
@@ -349,7 +352,7 @@ google.golang.org/grpc/serviceconfig
 google.golang.org/grpc/stats
 google.golang.org/grpc/status
 google.golang.org/grpc/tap
-# google.golang.org/protobuf v1.28.1
+# google.golang.org/protobuf v1.31.0
 ## explicit; go 1.11
 google.golang.org/protobuf/encoding/protojson
 google.golang.org/protobuf/encoding/prototext
@@ -765,10 +768,10 @@ k8s.io/utils/lru
 k8s.io/utils/net
 k8s.io/utils/strings/slices
 k8s.io/utils/trace
-# knative.dev/hack v0.0.0-20230628110129-fc42790854e8
+# knative.dev/hack v0.0.0-20230710131339-12cd6a1f789c
 ## explicit; go 1.18
 knative.dev/hack
-# knative.dev/networking v0.0.0-20230628105954-91821ae96399
+# knative.dev/networking v0.0.0-20230710015341-b2cce924227a
 ## explicit; go 1.18
 knative.dev/networking/pkg/apis/networking
 knative.dev/networking/pkg/apis/networking/v1alpha1
@@ -778,7 +781,7 @@ knative.dev/networking/pkg/http
 knative.dev/networking/pkg/http/header
 knative.dev/networking/pkg/http/proxy
 knative.dev/networking/pkg/http/stats
-# knative.dev/pkg v0.0.0-20230628105954-6eb4b40a9a30
+# knative.dev/pkg v0.0.0-20230710013638-5ef4812a4fe9
 ## explicit; go 1.18
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -808,7 +811,7 @@ knative.dev/pkg/tracing/propagation
 knative.dev/pkg/tracing/propagation/tracecontextb3
 knative.dev/pkg/tracker
 knative.dev/pkg/websocket
-# knative.dev/serving v0.37.1-0.20230703075931-32ec382155c9
+# knative.dev/serving v0.37.1-0.20230711005812-4c76e3b3033d
 ## explicit; go 1.18
 knative.dev/serving/pkg/activator
 knative.dev/serving/pkg/apis/autoscaling
