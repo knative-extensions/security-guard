@@ -119,3 +119,13 @@ func (config *LimitConfig) Learn(pile LimitPile) {
 
 func (config *LimitConfig) Prepare() {
 }
+
+func (config *LimitConfig) Score() uint32 {
+	return uint32(*config)
+}
+
+func (config *LimitConfig) Fuse(otherConfig *LimitConfig) {
+	if uint32(*config) < uint32(*otherConfig) {
+		*config = *otherConfig
+	}
+}

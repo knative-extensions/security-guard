@@ -32,6 +32,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -316,6 +317,13 @@ func (k *KubeMgr) setCm(ns string, sid string, guardianSpec *spec.GuardianSpec) 
 	return nil
 }
 
+type jsonPatchOp struct {
+	Op   string `json:"op"`
+	Path string `json:"path"`
+	//	From  string      `json:"from"`
+	Value interface{} `json:"value"`
+}
+
 // Set a Guardian CRD (Update if exists, create if not)
 // In case the read CRD is corrupted, try to update using a well structured one
 // Using a client side Read then Write sequence.
@@ -325,42 +333,30 @@ func (k *KubeMgr) setCm(ns string, sid string, guardianSpec *spec.GuardianSpec) 
 // Lose of manual updates is reported to the user which will normally retry.
 // Lose of guard-service updates occurs periodically such that data is not lost
 func (k *KubeMgr) setCrd(ns string, sid string, guardianSpec *spec.GuardianSpec) error {
-	var g *spec.Guardian
-	var err error
+	learned, errMarshal := json.Marshal(guardianSpec.Learned)
+	if errMarshal != nil {
+		return fmt.Errorf("setCrd json.Marshal(guardianSpec.Learned) error for ns %s sid %s: %w", ns, sid, errMarshal)
+	}
+	str := fmt.Sprintf(`[{"op":"replace","path":"/spec/learned","value":%s},{"op":"replace","path":"/spec/samples","value":%d}]`, learned, guardianSpec.NumSamples)
 
-	if g, err = k.crdClient.Guardians(ns).Get(context.TODO(), sid, metav1.GetOptions{}); err != nil {
+	if _, errPatch := k.crdClient.Guardians(ns).Patch(context.TODO(), sid, types.JSONPatchType, []byte(str), metav1.PatchOptions{}); errPatch != nil {
+		// lets see if we have such a crd
+		_, errGet := k.crdClient.Guardians(ns).Get(context.TODO(), sid, metav1.GetOptions{})
+
+		if errGet == nil {
+			// we do have such crd, but for some reason we failed to patch it...
+			return fmt.Errorf("setCrd ns %s sid %s: patch failed %w", ns, sid, errPatch)
+		}
 		// Failed to read CRD
-		if !errors.IsNotFound(err) {
-			return fmt.Errorf("set crd ns %s sid %s: error reading guardian %w", ns, sid, err)
+		if !errors.IsNotFound(errGet) {
+			// some read error
+			return fmt.Errorf("setCrd ns %s sid %s: error reading guardian %w", ns, sid, errGet)
 		}
-
-		if err = k.createCrd(ns, sid, guardianSpec); err != nil {
-			return fmt.Errorf("set crd ns %s sid %s: %w", ns, sid, err)
-		}
-		return nil
-	}
-
-	// CRD exists - lets update it
-	g.Name = sid
-	if g.Spec == nil {
-		g.Spec = new(spec.GuardianSpec)
-	}
-	if guardianSpec != nil {
-		if guardianSpec.Control != nil {
-			g.Spec.Control = guardianSpec.Control
-		}
-		if guardianSpec.Configured != nil {
-			g.Spec.Configured = guardianSpec.Configured
-		}
-		if guardianSpec.Learned != nil {
-			g.Spec.Learned = guardianSpec.Learned
+		// No such crd, lets create one
+		if errCreate := k.createCrd(ns, sid, guardianSpec); errCreate != nil {
+			return fmt.Errorf("setCrd ns %s sid %s: %w", ns, sid, errCreate)
 		}
 	}
-
-	if _, err = k.crdClient.Guardians(ns).Update(context.TODO(), g, metav1.UpdateOptions{}); err != nil {
-		return fmt.Errorf("set crd ns %s sid %s: updating resource %w", ns, sid, err)
-	}
-
 	return nil
 }
 

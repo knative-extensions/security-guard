@@ -139,3 +139,18 @@ func (config *AsciiFlagsConfig) Learn(pile AsciiFlagsPile) {
 
 func (config *AsciiFlagsConfig) Prepare() {
 }
+
+func (config *AsciiFlagsConfig) Score() uint32 {
+	var count, flags uint32
+	flags = uint32(*config)
+	// Brian Kernighan’s Algorithm
+	for flags > 0 {
+		flags &= (flags - 1)
+		count++
+	}
+	return count
+}
+
+func (config *AsciiFlagsConfig) Fuse(otherConfig *AsciiFlagsConfig) {
+	*config |= *otherConfig
+}

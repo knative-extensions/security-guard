@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set -x
 export KO_DOCKER_REPO=ko.local
 
 # Knative install using quickstart
@@ -30,6 +31,10 @@ kind load docker-image $Q_IMAGE --name k8s
 GS_IMAGE=`ko build ko://knative.dev/security-guard/cmd/guard-service -B  `
 kind load docker-image $GS_IMAGE --name k8s
 
+# create and load guard-webhook image
+GW_IMAGE=`ko build ko://knative.dev/security-guard/cmd/guard-webhook -B  `
+kind load docker-image $GW_IMAGE --name k8s
+
 # Kind seem to sometime need some extra time
 sleep 10
 
@@ -41,3 +46,14 @@ kubectl patch configmap config-network -n knative-serving --type=merge -p '{"dat
 
 # Restart activator pod
 kubectl rollout restart deployment activator -n knative-serving
+
+if ! [ -x "$(command -v kn)" ]; then
+  echo 'kn is not installed.' >&2
+else
+    kn service create helloworld-go \
+        --image ghcr.io/knative/helloworld-go:latest \
+        --env "TARGET=Secured World" \
+        --annotation features.knative.dev/queueproxy-podinfo=enabled \
+        --annotation qpoption.knative.dev/guard-activate=enable
+fi
+

@@ -287,6 +287,7 @@ type SimpleValConfig struct {
 	Sequences    LimitConfig      `json:"sequences"`
 	Flags        AsciiFlagsConfig `json:"flags"`
 	UnicodeFlags FlagSliceConfig  `json:"unicodeFlags"`
+	score        uint32
 }
 
 func (config *SimpleValConfig) learnI(valPile ValuePile) {
@@ -332,4 +333,36 @@ func (config *SimpleValConfig) Prepare() {
 	config.Sequences.Prepare()
 	config.Flags.Prepare()
 	config.UnicodeFlags.Prepare()
+}
+
+// This is an initial design of Score
+func (config *SimpleValConfig) Score() uint32 {
+	if config.score == 0 {
+		var score uint32
+		score += config.SpecialChars.Score()
+		score += config.NonReadables.Score()
+		score += config.Sequences.Score()
+		score += config.Flags.Score()
+		score += config.UnicodeFlags.Score()
+		// Give the above scores 4 times as much influence on the below scores
+		score *= 4
+		score += config.Digits.Score()
+		score += config.Letters.Score()
+		score += config.Spaces.Score()
+		score += config.Unicodes.Score()
+		config.score = score
+	}
+	return config.score
+}
+
+func (config *SimpleValConfig) Fuse(otherConfig *SimpleValConfig) {
+	config.Digits.Fuse(&otherConfig.Digits)
+	config.Letters.Fuse(&otherConfig.Letters)
+	config.Spaces.Fuse(&otherConfig.Spaces)
+	config.SpecialChars.Fuse(&otherConfig.SpecialChars)
+	config.NonReadables.Fuse(&otherConfig.NonReadables)
+	config.Unicodes.Fuse(&otherConfig.Unicodes)
+	config.Sequences.Fuse(&otherConfig.Sequences)
+	config.Flags.Fuse(&otherConfig.Flags)
+	config.UnicodeFlags.Fuse(&otherConfig.UnicodeFlags)
 }

@@ -106,3 +106,20 @@ func (config *FlagSliceConfig) Learn(pile FlagSlicePile) {
 
 func (config *FlagSliceConfig) Prepare() {
 }
+
+func (config *FlagSliceConfig) Score() uint32 {
+	var count, flags uint32
+	for _, v := range *config {
+		flags = v
+		// Brian Kernighan’s Algorithmzv gfahu
+		for flags > 0 {
+			flags &= (flags - 1)
+			count++
+		}
+	}
+	return count
+}
+
+func (config *FlagSliceConfig) Fuse(otherConfig *FlagSliceConfig) {
+	*config = mergeFlagSlices(*config, *otherConfig)
+}
