@@ -47,7 +47,6 @@ type StructuredProfile struct {
 	Kind string             `json:"kind"` // bool, float64, string, array, map
 	Vals []SimpleValProfile `json:"vals"` // used for: array, boolean, number, string items
 	Kv   KeyValProfile      `json:"kv"`   // used for: object items
-	//Kv   map[string]*StructuredProfile `json:"kv"`   // used for: object items
 }
 
 // Profile a generic json
@@ -129,7 +128,6 @@ type StructuredPile struct {
 	Kind string         `json:"kind"` // bool, float64, string, array, map
 	Val  *SimpleValPile `json:"val"`  // used for: array, boolean, number, string items
 	Kv   KeyValPile     `json:"kv"`   // used for: object items
-	//Kv   map[string]*StructuredPile `json:"kv"`   // used for: object items
 }
 
 func (pile *StructuredPile) addI(valProfile ValueProfile) {

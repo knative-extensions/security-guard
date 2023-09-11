@@ -318,9 +318,8 @@ func (k *KubeMgr) setCm(ns string, sid string, guardianSpec *spec.GuardianSpec) 
 }
 
 type jsonPatchOp struct {
-	Op   string `json:"op"`
-	Path string `json:"path"`
-	//	From  string      `json:"from"`
+	Op    string      `json:"op"`
+	Path  string      `json:"path"`
 	Value interface{} `json:"value"`
 }
 
