@@ -25,8 +25,6 @@ import (
 	"strings"
 	"time"
 
-	_ "net/http/pprof"
-
 	pi "knative.dev/security-guard/pkg/pluginterfaces"
 )
 

@@ -19,7 +19,7 @@ package main
 import (
 	"crypto/tls"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -49,6 +49,8 @@ var (
 	jsonPatchType = admission.PatchTypeJSONPatch
 )
 
+const MAX_MUTATE_BODY = 1000000
+
 // add kind AdmissionReview in scheme
 func init() {
 	logger, _ := zap.NewDevelopment()
@@ -63,7 +65,8 @@ func init() {
 func serveMutate(w http.ResponseWriter, r *http.Request) {
 	var body []byte
 	if r.Body != nil {
-		if data, err := ioutil.ReadAll(r.Body); err == nil {
+		r.Body = http.MaxBytesReader(w, r.Body, MAX_MUTATE_BODY)
+		if data, err := io.ReadAll(r.Body); err == nil {
 			body = data
 		}
 	}
