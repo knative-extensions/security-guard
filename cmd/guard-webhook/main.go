@@ -270,8 +270,9 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/mutate", serveMutate)
 	server := &http.Server{
-		Handler: mux,
-		Addr:    ":8443",
+		Handler:           mux,
+		Addr:              ":8443",
+		ReadHeaderTimeout: 2 * time.Second,
 		TLSConfig: &tls.Config{
 			Certificates: []tls.Certificate{serverCert},
 		},

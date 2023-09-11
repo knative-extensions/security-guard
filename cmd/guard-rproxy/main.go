@@ -200,8 +200,9 @@ func main() {
 	signalCtx := signals.NewContext()
 	guardGate.securityPlug.Init(signalCtx, plugConfig, sid, ns, pi.Log)
 	srv := &http.Server{
-		Addr:    target,
-		Handler: mux,
+		Addr:              target,
+		Handler:           mux,
+		ReadHeaderTimeout: 2 * time.Second,
 	}
 	go func(srv *http.Server) {
 		err := srv.ListenAndServe()

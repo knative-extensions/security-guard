@@ -349,8 +349,9 @@ func (l *learner) init() (srv *http.Server, quit chan bool, flushed chan bool) {
 	target := ":8888"
 
 	srv = &http.Server{
-		Addr:    target,
-		Handler: mux,
+		Addr:              target,
+		Handler:           mux,
+		ReadHeaderTimeout: 2 * time.Second,
 	}
 
 	quit = make(chan bool)
