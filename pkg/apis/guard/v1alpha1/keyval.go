@@ -17,10 +17,16 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"fmt"
 	"strings"
+
+	"github.com/zeebo/xxh3"
 )
 
 //////////////////// KeyValProfile ////////////////
+
+const MAX_KEYS_LEARNED = 7
+const MAX_KEY_LENGTH = 64
 
 // Exposes ValueProfile interface
 type KeyValProfile map[string]*SimpleValProfile
@@ -38,6 +44,16 @@ func (profile *KeyValProfile) profileI(args ...interface{}) {
 
 }
 
+func hashIfNeeded(keyIn string) string {
+	l := len(keyIn)
+	if l <= MAX_KEY_LENGTH {
+		return keyIn
+	}
+	h := xxh3.HashString(keyIn)
+	keyOut := fmt.Sprintf("xxHash %d", h)
+	return keyOut
+}
+
 func (profile *KeyValProfile) ProfileMapString(keyValMap map[string]string) {
 	*profile = nil
 	if len(keyValMap) == 0 { // no keys
@@ -46,9 +62,10 @@ func (profile *KeyValProfile) ProfileMapString(keyValMap map[string]string) {
 	}
 	*profile = make(map[string]*SimpleValProfile, len(keyValMap))
 	for k, v := range keyValMap {
+		key := hashIfNeeded(k)
 		// Profile the concatenated value
-		(*profile)[k] = new(SimpleValProfile)
-		(*profile)[k].Profile(v)
+		(*profile)[key] = new(SimpleValProfile)
+		(*profile)[key].Profile(v)
 	}
 }
 
@@ -60,13 +77,14 @@ func (profile *KeyValProfile) ProfileMapStringSlice(keyValMap map[string][]strin
 	}
 	*profile = make(map[string]*SimpleValProfile, len(keyValMap))
 	for k, v := range keyValMap {
+		key := hashIfNeeded(k)
 		// Concatenate all strings into one value
 		// Appropriate for evaluating []string where order should be also preserved
 		val := strings.Join(v, " ")
 
 		// Profile the concatenated value
-		(*profile)[k] = new(SimpleValProfile)
-		(*profile)[k].Profile(val)
+		(*profile)[key] = new(SimpleValProfile)
+		(*profile)[key].Profile(val)
 	}
 }
 
@@ -126,6 +144,12 @@ type KeyValConfig struct {
 	Vals          map[string]*SimpleValConfig `json:"vals"`          // Profile the value of known keys
 	OtherVals     *SimpleValConfig            `json:"otherVals"`     // Profile the values of other keys
 	OtherKeynames *SimpleValConfig            `json:"otherKeynames"` // Profile the keynames of other keys
+	valScores     [MAX_KEYS_LEARNED]svcScore
+}
+
+type svcScore struct {
+	score uint32
+	key   string
 }
 
 func (config *KeyValConfig) decideI(valProfile ValueProfile) *Decision {
@@ -176,23 +200,107 @@ func (config *KeyValConfig) Learn(pile *KeyValPile) {
 		return
 	}
 
+	// we should learn a maximum of MAX_KEYS
+	// we aim to ensure that these are the MAX_KEYS with highest score
+	// we use heuristics to get a rough estimate which are the the keys with highest score
+
 	// learn known keys
 	if config.Vals == nil {
 		config.Vals = make(map[string]*SimpleValConfig, len(*pile))
 	}
-	for k, v := range *pile {
-		svc, ok := config.Vals[k]
-		if !ok {
-			svc = new(SimpleValConfig)
-			config.Vals[k] = svc
+	for key, v_pile := range *pile {
+		svc, ok := config.Vals[key]
+		if ok && svc != nil {
+			svc.Learn(v_pile)
+			continue
 		}
-		svc.Learn(v)
+
+		// new key!
+		svc = new(SimpleValConfig)
+		svc.Learn(v_pile)
+		score := svc.Score()
+		//lowestScore := score
+		lowestKey := key
+		lowestSvc := svc
+		index := config.findScoreIndex(score)
+		if index >= 0 {
+			// The lowest score key is at valScores[0]
+			lowestKey = config.valScores[0].key
+			lowestSvc = config.Vals[lowestKey]
+			// Add svc, key, score to Vals and valScores
+			config.setScore(score, key, index)
+			config.Vals[key] = svc
+		}
+		// merge lowestScore and lowestKey with unknown
+		if lowestKey == "" {
+			// nothing to merge
+			continue
+		}
+		if key != lowestKey {
+			delete(config.Vals, lowestKey)
+		}
+		// add lowestSvc as OtherVals
+		config.addSvcToOtherVals(lowestSvc)
+
+		// add lowestKey to OtherKeynames
+		config.addKeyToOtherKeynames(lowestKey)
 	}
 }
 
+// set lowestSvc as OtherVals
+func (config *KeyValConfig) addSvcToOtherVals(svc *SimpleValConfig) {
+	if config.OtherVals == nil {
+		config.OtherVals = svc
+	} else {
+		// Fuse config.OtherVals
+		config.OtherVals.Fuse(svc)
+	}
+}
+
+// add key to OtherKeynames
+func (config *KeyValConfig) addKeyToOtherKeynames(key string) {
+	svprofile := SimpleValProfile{}
+	svprofile.Profile(key)
+	svpile := SimpleValPile{}
+	svpile.Add(&svprofile)
+	if config.OtherKeynames == nil {
+		config.OtherKeynames = &SimpleValConfig{}
+	}
+	config.OtherKeynames.Learn(&svpile)
+}
+
+func (config *KeyValConfig) findScoreIndex(score uint32) int {
+	for index := 0; index < MAX_KEYS_LEARNED; index++ {
+		if score <= config.valScores[index].score {
+			return index - 1
+		}
+	}
+	// score is bigger than all valScores[*].scores
+	return MAX_KEYS_LEARNED - 1
+}
+
+func (config *KeyValConfig) setScore(score uint32, key string, index int) {
+	// move valScores[i+1] to valScores[i] for any i smaller tha index
+	for i := 0; i < index; i++ {
+		config.valScores[i].score = config.valScores[i+1].score
+		config.valScores[i].key = config.valScores[i+1].key
+	}
+	// set valScores[index] with the new value
+	config.valScores[index].score = score
+	config.valScores[index].key = key
+}
+
 func (config *KeyValConfig) Prepare() {
-	for _, v := range config.Vals {
-		v.Prepare()
+	for key, v := range config.Vals {
+		if v != nil {
+			v.Prepare()
+			score := v.Score()
+			index := config.findScoreIndex(score)
+			if index >= 0 {
+				// Add svc, key, score to Vals and valScores
+				config.setScore(score, key, index)
+			}
+		}
 	}
 
 	if config.OtherKeynames != nil {

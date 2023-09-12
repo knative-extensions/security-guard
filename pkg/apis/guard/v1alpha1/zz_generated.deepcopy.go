@@ -673,6 +673,7 @@ func (in *KeyValConfig) DeepCopyInto(out *KeyValConfig) {
 		*out = new(SimpleValConfig)
 		(*in).DeepCopyInto(*out)
 	}
+	out.valScores = in.valScores
 	return
 }
 
@@ -1531,21 +1532,7 @@ func (in *StructuredConfig) DeepCopyInto(out *StructuredConfig) {
 		*out = new(SimpleValConfig)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.Kv != nil {
-		in, out := &in.Kv, &out.Kv
-		*out = make(map[string]*StructuredConfig, len(*in))
-		for key, val := range *in {
-			var outVal *StructuredConfig
-			if val == nil {
-				(*out)[key] = nil
-			} else {
-				in, out := &val, &outVal
-				*out = new(StructuredConfig)
-				(*in).DeepCopyInto(*out)
-			}
-			(*out)[key] = outVal
-		}
-	}
+	in.Kv.DeepCopyInto(&out.Kv)
 	return
 }
 
@@ -1569,14 +1556,14 @@ func (in *StructuredPile) DeepCopyInto(out *StructuredPile) {
 	}
 	if in.Kv != nil {
 		in, out := &in.Kv, &out.Kv
-		*out = make(map[string]*StructuredPile, len(*in))
+		*out = make(KeyValPile, len(*in))
 		for key, val := range *in {
-			var outVal *StructuredPile
+			var outVal *SimpleValPile
 			if val == nil {
 				(*out)[key] = nil
 			} else {
 				in, out := &val, &outVal
-				*out = new(StructuredPile)
+				*out = new(SimpleValPile)
 				(*in).DeepCopyInto(*out)
 			}
 			(*out)[key] = outVal
@@ -1607,14 +1594,14 @@ func (in *StructuredProfile) DeepCopyInto(out *StructuredProfile) {
 	}
 	if in.Kv != nil {
 		in, out := &in.Kv, &out.Kv
-		*out = make(map[string]*StructuredProfile, len(*in))
+		*out = make(KeyValProfile, len(*in))
 		for key, val := range *in {
-			var outVal *StructuredProfile
+			var outVal *SimpleValProfile
 			if val == nil {
 				(*out)[key] = nil
 			} else {
 				in, out := &val, &outVal
-				*out = new(StructuredProfile)
+				*out = new(SimpleValProfile)
 				(*in).DeepCopyInto(*out)
 			}
 			(*out)[key] = outVal

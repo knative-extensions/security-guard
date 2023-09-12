@@ -44,9 +44,9 @@ const (
 //			array as JSON array.
 //			map or struct as JSON Object.
 type StructuredProfile struct {
-	Kind string                        `json:"kind"` // bool, float64, string, array, map
-	Vals []SimpleValProfile            `json:"vals"` // used for: array, boolean, number, string items
-	Kv   map[string]*StructuredProfile `json:"kv"`   // used for: object items
+	Kind string             `json:"kind"` // bool, float64, string, array, map
+	Vals []SimpleValProfile `json:"vals"` // used for: array, boolean, number, string items
+	Kv   KeyValProfile      `json:"kv"`   // used for: object items
 }
 
 // Profile a generic json
@@ -54,6 +54,26 @@ type StructuredProfile struct {
 // Implementation supports only array of strings
 func (profile *StructuredProfile) profileI(args ...interface{}) {
 	profile.Profile(args[0])
+}
+
+func (profile *StructuredProfile) recursiveKeyVal(key string, data interface{}) {
+	if data == nil {
+		return
+	}
+	rData := reflect.ValueOf(data)
+	switch rData.Kind() {
+	case reflect.Map:
+		for _, key := range rData.MapKeys() {
+			k := key.String()
+			v := rData.MapIndex(key)
+			profile.recursiveKeyVal(fmt.Sprintf("%s:%s", key, k), v.Interface())
+		}
+	default:
+		key = hashIfNeeded(key)
+		svp := &SimpleValProfile{}
+		svp.Profile(fmt.Sprint(rData))
+		profile.Kv[key] = svp
+	}
 }
 
 func (profile *StructuredProfile) Profile(data interface{}) {
@@ -77,12 +97,11 @@ func (profile *StructuredProfile) Profile(data interface{}) {
 		}
 	case reflect.Map:
 		profile.Kind = KindObject
-		profile.Kv = make(map[string]*StructuredProfile, rData.Len())
+		profile.Kv = make(KeyValProfile)
 		for _, key := range rData.MapKeys() {
 			k := key.String()
 			v := rData.MapIndex(key)
-			profile.Kv[k] = new(StructuredProfile)
-			profile.Kv[k].Profile(v.Interface())
+			profile.recursiveKeyVal(k, v.Interface())
 		}
 	case reflect.Float64:
 		profile.Kind = KindNumber
@@ -106,9 +125,9 @@ func (profile *StructuredProfile) Profile(data interface{}) {
 
 // Exposes ValuePile interface
 type StructuredPile struct {
-	Kind string                     `json:"kind"` // bool, float64, string, array, map
-	Val  *SimpleValPile             `json:"val"`  // used for: array, boolean, number, string items
-	Kv   map[string]*StructuredPile `json:"kv"`   // used for: object items
+	Kind string         `json:"kind"` // bool, float64, string, array, map
+	Val  *SimpleValPile `json:"val"`  // used for: array, boolean, number, string items
+	Kv   KeyValPile     `json:"kv"`   // used for: object items
 }
 
 func (pile *StructuredPile) addI(valProfile ValueProfile) {
@@ -121,7 +140,6 @@ func (pile *StructuredPile) Add(profile *StructuredProfile) {
 		switch profile.Kind {
 		case KindObject:
 			pile.Kind = profile.Kind
-			pile.Kv = make(map[string]*StructuredPile, len(profile.Kv))
 		case KindArray, KindBoolean, KindNumber, KindString:
 			pile.Kind = profile.Kind
 			pile.Val = new(SimpleValPile)
@@ -141,14 +159,10 @@ func (pile *StructuredPile) Add(profile *StructuredProfile) {
 	}
 	switch profile.Kind {
 	case KindObject:
-		for k, v := range profile.Kv {
-			vPile, exists := pile.Kv[k]
-			if !exists {
-				vPile = new(StructuredPile)
-				pile.Kv[k] = vPile
-			}
-			vPile.Add(v)
+		if pile.Kv == nil {
+			pile.Kv = make(KeyValPile)
 		}
+		pile.Kv.Add(&profile.Kv)
 	case KindArray:
 		for _, v := range profile.Vals {
 			pile.Val.Add(&v)
@@ -173,8 +187,6 @@ func (pile *StructuredPile) Merge(otherPile *StructuredPile) {
 	if pile.Kind == KindEmpty {
 		pile.Kind = otherPile.Kind
 		switch otherPile.Kind {
-		case KindObject:
-			pile.Kv = make(map[string]*StructuredPile, len(otherPile.Kv))
 		case KindArray, KindBoolean, KindNumber, KindString:
 			pile.Val = new(SimpleValPile)
 		}
@@ -185,15 +197,10 @@ func (pile *StructuredPile) Merge(otherPile *StructuredPile) {
 	}
 	switch otherPile.Kind {
 	case KindObject:
-		for k, v := range otherPile.Kv {
-			vPile, exists := pile.Kv[k]
-			if !exists {
-				vPile = new(StructuredPile)
-				pile.Kv[k] = vPile
-			} else {
-				vPile.Merge(v)
-			}
+		if pile.Kv == nil {
+			pile.Kv = make(KeyValPile)
 		}
+		pile.Kv.Merge(&otherPile.Kv)
 	case KindArray, KindBoolean, KindNumber, KindString:
 		pile.Val.Merge(otherPile.Val)
 	}
@@ -203,9 +210,9 @@ func (pile *StructuredPile) Merge(otherPile *StructuredPile) {
 
 // Exposes ValueConfig interface
 type StructuredConfig struct {
-	Kind string                       `json:"kind"` // boolean, number, string, skip, array, object
-	Val  *SimpleValConfig             `json:"val"`  // used for: array, boolean, number, string items
-	Kv   map[string]*StructuredConfig `json:"kv"`   // used for: object items
+	Kind string           `json:"kind"` // boolean, number, string, skip, array, object
+	Val  *SimpleValConfig `json:"val"`  // used for: array, boolean, number, string items
+	Kv   KeyValConfig     `json:"kv"`   // used for: object items
 }
 
 func (config *StructuredConfig) decideI(valProfile ValueProfile) *Decision {
@@ -225,13 +232,7 @@ func (config *StructuredConfig) Decide(profile *StructuredProfile) *Decision {
 	}
 	switch config.Kind {
 	case KindObject:
-		for jpk, jpv := range profile.Kv {
-			if config.Kv[jpk] == nil {
-				DecideInner(&current, 1, "Structured - key not allowed: %s", jpk)
-			} else {
-				DecideChild(&current, config.Kv[jpk].Decide(jpv), "Structured - Key: %s", jpk)
-			}
-		}
+		DecideChild(&current, config.Kv.Decide(&profile.Kv), "Structured KeyVal:")
 	case KindArray:
 		for _, jpv := range profile.Vals {
 			DecideChild(&current, config.Val.Decide(&jpv), "Structured - array val")
@@ -252,11 +253,9 @@ func (config *StructuredConfig) Learn(pile *StructuredPile) {
 		config.Kind = pile.Kind
 		switch pile.Kind {
 		case KindObject:
-			config.Kv = make(map[string]*StructuredConfig, len(pile.Kv))
 			config.Val = nil
 		case KindArray, KindBoolean, KindNumber, KindString:
 			config.Val = new(SimpleValConfig)
-			config.Kv = nil
 		}
 	}
 	if config.Kind != pile.Kind {
@@ -265,14 +264,7 @@ func (config *StructuredConfig) Learn(pile *StructuredPile) {
 	}
 	switch config.Kind {
 	case KindObject:
-		for k, v := range pile.Kv {
-			vConfig, exists := config.Kv[k]
-			if !exists {
-				vConfig = new(StructuredConfig)
-				config.Kv[k] = vConfig
-			}
-			vConfig.Learn(v)
-		}
+		config.Kv.Learn(&pile.Kv)
 	case KindArray, KindBoolean, KindNumber, KindString:
 		config.Val.Learn(pile.Val)
 	}
@@ -281,9 +273,7 @@ func (config *StructuredConfig) Learn(pile *StructuredPile) {
 func (config *StructuredConfig) Prepare() {
 	switch config.Kind {
 	case KindObject:
-		for _, v := range config.Kv {
-			v.Prepare()
-		}
+		config.Kv.Prepare()
 	case KindArray, KindBoolean, KindNumber, KindString:
 		config.Val.Prepare()
 	}

@@ -277,7 +277,7 @@ func (s *session) screenRequestBody(req *http.Request) {
 
 func (s *session) screenEnvelop(ticks int64) {
 	respTime := s.respTime
-	if s.reqTime <= ticks {
+	if s.reqTime == respTime {
 		// we do not know the response time, lets assume it is now
 		respTime = ticks
 	}

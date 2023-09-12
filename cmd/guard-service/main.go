@@ -38,6 +38,8 @@ import (
 	pi "knative.dev/security-guard/pkg/pluginterfaces"
 )
 
+const MAX_SYNC_BODY = 10000000
+
 type config struct {
 	GuardServiceLogLevel string   `split_words:"true" required:"false"`
 	GuardServiceInterval string   `split_words:"true" required:"false"`
@@ -251,6 +253,7 @@ func (l *learner) processSync(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	req.Body = http.MaxBytesReader(w, req.Body, MAX_SYNC_BODY)
 	err = json.NewDecoder(req.Body).Decode(&syncReq)
 	if err != nil {
 		pi.Log.Infof("processSync error: %v", err)
@@ -346,8 +349,9 @@ func (l *learner) init() (srv *http.Server, quit chan bool, flushed chan bool) {
 	target := ":8888"
 
 	srv = &http.Server{
-		Addr:    target,
-		Handler: mux,
+		Addr:              target,
+		Handler:           mux,
+		ReadHeaderTimeout: 2 * time.Second,
 	}
 
 	quit = make(chan bool)

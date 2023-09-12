@@ -19,7 +19,6 @@ package iodup
 import (
 	"fmt"
 	"io"
-	_ "net/http/pprof"
 	"sync"
 	"time"
 )

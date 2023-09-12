@@ -62,7 +62,7 @@ func Test_SessionInContext(t *testing.T) {
 		req.Header.Set("Content-Type", restful.MIME_JSON)
 		s2.screenRequest(req)
 		if !s2.hasAlert() {
-			t.Errorf("expected alert")
+			t.Errorf("expected alert A")
 		}
 		s2.decision = nil
 		req.RemoteAddr = "1.2.3.4:80"
@@ -73,12 +73,12 @@ func Test_SessionInContext(t *testing.T) {
 		s2.gateState.criteria.Active = true
 		s2.screenRequest(req)
 		if !s2.hasAlert() {
-			t.Errorf("expected alert")
+			t.Errorf("expected alert B")
 		}
 		s2.decision = nil
 		s2.gateState.criteria.Active = false
 
-		td, _ := time.ParseDuration("1s")
+		td, _ := time.ParseDuration("2s")
 		time.Sleep(td)
 		s2.screenEnvelop(s2.gateState.getTicks())
 		if s2.hasAlert() {
@@ -87,7 +87,7 @@ func Test_SessionInContext(t *testing.T) {
 		s2.gateState.criteria.Active = true
 		s2.screenEnvelop(s2.gateState.getTicks())
 		if !s2.hasAlert() {
-			t.Errorf("expected alert")
+			t.Errorf("expected alert C")
 		}
 		s2.decision = nil
 		s2.gateState.criteria.Active = false
@@ -100,7 +100,7 @@ func Test_SessionInContext(t *testing.T) {
 		s2.gateState.criteria.Active = true
 		s2.screenResponse(resp, s2.gateState.getTicks())
 		if !s2.hasAlert() {
-			t.Errorf("expected alert")
+			t.Errorf("expected alert D")
 		}
 		s2.decision = nil
 		s2.gateState.criteria.Active = false
