@@ -143,8 +143,13 @@ func (*RevisionSpec) applyProbes(container *corev1.Container) {
 	}
 	if container.ReadinessProbe.TCPSocket == nil &&
 		container.ReadinessProbe.HTTPGet == nil &&
-		container.ReadinessProbe.Exec == nil {
+		container.ReadinessProbe.Exec == nil &&
+		container.ReadinessProbe.GRPC == nil {
 		container.ReadinessProbe.TCPSocket = &corev1.TCPSocketAction{}
+	}
+
+	if container.ReadinessProbe.GRPC != nil && container.ReadinessProbe.GRPC.Service == nil {
+		container.ReadinessProbe.GRPC.Service = ptr.String("")
 	}
 
 	if container.ReadinessProbe.SuccessThreshold == 0 {
@@ -206,6 +211,10 @@ func (rs *RevisionSpec) defaultSecurityContext(psc *corev1.PodSecurityContext, c
 		if updatedSC.Capabilities.Add == nil && needsLowPort {
 			updatedSC.Capabilities.Add = []corev1.Capability{"NET_BIND_SERVICE"}
 		}
+	}
+
+	if psc.RunAsNonRoot == nil {
+		updatedSC.RunAsNonRoot = ptr.Bool(true)
 	}
 
 	if *updatedSC != (corev1.SecurityContext{}) {
