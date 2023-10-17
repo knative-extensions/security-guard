@@ -16,7 +16,9 @@ aliases:
   - snneji
   docs-writers:
   - csantanapr
-  - psschwei
+  - nak3
+  - retocode
+  - skonto
   - snneji
   eventing-autoscaler-keda-approvers: []
   eventing-awssqs-approvers:
@@ -50,6 +52,7 @@ aliases:
   - matzew
   - pierDipi
   eventing-kafka-broker-reviewers:
+  - Leo6Leo
   - cali0707
   eventing-kafka-mtsource-approvers:
   - steven0711dong
@@ -81,6 +84,7 @@ aliases:
   - lionelvillard
   - matzew
   eventing-reviewers:
+  - Leo6Leo
   - cali0707
   - creydr
   eventing-wg-leads:
@@ -160,7 +164,8 @@ aliases:
   - christophd
   - rhuss
   knative-admin:
-  - Vishal-Chdhry
+  - Cali0707
+  - ReToCode
   - creydr
   - csantanapr
   - davidhadas
@@ -181,7 +186,8 @@ aliases:
   - skonto
   - upodroid
   knative-release-leads:
-  - Vishal-Chdhry
+  - Cali0707
+  - ReToCode
   - creydr
   - dsimansk
   - pierDipi
@@ -224,7 +230,6 @@ aliases:
   productivity-writers:
   - cardil
   - kvmware
-  - psschwei
   - upodroid
   security-guard-approvers:
   - davidhadas
