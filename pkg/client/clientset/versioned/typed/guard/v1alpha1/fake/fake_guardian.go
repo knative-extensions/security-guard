@@ -23,7 +23,6 @@ import (
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -36,9 +35,9 @@ type FakeGuardians struct {
 	ns   string
 }
 
-var guardiansResource = schema.GroupVersionResource{Group: "guard.security.knative.dev", Version: "v1alpha1", Resource: "guardians"}
+var guardiansResource = v1alpha1.SchemeGroupVersion.WithResource("guardians")
 
-var guardiansKind = schema.GroupVersionKind{Group: "guard.security.knative.dev", Version: "v1alpha1", Kind: "Guardian"}
+var guardiansKind = v1alpha1.SchemeGroupVersion.WithKind("Guardian")
 
 // Get takes name of the guardian, and returns the corresponding guardian object, and an error if there is any.
 func (c *FakeGuardians) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.Guardian, err error) {
