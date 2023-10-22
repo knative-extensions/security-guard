@@ -46,15 +46,15 @@ kubectl create namespace knative-serving
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
 
 #Create K8s resources CRD, ServiceAccounts etc.
-kubectl apply -f https://raw.githubusercontent.com/knative-sandbox/security-guard/release-0.5/config/resources/gateAccount.yaml
-kubectl apply -f https://raw.githubusercontent.com/knative-sandbox/security-guard/release-0.5/config/resources/serviceAccount.yaml
-kubectl apply -f https://raw.githubusercontent.com/knative-sandbox/security-guard/release-0.5/config/resources/guardiansCrd.yaml
+kubectl apply -f https://raw.githubusercontent.com/knative-sandbox/security-guard/release-0.6/config/resources/gateAccount.yaml
+kubectl apply -f https://raw.githubusercontent.com/knative-sandbox/security-guard/release-0.6/config/resources/serviceAccount.yaml
+kubectl apply -f https://raw.githubusercontent.com/knative-sandbox/security-guard/release-0.6/config/resources/guardiansCrd.yaml
 
 # start create-secrets
-kubectl apply -f https://github.com/knative-sandbox/security-guard/releases/download/v0.5.0/create-secrets.yaml
+kubectl apply -f https://github.com/knative-sandbox/security-guard/releases/download/v0.6.0/create-secrets.yaml
 
 # start guard-service
-kubectl apply -f https://github.com/knative-sandbox/security-guard/releases/download/v0.5.0/guard-service.yaml
+kubectl apply -f https://github.com/knative-sandbox/security-guard/releases/download/v0.6.0/guard-service.yaml
 
 # wait for keys to be ready
 kubectl wait --namespace knative-serving --for=condition=complete job/create-knative-secrets --timeout=120s
@@ -68,10 +68,10 @@ REPLACE_NAME="s/ name: knative-serving-certs/ name: default-serving-certs/"
 kubectl get secret knative-serving-certs --namespace=knative-serving -o yaml |sed "${REPLACE_NS}" |sed "${REPLACE_NAME}" |sed  "s/ selfLink: .*/ /"|sed  "s/ uid: .*/ /" |sed  "s/ resourceVersion: .*/ /" |kubectl apply -f -
 
 #add hellowworld - protected using a guard sidecar  (the recommended pattern)
-kubectl apply -f https://github.com/knative-sandbox/security-guard/releases/download/v0.5.0/secured-helloworld.yaml
+kubectl apply -f https://github.com/knative-sandbox/security-guard/releases/download/v0.6.0/secured-helloworld.yaml
 
 #add myapp - protected using a separate guard pod (non-recommended pattern)
-kubectl apply -f https://github.com/knative-sandbox/security-guard/releases/download/v0.5.0/secured-layered-myapp.yaml
+kubectl apply -f https://github.com/knative-sandbox/security-guard/releases/download/v0.6.0/secured-layered-myapp.yaml
 
 #cleanup
 rm $CONFIG

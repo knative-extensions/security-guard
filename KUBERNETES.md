@@ -173,12 +173,12 @@ ko apply -f ./config/deploy/guard-service.yaml
 ### Install guard-service from released images and yamls
 
 ```sh
-kubectl apply -f https://raw.githubusercontent.com/knative-sandbox/security-guard/release-0.5/config/resources/gateAccount.yaml
-kubectl apply -f https://raw.githubusercontent.com/knative-sandbox/security-guard/release-0.5/config/resources/serviceAccount.yaml
-kubectl apply -f https://raw.githubusercontent.com/knative-sandbox/security-guard/release-0.5/config/resources/guardiansCrd.yaml
+kubectl apply -f https://raw.githubusercontent.com/knative-sandbox/security-guard/release-0.6/config/resources/gateAccount.yaml
+kubectl apply -f https://raw.githubusercontent.com/knative-sandbox/security-guard/release-0.6/config/resources/serviceAccount.yaml
+kubectl apply -f https://raw.githubusercontent.com/knative-sandbox/security-guard/release-0.6/config/resources/guardiansCrd.yaml
 
-kubectl apply -f https://github.com/knative-sandbox/security-guard/releases/download/v0.5.0/create-knative-secrets.yaml
-kubectl apply -f https://github.com/knative-sandbox/security-guard/releases/download/v0.5.0/guard-service.yaml
+kubectl apply -f https://github.com/knative-sandbox/security-guard/releases/download/v0.6.0/create-knative-secrets.yaml
+kubectl apply -f https://github.com/knative-sandbox/security-guard/releases/download/v0.6.0/guard-service.yaml
 ```
 
 ## Deploying a pod with a Security-Guard sidecar
