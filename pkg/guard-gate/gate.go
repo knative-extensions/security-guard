@@ -28,7 +28,7 @@ import (
 	pi "knative.dev/security-guard/pkg/pluginterfaces"
 )
 
-const plugVersion string = "0.5"
+const plugVersion string = "0.6"
 const plugName string = "guard"
 
 const (
@@ -74,6 +74,7 @@ func (p *plug) ApproveRequest(req *http.Request) (*http.Request, error) {
 
 	// Req
 	s.screenEnvelop(ticks)
+	s.screenPod()
 	s.screenRequest(req)
 	s.screenRequestBody(req)
 
@@ -117,6 +118,7 @@ func (p *plug) ApproveResponse(req *http.Request, resp *http.Response) (*http.Re
 	s.screenResponse(resp, ticks)
 	s.screenResponseBody(resp)
 	s.screenEnvelop(ticks)
+	s.screenPod()
 
 	if p.gateState.shouldBlock() && (s.hasAlert() || p.gateState.hasAlert()) {
 		p.gateState.addStat("BlockOnResponse")
