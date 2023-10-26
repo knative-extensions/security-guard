@@ -109,6 +109,11 @@ func (l *learner) authenticate(req *http.Request) (podname string, sid string, n
 		err = fmt.Errorf("missing token")
 		return
 	}
+	if len(token) < 8 {
+		err = fmt.Errorf("invalid token")
+		return
+	}
+
 	token = token[7:]
 
 	// Check token cache
