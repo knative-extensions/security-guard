@@ -1,4 +1,4 @@
-# Report a vulnerability
+# Knative Security Policy
 
 We're extremely grateful for security researchers and users that report vulnerabilities to the Knative Open Source Community. All reports are thoroughly investigated by a set of community volunteers.
 
