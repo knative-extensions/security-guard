@@ -127,7 +127,6 @@ We persist the guardian if 5 min passed since we last persisted it and we have a
 
 Although **Guardian** CRDs and Configmaps can be controlled directly via `kubectl`, an optional [guard-ui](cmd/guard-ui) is offered to simplify and clarify the micro-rules.
 
-
 ## Summary
 
 Guard takes a zero-trust approach. Guard assumes that all services are most likely vulnerable and places a gate in front of every service to monitor client interactions and block exploit delivery. By doing so, Guard implements a zero-trust architecture. At the same time, guard monitors each service Pod, offering further protection on a Pod level basis.
