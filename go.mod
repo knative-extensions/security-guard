@@ -1,6 +1,8 @@
 module knative.dev/security-guard
 
-go 1.18
+go 1.21
+
+toolchain go1.21.4
 
 require (
 	github.com/emicklei/go-restful v2.9.5+incompatible
@@ -12,10 +14,10 @@ require (
 	k8s.io/api v0.27.6
 	k8s.io/apimachinery v0.27.6
 	k8s.io/client-go v0.27.6
-	knative.dev/hack v0.0.0-20231109190034-5deaddeb51a7
-	knative.dev/networking v0.0.0-20231115015815-3af9769712cd
-	knative.dev/pkg v0.0.0-20231115001034-97c7258e3a98
-	knative.dev/serving v0.39.1-0.20231116002444-75613869a913
+	knative.dev/hack v0.0.0-20231129013717-94f0ccfbab2d
+	knative.dev/networking v0.0.0-20231129014433-ee22af1c2102
+	knative.dev/pkg v0.0.0-20231129013332-6df4a9a2a222
+	knative.dev/serving v0.39.1-0.20231129022154-16a0c550ff26
 )
 
 require (
@@ -78,7 +80,7 @@ require (
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.15.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
-	google.golang.org/api v0.150.0 // indirect
+	google.golang.org/api v0.151.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20231016165738-49dd2c1f3d0b // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20231016165738-49dd2c1f3d0b // indirect
