@@ -2,8 +2,16 @@
 # Do not modify this file, instead modify peribolos/knative-extensions.yaml
 
 aliases:
-  backstage-plugins-reviewers: []
-  backstage-plugins-writers: []
+  backstage-plugins-reviewers:
+  - aliok
+  - cali0707
+  - leo6leo
+  - pierdipi
+  backstage-plugins-writers:
+  - aliok
+  - cali0707
+  - leo6leo
+  - pierdipi
   client-wg-leads:
   - dsimansk
   - navidshaikh
@@ -18,7 +26,6 @@ aliases:
   - snneji
   docs-writers:
   - csantanapr
-  - nak3
   - retocode
   - skonto
   - snneji
@@ -204,13 +211,10 @@ aliases:
   - dprotaso
   net-gateway-api-approvers:
   - dprotaso
-  - nak3
   net-http01-approvers: []
   net-istio-approvers:
-  - nak3
   - skonto
   net-kourier-approvers:
-  - nak3
   - skonto
   networking-wg-leads: []
   operations-wg-leads:
@@ -241,7 +245,6 @@ aliases:
   - davidhadas
   - evankanderson
   serving-approvers:
-  - nak3
   - psschwei
   - skonto
   serving-progressive-rollout-approvers:
@@ -250,19 +253,17 @@ aliases:
   - sukumargaonkar
   - yuzisun
   serving-reviewers:
-  - KauzClay
-  - krsna-m
+  - izabelacg
   - retocode
   - skonto
   serving-triage:
-  - KauzClay
+  - izabelacg
   - retocode
   - skonto
   serving-wg-leads:
   - dprotaso
   serving-writers:
   - dprotaso
-  - nak3
   - psschwei
   - skonto
   steering-committee:
