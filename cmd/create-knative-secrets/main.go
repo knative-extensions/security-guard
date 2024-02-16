@@ -148,7 +148,7 @@ func main() {
 			fmt.Printf("Cannot generate the keypair for the knative-serving-certs secret: %v\n", err)
 			return
 		}
-		err = commitUpdatedSecret(client, secret, keyPair, caSecret.Data[certificates.SecretCertKey])
+		err = commitUpdatedSecret(client, secret, keyPair, caSecret.Data[certificates.CertName])
 		if err != nil {
 			fmt.Printf("Failed to commit the keypair for the knative-serving-certs secret: %v\n", err)
 			return
@@ -166,8 +166,6 @@ func commitUpdatedSecret(client kubernetes.Interface, secret *corev1.Secret, key
 	secret.Data = make(map[string][]byte, 6)
 	secret.Data[certificates.CertName] = keyPair.CertBytes()
 	secret.Data[certificates.PrivateKeyName] = keyPair.PrivateKeyBytes()
-	secret.Data[certificates.SecretCertKey] = keyPair.CertBytes()
-	secret.Data[certificates.SecretPKKey] = keyPair.PrivateKeyBytes()
 	if caCert != nil {
 		secret.Data[certificates.CaCertName] = caCert
 	}
@@ -177,11 +175,11 @@ func commitUpdatedSecret(client kubernetes.Interface, secret *corev1.Secret, key
 }
 
 func parseAndValidateSecret(secret *corev1.Secret, shouldContainCaCert bool) (*x509.Certificate, *rsa.PrivateKey, error) {
-	certBytes, ok := secret.Data[certificates.SecretCertKey]
+	certBytes, ok := secret.Data[certificates.CertName]
 	if !ok {
 		return nil, nil, fmt.Errorf("missing cert bytes")
 	}
-	pkBytes, ok := secret.Data[certificates.SecretPKKey]
+	pkBytes, ok := secret.Data[certificates.PrivateKeyName]
 	if !ok {
 		return nil, nil, fmt.Errorf("missing pk bytes")
 	}
