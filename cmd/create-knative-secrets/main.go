@@ -36,7 +36,7 @@ import (
 	pkglogging "knative.dev/pkg/logging"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/networking/pkg/certificates"
+	"knative.dev/security-guard/pkg/certificates"
 )
 
 const (
@@ -169,7 +169,6 @@ func commitUpdatedSecret(client kubernetes.Interface, secret *corev1.Secret, key
 	secret.Data[certificates.SecretCertKey] = keyPair.CertBytes()
 	secret.Data[certificates.SecretPKKey] = keyPair.PrivateKeyBytes()
 	if caCert != nil {
-		secret.Data[certificates.SecretCaCertKey] = caCert
 		secret.Data[certificates.CaCertName] = caCert
 	}
 
@@ -187,7 +186,7 @@ func parseAndValidateSecret(secret *corev1.Secret, shouldContainCaCert bool) (*x
 		return nil, nil, fmt.Errorf("missing pk bytes")
 	}
 	if shouldContainCaCert {
-		if _, ok := secret.Data[certificates.SecretCaCertKey]; !ok {
+		if _, ok := secret.Data[certificates.CaCertName]; !ok {
 			return nil, nil, fmt.Errorf("missing ca cert bytes")
 		}
 	}
