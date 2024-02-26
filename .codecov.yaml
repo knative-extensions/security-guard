@@ -21,3 +21,4 @@ ignore:
   - "test"
   - "third_party"
   - "vendor"
+  - "pkg/client/clientset"
