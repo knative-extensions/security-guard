@@ -35,7 +35,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
-	"knative.dev/networking/pkg/certificates"
+	"knative.dev/security-guard/pkg/certificates"
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 )
 

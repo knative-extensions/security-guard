@@ -27,7 +27,7 @@ import (
 	"strings"
 
 	"go.uber.org/zap"
-	"knative.dev/networking/pkg/certificates"
+	"knative.dev/security-guard/pkg/certificates"
 	"knative.dev/serving/pkg/queue"
 	"knative.dev/serving/pkg/queue/sharedmain"
 
@@ -134,12 +134,7 @@ func (p *GateQPOption) ProcessAnnotations() bool {
 		if rootCA := os.Getenv("ROOT_CA"); rootCA != "" {
 			p.config["rootca"] = rootCA
 		} else {
-			// lets try the older secret names
-			pi.Log.Debugf("RootCa (%s) is missing", path.Join(queue.CertDirectory, certificates.CaCertName))
-			buf, err = os.ReadFile(path.Join(queue.CertDirectory, certificates.SecretCaCertKey))
-			if err != nil {
-				pi.Log.Debugf("RootCa (%s) is missing - Insecure communication, working without TLS RootCA!", path.Join(queue.CertDirectory, certificates.SecretCaCertKey))
-			}
+			pi.Log.Debugf("RootCa (%s) is missing - Insecure communication, working without TLS RootCA!", path.Join(queue.CertDirectory, certificates.CaCertName))
 		}
 	}
 	if err == nil {
