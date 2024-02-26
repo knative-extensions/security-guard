@@ -17,7 +17,6 @@ limitations under the License.
 package certificates
 
 import (
-	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -112,16 +111,6 @@ func CreateCACerts(expirationInterval time.Duration) (*KeyPair, error) {
 		Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(caKeyPair),
 	}
 	return NewKeyPair(caPrivateKeyPem, caCertPem), nil
-}
-
-// Deprecated: CreateControlPlaneCert generates the certificate for the client
-func CreateControlPlaneCert(_ context.Context, caKey *rsa.PrivateKey, caCertificate *x509.Certificate, expirationInterval time.Duration) (*KeyPair, error) {
-	return CreateCert(caKey, caCertificate, expirationInterval, LegacyFakeDnsName)
-}
-
-// Deprecated: CreateDataPlaneCert generates the certificate for the server
-func CreateDataPlaneCert(_ context.Context, caKey *rsa.PrivateKey, caCertificate *x509.Certificate, expirationInterval time.Duration) (*KeyPair, error) {
-	return CreateCert(caKey, caCertificate, expirationInterval, LegacyFakeDnsName)
 }
 
 // CreateCert generates the certificate for use by client and server

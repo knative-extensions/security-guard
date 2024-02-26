@@ -143,7 +143,7 @@ func main() {
 		// Check the secret to reconcile type
 		var keyPair *certificates.KeyPair
 
-		keyPair, err = certificates.CreateDataPlaneCert(ctx, caPk, caCert, expirationInterval)
+		keyPair, err = certificates.CreateCert(caPk, caCert, expirationInterval)
 		if err != nil {
 			fmt.Printf("Cannot generate the keypair for the knative-serving-certs secret: %v\n", err)
 			return
