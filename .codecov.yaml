@@ -25,4 +25,3 @@ ignore:
   - "cmd/guard-webhook"
   - "cmd/guard-ui"
   - "cmd/create-knative-secrets"
-  
