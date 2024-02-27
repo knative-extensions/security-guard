@@ -16,6 +16,7 @@ jobs:
       matrix:
         k8s-version:
         - v1.28.x
+        - v1.29.x
 
     env:
       KO_DOCKER_REPO: registry.local:5000/knative # registry setup by setup-kind
