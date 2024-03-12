@@ -70,7 +70,12 @@ jobs:
     - name: Wait for Ready
       run: |
         echo Waiting for Pods to become ready.
+        kubectl get pods -n knative-serving
         kubectl wait pod --timeout 300s --for=condition=Ready -n knative-serving -l "app.kubernetes.io/name=knative-serving"
+        sleep 60
+        kubectl get pods -n knative-serving
+        kubectl describe pods -n knative-serving
+        kubectl logs -n knative-serving deployment/guard-service
         kubectl wait pod --timeout 300s --for=condition=Ready -n knative-serving -l "app=guard-service"
         # For debugging.
         kubectl get pods --all-namespaces
