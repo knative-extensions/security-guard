@@ -31,6 +31,10 @@ kind load docker-image $Q_IMAGE --name k8s
 GS_IMAGE=`ko build ko://knative.dev/security-guard/cmd/guard-service -B  `
 kind load docker-image $GS_IMAGE --name k8s
 
+# create and load create-knative-secrets image
+GS_IMAGE=`ko build ko://knative.dev/security-guard/cmd/create-knative-secrets -B  `
+kind load docker-image $GS_IMAGE --name k8s
+
 # create and load guard-webhook image
 GW_IMAGE=`ko build ko://knative.dev/security-guard/cmd/guard-webhook -B  `
 kind load docker-image $GW_IMAGE --name k8s

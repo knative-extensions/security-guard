@@ -69,6 +69,10 @@ jobs:
 
     - name: Wait for Ready
       run: |
+        echo Waiting for Secrets to be created.
+        kubectl get pods -n knative-serving
+        kubectl wait job/create-knative-secrets   -n knative-serving --for=condition=complete --timeout 300s
+        kubectl get secrets  -n knative-serving 
         echo Waiting for Pods to become ready.
         kubectl wait pod --timeout 300s --for=condition=Ready -n knative-serving -l "app.kubernetes.io/name=knative-serving"
         kubectl wait pod --timeout 300s --for=condition=Ready -n knative-serving -l "app=guard-service"
