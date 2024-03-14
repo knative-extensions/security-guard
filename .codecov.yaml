@@ -23,5 +23,5 @@ ignore:
   - "vendor"
   - "pkg/client/clientset"
   - "cmd/guard-ui"
-  # - "cmd/guard-webhook"
-  # - "cmd/create-knative-secrets"
+  - "cmd/guard-webhook"
+  - "cmd/create-knative-secrets"
