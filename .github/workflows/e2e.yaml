@@ -3,7 +3,7 @@ name: e2e
 on:
   pull_request:
     branches: [ 'main', 'release-*' ]
-    
+
 defaults:
   run:
     shell: bash
@@ -15,8 +15,8 @@ jobs:
       fail-fast: false # Keep running if one leg fails.
       matrix:
         k8s-version:
-        - v1.27.x
         - v1.28.x
+        - v1.29.x
 
     env:
       KO_DOCKER_REPO: registry.local:5000/knative # registry setup by setup-kind
@@ -41,7 +41,7 @@ jobs:
 
     - name: Check out current repository code onto GOPATH
       uses: actions/checkout@v3
-    
+
     - name: Setup KinD
       uses: chainguard-dev/actions/setup-kind@main
       with:
@@ -53,7 +53,7 @@ jobs:
       run: |
         set -o pipefail
         kubectl apply -f https://storage.googleapis.com/knative-nightly/serving/latest/serving-crds.yaml
-        kubectl apply -f https://storage.googleapis.com/knative-nightly/serving/latest/serving-core.yaml      
+        kubectl apply -f https://storage.googleapis.com/knative-nightly/serving/latest/serving-core.yaml
         kubectl apply -f https://storage.googleapis.com/knative-nightly/net-kourier/latest/kourier.yaml
         kubectl patch configmap/config-network \
           --namespace knative-serving \
@@ -62,9 +62,9 @@ jobs:
         kubectl patch configmap/config-logging \
           --namespace knative-serving \
           --type merge \
-          --patch '{"data":{"loglevel.queueproxy":"debug"}}'  
-      
-    - name: Install  security-guard  
+          --patch '{"data":{"loglevel.queueproxy":"debug"}}'
+
+    - name: Install  security-guard
       run: ko apply -Rf ./config
 
     - name: Wait for Ready
@@ -92,7 +92,7 @@ jobs:
            --env "TARGET=Secured World" \
            --annotation features.knative.dev/queueproxy-podinfo=enabled \
            --annotation qpoption.knative.dev/guard-activate=enable
-        URL=`kn service list|grep httptest1|awk '{print $2}'`   
+        URL=`kn service list|grep httptest1|awk '{print $2}'`
         echo "PROTECTED_SERVICE=$URL" >> $GITHUB_ENV
 
     - name: Run e2e Tests "httptest1"
@@ -106,4 +106,3 @@ jobs:
         cluster-resources: nodes,namespaces,crds
         namespace-resources: pods,svc,services.serving.knative.dev,guardians.guard.security.knative.dev
         artifact-name: logs-${{ matrix.k8s-version }}
-      

@@ -28,8 +28,8 @@ import (
 	"os"
 	"path"
 
-	"knative.dev/networking/pkg/certificates"
 	spec "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
+	"knative.dev/security-guard/pkg/certificates"
 	guardKubeMgr "knative.dev/security-guard/pkg/guard-kubemgr"
 	pi "knative.dev/security-guard/pkg/pluginterfaces"
 )
