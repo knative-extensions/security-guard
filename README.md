@@ -4,6 +4,7 @@
 [![LICENSE](https://img.shields.io/github/license/knative-sandbox/security-guard.svg)](https://github.com/knative-sandbox/seurity-guard/blob/main/LICENSE)
 [![Slack Status](https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&style=social)](https://knative.slack.com)
 [![codecov](https://codecov.io/gh/knative-sandbox/security-guard/branch/main/graph/badge.svg)](https://codecov.io/gh/knative-sandbox/security-guard)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fknative-extensions%2Fsecurity-guard.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fknative-extensions%2Fsecurity-guard?ref=badge_shield)
 
 <h1><img src="img/guard.png" width="80"/> Security-Guard</h1>
 
@@ -130,3 +131,7 @@ Although **Guardian** CRDs and Configmaps can be controlled directly via `kubect
 ## Summary
 
 Guard takes a zero-trust approach. Guard assumes that all services are most likely vulnerable and places a gate in front of every service to monitor client interactions and block exploit delivery. By doing so, Guard implements a zero-trust architecture. At the same time, guard monitors each service Pod, offering further protection on a Pod level basis.
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fknative-extensions%2Fsecurity-guard.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fknative-extensions%2Fsecurity-guard?ref=badge_large)
