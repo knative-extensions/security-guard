@@ -27,26 +27,6 @@ boilerplate="${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt"
 
 echo "=== Update Codegen for $MODULE_NAME"
 
-# group "Kubernetes Codegen"
-#
-# generate the code with:
-# --output-base    because this script should also be able to run inside the vendor dir of
-#                  k8s.io/kubernetes. The output-base is needed for the generators to output into the vendor dir
-#                  instead of the $GOPATH directly. For normal projects this can be dropped.
-# ${CODEGEN_PKG}/generate-groups.sh "client" \
-#   knative.dev/security-guard/pkg/client knative.dev/security-guard/pkg/apis \
-#    "guard:v1alpha1" \
-#   --go-header-file "${boilerplate}"
-
-
-# group "Deepcopy Gen"
-#
-# Depends on generate-groups.sh to install bin/deepcopy-gen
-# ${GOPATH}/bin/deepcopy-gen \
-#  -O zz_generated.deepcopy \
-#   --go-header-file "${boilerplate}" \
-#   -i knative.dev/security-guard/pkg/apis/guard/v1alpha1
-
 source "${CODEGEN_PKG}/kube_codegen.sh"
 
 group "Kubernetes Codegen"
