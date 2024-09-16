@@ -18,9 +18,6 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-#Broken code generation - should be fixed after we upgrade the go tools to 0.30.*  
-exit 0 
-
 source $(dirname $0)/../vendor/knative.dev/hack/codegen-library.sh
 
 # If we run with -mod=vendor here, then generate-groups.sh looks for vendor files in the wrong place.
@@ -30,22 +27,12 @@ boilerplate="${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt"
 
 echo "=== Update Codegen for $MODULE_NAME"
 
+source "${CODEGEN_PKG}/kube_codegen.sh"
+
 group "Kubernetes Codegen"
 
-# generate the code with:
-# --output-base    because this script should also be able to run inside the vendor dir of
-#                  k8s.io/kubernetes. The output-base is needed for the generators to output into the vendor dir
-#                  instead of the $GOPATH directly. For normal projects this can be dropped.
-${CODEGEN_PKG}/generate-groups.sh "client" \
-  knative.dev/security-guard/pkg/client knative.dev/security-guard/pkg/apis \
-   "guard:v1alpha1" \
-  --go-header-file "${boilerplate}"
-
+kube::codegen::gen_client  --boilerplate "${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt"  --output-dir "pkg/client"  --output-pkg "knative.dev/security-guard/pkg/client/" pkg/apis
 
 group "Deepcopy Gen"
 
-# Depends on generate-groups.sh to install bin/deepcopy-gen
-${GOPATH}/bin/deepcopy-gen \
-  -O zz_generated.deepcopy \
-  --go-header-file "${boilerplate}" \
-  -i knative.dev/security-guard/pkg/apis/guard/v1alpha1
+kube::codegen::gen_helpers --boilerplate "${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt" pkg/apis
