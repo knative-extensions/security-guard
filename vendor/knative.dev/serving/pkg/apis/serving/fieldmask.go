@@ -66,6 +66,10 @@ func VolumeSourceMask(ctx context.Context, in *corev1.VolumeSource) *corev1.Volu
 		out.PersistentVolumeClaim = in.PersistentVolumeClaim
 	}
 
+	if cfg.Features.PodSpecVolumesHostPath != config.Disabled {
+		out.HostPath = in.HostPath
+	}
+
 	// Too many disallowed fields to list
 
 	return out
@@ -710,10 +714,12 @@ func SecurityContextMask(ctx context.Context, in *corev1.SecurityContext) *corev
 	// SeccompProfile defaults to "unconstrained", but the safe values are
 	// "RuntimeDefault" or "Localhost" (with localhost path set)
 	out.SeccompProfile = in.SeccompProfile
-
+	// Only allow setting Privileged to false
+	if in.Privileged != nil && !*in.Privileged {
+		out.Privileged = in.Privileged
+	}
 	// Disallowed
 	// This list is unnecessary, but added here for clarity
-	out.Privileged = nil
 	out.SELinuxOptions = nil
 	out.ProcMount = nil
 
