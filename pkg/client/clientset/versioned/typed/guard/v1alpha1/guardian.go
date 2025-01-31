@@ -19,13 +19,13 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"context"
+	context "context"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	gentype "k8s.io/client-go/gentype"
-	v1alpha1 "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
+	guardv1alpha1 "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
 	scheme "knative.dev/security-guard/pkg/client/clientset/versioned/scheme"
 )
 
@@ -37,31 +37,32 @@ type GuardiansGetter interface {
 
 // GuardianInterface has methods to work with Guardian resources.
 type GuardianInterface interface {
-	Create(ctx context.Context, guardian *v1alpha1.Guardian, opts v1.CreateOptions) (*v1alpha1.Guardian, error)
-	Update(ctx context.Context, guardian *v1alpha1.Guardian, opts v1.UpdateOptions) (*v1alpha1.Guardian, error)
+	Create(ctx context.Context, guardian *guardv1alpha1.Guardian, opts v1.CreateOptions) (*guardv1alpha1.Guardian, error)
+	Update(ctx context.Context, guardian *guardv1alpha1.Guardian, opts v1.UpdateOptions) (*guardv1alpha1.Guardian, error)
 	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
-	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.Guardian, error)
-	List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.GuardianList, error)
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*guardv1alpha1.Guardian, error)
+	List(ctx context.Context, opts v1.ListOptions) (*guardv1alpha1.GuardianList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.Guardian, err error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *guardv1alpha1.Guardian, err error)
 	GuardianExpansion
 }
 
 // guardians implements GuardianInterface
 type guardians struct {
-	*gentype.ClientWithList[*v1alpha1.Guardian, *v1alpha1.GuardianList]
+	*gentype.ClientWithList[*guardv1alpha1.Guardian, *guardv1alpha1.GuardianList]
 }
 
 // newGuardians returns a Guardians
 func newGuardians(c *GuardV1alpha1Client, namespace string) *guardians {
 	return &guardians{
-		gentype.NewClientWithList[*v1alpha1.Guardian, *v1alpha1.GuardianList](
+		gentype.NewClientWithList[*guardv1alpha1.Guardian, *guardv1alpha1.GuardianList](
 			"guardians",
 			c.RESTClient(),
 			scheme.ParameterCodec,
 			namespace,
-			func() *v1alpha1.Guardian { return &v1alpha1.Guardian{} },
-			func() *v1alpha1.GuardianList { return &v1alpha1.GuardianList{} }),
+			func() *guardv1alpha1.Guardian { return &guardv1alpha1.Guardian{} },
+			func() *guardv1alpha1.GuardianList { return &guardv1alpha1.GuardianList{} },
+		),
 	}
 }

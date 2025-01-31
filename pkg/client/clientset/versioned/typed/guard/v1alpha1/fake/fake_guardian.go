@@ -19,116 +19,32 @@ limitations under the License.
 package fake
 
 import (
-	"context"
-
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	labels "k8s.io/apimachinery/pkg/labels"
-	types "k8s.io/apimachinery/pkg/types"
-	watch "k8s.io/apimachinery/pkg/watch"
-	testing "k8s.io/client-go/testing"
+	gentype "k8s.io/client-go/gentype"
 	v1alpha1 "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
+	guardv1alpha1 "knative.dev/security-guard/pkg/client/clientset/versioned/typed/guard/v1alpha1"
 )
 
-// FakeGuardians implements GuardianInterface
-type FakeGuardians struct {
+// fakeGuardians implements GuardianInterface
+type fakeGuardians struct {
+	*gentype.FakeClientWithList[*v1alpha1.Guardian, *v1alpha1.GuardianList]
 	Fake *FakeGuardV1alpha1
-	ns   string
 }
 
-var guardiansResource = v1alpha1.SchemeGroupVersion.WithResource("guardians")
-
-var guardiansKind = v1alpha1.SchemeGroupVersion.WithKind("Guardian")
-
-// Get takes name of the guardian, and returns the corresponding guardian object, and an error if there is any.
-func (c *FakeGuardians) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.Guardian, err error) {
-	emptyResult := &v1alpha1.Guardian{}
-	obj, err := c.Fake.
-		Invokes(testing.NewGetActionWithOptions(guardiansResource, c.ns, name, options), emptyResult)
-
-	if obj == nil {
-		return emptyResult, err
+func newFakeGuardians(fake *FakeGuardV1alpha1, namespace string) guardv1alpha1.GuardianInterface {
+	return &fakeGuardians{
+		gentype.NewFakeClientWithList[*v1alpha1.Guardian, *v1alpha1.GuardianList](
+			fake.Fake,
+			namespace,
+			v1alpha1.SchemeGroupVersion.WithResource("guardians"),
+			v1alpha1.SchemeGroupVersion.WithKind("Guardian"),
+			func() *v1alpha1.Guardian { return &v1alpha1.Guardian{} },
+			func() *v1alpha1.GuardianList { return &v1alpha1.GuardianList{} },
+			func(dst, src *v1alpha1.GuardianList) { dst.ListMeta = src.ListMeta },
+			func(list *v1alpha1.GuardianList) []*v1alpha1.Guardian { return gentype.ToPointerSlice(list.Items) },
+			func(list *v1alpha1.GuardianList, items []*v1alpha1.Guardian) {
+				list.Items = gentype.FromPointerSlice(items)
+			},
+		),
+		fake,
 	}
-	return obj.(*v1alpha1.Guardian), err
-}
-
-// List takes label and field selectors, and returns the list of Guardians that match those selectors.
-func (c *FakeGuardians) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.GuardianList, err error) {
-	emptyResult := &v1alpha1.GuardianList{}
-	obj, err := c.Fake.
-		Invokes(testing.NewListActionWithOptions(guardiansResource, guardiansKind, c.ns, opts), emptyResult)
-
-	if obj == nil {
-		return emptyResult, err
-	}
-
-	label, _, _ := testing.ExtractFromListOptions(opts)
-	if label == nil {
-		label = labels.Everything()
-	}
-	list := &v1alpha1.GuardianList{ListMeta: obj.(*v1alpha1.GuardianList).ListMeta}
-	for _, item := range obj.(*v1alpha1.GuardianList).Items {
-		if label.Matches(labels.Set(item.Labels)) {
-			list.Items = append(list.Items, item)
-		}
-	}
-	return list, err
-}
-
-// Watch returns a watch.Interface that watches the requested guardians.
-func (c *FakeGuardians) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
-	return c.Fake.
-		InvokesWatch(testing.NewWatchActionWithOptions(guardiansResource, c.ns, opts))
-
-}
-
-// Create takes the representation of a guardian and creates it.  Returns the server's representation of the guardian, and an error, if there is any.
-func (c *FakeGuardians) Create(ctx context.Context, guardian *v1alpha1.Guardian, opts v1.CreateOptions) (result *v1alpha1.Guardian, err error) {
-	emptyResult := &v1alpha1.Guardian{}
-	obj, err := c.Fake.
-		Invokes(testing.NewCreateActionWithOptions(guardiansResource, c.ns, guardian, opts), emptyResult)
-
-	if obj == nil {
-		return emptyResult, err
-	}
-	return obj.(*v1alpha1.Guardian), err
-}
-
-// Update takes the representation of a guardian and updates it. Returns the server's representation of the guardian, and an error, if there is any.
-func (c *FakeGuardians) Update(ctx context.Context, guardian *v1alpha1.Guardian, opts v1.UpdateOptions) (result *v1alpha1.Guardian, err error) {
-	emptyResult := &v1alpha1.Guardian{}
-	obj, err := c.Fake.
-		Invokes(testing.NewUpdateActionWithOptions(guardiansResource, c.ns, guardian, opts), emptyResult)
-
-	if obj == nil {
-		return emptyResult, err
-	}
-	return obj.(*v1alpha1.Guardian), err
-}
-
-// Delete takes name of the guardian and deletes it. Returns an error if one occurs.
-func (c *FakeGuardians) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	_, err := c.Fake.
-		Invokes(testing.NewDeleteActionWithOptions(guardiansResource, c.ns, name, opts), &v1alpha1.Guardian{})
-
-	return err
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *FakeGuardians) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewDeleteCollectionActionWithOptions(guardiansResource, c.ns, opts, listOpts)
-
-	_, err := c.Fake.Invokes(action, &v1alpha1.GuardianList{})
-	return err
-}
-
-// Patch applies the patch and returns the patched guardian.
-func (c *FakeGuardians) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.Guardian, err error) {
-	emptyResult := &v1alpha1.Guardian{}
-	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceActionWithOptions(guardiansResource, c.ns, name, pt, data, opts, subresources...), emptyResult)
-
-	if obj == nil {
-		return emptyResult, err
-	}
-	return obj.(*v1alpha1.Guardian), err
 }
