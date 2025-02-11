@@ -29,7 +29,7 @@ type FakeGuardV1alpha1 struct {
 }
 
 func (c *FakeGuardV1alpha1) Guardians(namespace string) v1alpha1.GuardianInterface {
-	return &FakeGuardians{c, namespace}
+	return newFakeGuardians(c, namespace)
 }
 
 // RESTClient returns a RESTClient that is used to communicate

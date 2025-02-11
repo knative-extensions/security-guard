@@ -19,11 +19,11 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"net/http"
+	http "net/http"
 
 	rest "k8s.io/client-go/rest"
-	v1alpha1 "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
-	"knative.dev/security-guard/pkg/client/clientset/versioned/scheme"
+	guardv1alpha1 "knative.dev/security-guard/pkg/apis/guard/v1alpha1"
+	scheme "knative.dev/security-guard/pkg/client/clientset/versioned/scheme"
 )
 
 type GuardV1alpha1Interface interface {
@@ -85,10 +85,10 @@ func New(c rest.Interface) *GuardV1alpha1Client {
 }
 
 func setConfigDefaults(config *rest.Config) error {
-	gv := v1alpha1.SchemeGroupVersion
+	gv := guardv1alpha1.SchemeGroupVersion
 	config.GroupVersion = &gv
 	config.APIPath = "/apis"
-	config.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
+	config.NegotiatedSerializer = rest.CodecFactoryForGeneratedClient(scheme.Scheme, scheme.Codecs).WithoutConversion()
 
 	if config.UserAgent == "" {
 		config.UserAgent = rest.DefaultKubernetesUserAgent()
