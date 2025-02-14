@@ -2,8 +2,6 @@ module knative.dev/security-guard
 
 go 1.23.0
 
-toolchain go1.23.3
-
 require (
 	github.com/emicklei/go-restful v2.9.5+incompatible
 	github.com/golang-jwt/jwt/v4 v4.5.0
