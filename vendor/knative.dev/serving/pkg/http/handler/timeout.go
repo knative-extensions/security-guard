@@ -138,9 +138,11 @@ func (h *timeoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			idleTimeout.Reset(timeToNextTimeout)
 		case <-responseStartTimeoutCh:
+			// If the response has already started, we need to continue
+			// processing other timeouts and wait for the handler to complete.
+			responseStartTimeoutDrained = true
 			timedOut := tw.tryResponseStartTimeoutAndWriteError(h.body)
 			if timedOut {
-				responseStartTimeoutDrained = true
 				return
 			}
 		}
@@ -216,9 +218,8 @@ func (tw *timeoutWriter) WriteHeader(code int) {
 	tw.w.WriteHeader(code)
 }
 
-// tryTimeoutAndWriteError writes an error to the responsewriter if
-// nothing has been written to the writer before. Returns whether
-// an error was written or not.
+// tryTimeoutAndWriteError writes an error to the responsewriter if it hasn't
+// been written to the writer before. Returns whether an error was written or not.
 //
 // If this writes an error, all subsequent calls to Write will
 // result in http.ErrHandlerTimeout.
@@ -226,7 +227,7 @@ func (tw *timeoutWriter) tryTimeoutAndWriteError(msg string) bool {
 	tw.mu.Lock()
 	defer tw.mu.Unlock()
 
-	if tw.lastWriteTime.IsZero() {
+	if !tw.timedOut {
 		tw.timeoutAndWriteError(msg)
 		return true
 	}

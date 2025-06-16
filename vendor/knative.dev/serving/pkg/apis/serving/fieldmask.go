@@ -70,6 +70,14 @@ func VolumeSourceMask(ctx context.Context, in *corev1.VolumeSource) *corev1.Volu
 		out.HostPath = in.HostPath
 	}
 
+	if cfg.Features.PodSpecVolumesCSI != config.Disabled {
+		out.CSI = in.CSI
+	}
+
+	if cfg.Features.PodSpecVolumesImage != config.Disabled {
+		out.Image = in.Image
+	}
+
 	// Too many disallowed fields to list
 
 	return out
@@ -333,11 +341,12 @@ func ContainerMask(in *corev1.Container) *corev1.Container {
 // VolumeMountMask performs a _shallow_ copy of the Kubernetes VolumeMount object to a new
 // Kubernetes VolumeMount object bringing over only the fields allowed in the Knative API. This
 // does not validate the contents or the bounds of the provided fields.
-func VolumeMountMask(in *corev1.VolumeMount) *corev1.VolumeMount {
+func VolumeMountMask(ctx context.Context, in *corev1.VolumeMount) *corev1.VolumeMount {
 	if in == nil {
 		return nil
 	}
 
+	cfg := config.FromContextOrDefaults(ctx)
 	out := new(corev1.VolumeMount)
 
 	// Allowed fields
@@ -345,10 +354,15 @@ func VolumeMountMask(in *corev1.VolumeMount) *corev1.VolumeMount {
 	out.ReadOnly = in.ReadOnly
 	out.MountPath = in.MountPath
 	out.SubPath = in.SubPath
+	if cfg.Features.PodSpecVolumesMountPropagation != config.Disabled {
+		out.MountPropagation = in.MountPropagation
+	} else {
+		out.MountPropagation = nil
+	}
 
 	// Disallowed fields
 	// This list is unnecessary, but added here for clarity
-	out.MountPropagation = nil
+	out.RecursiveReadOnly = nil
 
 	return out
 }
@@ -767,6 +781,22 @@ func NamespacedObjectReferenceMask(in *corev1.ObjectReference) *corev1.ObjectRef
 	out.FieldPath = ""
 	out.ResourceVersion = ""
 	out.UID = ""
+
+	return out
+}
+
+// ImageVolumeSourceMask performs a _shallow_ copy of Kubernetes ImageVolumeSource
+// bringing over only the fields allowed in the Knative API.
+func ImageVolumeSourceMask(in *corev1.ImageVolumeSource) *corev1.ImageVolumeSource {
+	if in == nil {
+		return nil
+	}
+
+	out := new(corev1.ImageVolumeSource)
+
+	// Allowed fields
+	out.Reference = in.Reference
+	out.PullPolicy = in.PullPolicy
 
 	return out
 }
