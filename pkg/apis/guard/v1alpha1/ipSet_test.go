@@ -144,25 +144,25 @@ func TestIpSet_Config(t *testing.T) {
 		config1.Learn(pile1)
 
 		if d := config1.Decide(IpSet1first); d != nil {
-			t.Errorf(d.String("Expected ip to be accepted but received"))
+			t.Error(d.String("Expected ip to be accepted but received"))
 		}
 		if d := config1.Decide(IpSet1second); d != nil {
-			t.Errorf(d.String("Expected ip to be accepted but received"))
+			t.Error(d.String("Expected ip to be accepted but received"))
 		}
 		if d := config1.Decide(IpSet1Test); d != nil {
-			t.Errorf(d.String("Expected ip to be accepted but received"))
+			t.Error(d.String("Expected ip to be accepted but received"))
 		}
 		if d := config1.Decide(IpSet2Test); d == nil {
-			t.Errorf("Expected ip to fail!")
+			t.Error("Expected ip to fail!")
 		}
 		if d := config1.Decide(IpSet1Loopback); d != nil {
-			t.Errorf(d.String("Expected ip to be accepted but received"))
+			t.Error(d.String("Expected ip to be accepted but received"))
 		}
 		if d := config1.Decide(IpSet1Private); d != nil {
-			t.Errorf(d.String("Expected ip to be accepted but received"))
+			t.Error(d.String("Expected ip to be accepted but received"))
 		}
 		if d := config1.Decide(IpSet1Unspecified); d != nil {
-			t.Errorf(d.String("Expected ip to be accepted but received"))
+			t.Error(d.String("Expected ip to be accepted but received"))
 		}
 
 		// A case where a new IP inflate the CIDR to smaller subnet
@@ -173,19 +173,19 @@ func TestIpSet_Config(t *testing.T) {
 		config2.Learn(pile2)
 
 		if d := config2.Decide(IpSet2first); d != nil {
-			t.Errorf(d.String("Expected ip to be accepted but received"))
+			t.Error(d.String("Expected ip to be accepted but received"))
 		}
 		if d := config2.Decide(IpSet2second); d != nil {
-			t.Errorf(d.String("Expected ip to be accepted but received"))
+			t.Error(d.String("Expected ip to be accepted but received"))
 		}
 		if d := config2.Decide(IpSet2Test); d != nil {
-			t.Errorf(d.String("Expected ip to be accepted but received"))
+			t.Error(d.String("Expected ip to be accepted but received"))
 		}
 		if d := config2.Decide(IpSet2Bad); d == nil {
-			t.Errorf("Expected ip to fail!")
+			t.Error("Expected ip to fail!")
 		}
 		if d := config2.Decide(IpSet1Test); d == nil {
-			t.Errorf("Expected ip to fail!")
+			t.Error("Expected ip to fail!")
 		}
 
 		// A case for two subnets
@@ -198,25 +198,25 @@ func TestIpSet_Config(t *testing.T) {
 		config3.Learn(pile3)
 
 		if d := config3.Decide(IpSet1first); d != nil {
-			t.Errorf(d.String("Expected ip to be accepted but received"))
+			t.Error(d.String("Expected ip to be accepted but received"))
 		}
 		if d := config3.Decide(IpSet1second); d != nil {
-			t.Errorf(d.String("Expected ip to be accepted but received"))
+			t.Error(d.String("Expected ip to be accepted but received"))
 		}
 		if d := config3.Decide(IpSet1Test); d != nil {
-			t.Errorf(d.String("Expected ip to be accepted but received"))
+			t.Error(d.String("Expected ip to be accepted but received"))
 		}
 		if d := config3.Decide(IpSet2first); d != nil {
-			t.Errorf(d.String("Expected ip to be accepted but received"))
+			t.Error(d.String("Expected ip to be accepted but received"))
 		}
 		if d := config3.Decide(IpSet2second); d != nil {
-			t.Errorf(d.String("Expected ip to be accepted but received"))
+			t.Error(d.String("Expected ip to be accepted but received"))
 		}
 		if d := config3.Decide(IpSet2Test); d != nil {
-			t.Errorf(d.String("Expected ip to be accepted but received"))
+			t.Error(d.String("Expected ip to be accepted but received"))
 		}
 		if d := config3.Decide(IpSet2Bad); d == nil {
-			t.Errorf("Expected ip to fail!")
+			t.Error("Expected ip to fail!")
 		}
 
 		// A case where a new IP does not need to inflate the CIDR
@@ -227,10 +227,10 @@ func TestIpSet_Config(t *testing.T) {
 		pile4.Add(IpSet1Test)
 		config4.Learn(pile4)
 		if d := config4.Decide(IpSet1Test); d != nil {
-			t.Errorf(d.String("Expected ip to be accepted but received"))
+			t.Error(d.String("Expected ip to be accepted but received"))
 		}
 		if d := config4.Decide(IpSet2Bad); d == nil {
-			t.Errorf("Expected ip to fail!")
+			t.Error("Expected ip to fail!")
 		}
 
 		// A case for ipv6
@@ -241,28 +241,28 @@ func TestIpSet_Config(t *testing.T) {
 		config6.Learn(pile6)
 
 		if d := config6.Decide(IpSet6first); d != nil {
-			t.Errorf(d.String("Expected ip to be accepted but received"))
+			t.Error(d.String("Expected ip to be accepted but received"))
 		}
 		if d := config6.Decide(IpSet6second); d != nil {
-			t.Errorf(d.String("Expected ip to be accepted but received"))
+			t.Error(d.String("Expected ip to be accepted but received"))
 		}
 		if d := config6.Decide(IpSet6Test); d != nil {
-			t.Errorf(d.String("Expected ip to be accepted but received"))
+			t.Error(d.String("Expected ip to be accepted but received"))
 		}
 		if d := config6.Decide(IpSet6Bad); d == nil {
-			t.Errorf("Expected ip to fail!")
+			t.Error("Expected ip to fail!")
 		}
 		if d := config6.Decide(IpSet2Test); d == nil {
-			t.Errorf("Expected ip to fail!")
+			t.Error("Expected ip to fail!")
 		}
 		if d := config6.Decide(IpSet6Loopback); d != nil {
-			t.Errorf(d.String("Expected ip to be accepted but received"))
+			t.Error(d.String("Expected ip to be accepted but received"))
 		}
 		if d := config6.Decide(IpSet6Private); d != nil {
-			t.Errorf(d.String("Expected ip to be accepted but received"))
+			t.Error(d.String("Expected ip to be accepted but received"))
 		}
 		if d := config6.Decide(IpSet6Unspecified); d != nil {
-			t.Errorf(d.String("Expected ip to be accepted but received"))
+			t.Error(d.String("Expected ip to be accepted but received"))
 		}
 
 		// A case of ipv4 and ipv6 together
@@ -276,37 +276,37 @@ func TestIpSet_Config(t *testing.T) {
 		pile7.Add(IpSet6second)
 		config7.Learn(pile7)
 		if d := config7.Decide(IpSet6first); d != nil {
-			t.Errorf(d.String("Expected ip to be accepted but received"))
+			t.Error(d.String("Expected ip to be accepted but received"))
 		}
 		if d := config7.Decide(IpSet6second); d != nil {
-			t.Errorf(d.String("Expected ip to be accepted but received"))
+			t.Error(d.String("Expected ip to be accepted but received"))
 		}
 		if d := config7.Decide(IpSet6Test); d != nil {
-			t.Errorf(d.String("Expected ip to be accepted but received"))
+			t.Error(d.String("Expected ip to be accepted but received"))
 		}
 		if d := config7.Decide(IpSet6Bad); d == nil {
-			t.Errorf("Expected ip to fail!")
+			t.Error("Expected ip to fail!")
 		}
 		if d := config7.Decide(IpSet1first); d != nil {
-			t.Errorf(d.String("Expected ip to be accepted but received"))
+			t.Error(d.String("Expected ip to be accepted but received"))
 		}
 		if d := config7.Decide(IpSet1second); d != nil {
-			t.Errorf(d.String("Expected ip to be accepted but received"))
+			t.Error(d.String("Expected ip to be accepted but received"))
 		}
 		if d := config7.Decide(IpSet1Test); d != nil {
-			t.Errorf(d.String("Expected ip to be accepted but received"))
+			t.Error(d.String("Expected ip to be accepted but received"))
 		}
 		if d := config7.Decide(IpSet2first); d != nil {
-			t.Errorf(d.String("Expected ip to be accepted but received"))
+			t.Error(d.String("Expected ip to be accepted but received"))
 		}
 		if d := config7.Decide(IpSet2second); d != nil {
-			t.Errorf(d.String("Expected ip to be accepted but received"))
+			t.Error(d.String("Expected ip to be accepted but received"))
 		}
 		if d := config7.Decide(IpSet2Test); d != nil {
-			t.Errorf(d.String("Expected ip to be accepted but received"))
+			t.Error(d.String("Expected ip to be accepted but received"))
 		}
 		if d := config7.Decide(IpSet2Bad); d == nil {
-			t.Errorf("Expected ip to fail!")
+			t.Error("Expected ip to fail!")
 		}
 	})
 

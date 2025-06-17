@@ -117,7 +117,7 @@ func ValueTests_Test_WithMarshal(t *testing.T, profiles []ValueProfile, piles []
 		config.learnI(pile)
 
 		if d := config.decideI(profile); d != nil {
-			t.Errorf(d.String("config.Decide(profile) wrong decision:"))
+			t.Error(d.String("config.Decide(profile) wrong decision:"))
 		}
 
 		if bytes, err = json.Marshal(config); err != nil {
@@ -246,10 +246,10 @@ func ValueTests_TestMerge(t *testing.T, profiles []ValueProfile, piles []ValuePi
 		// test ConfigValue
 		configs[0].learnI(piles[0])
 		if d := configs[0].decideI(profiles[0]); d != nil {
-			t.Errorf(d.String("config.Decide(profile) wrong decision: "))
+			t.Error(d.String("config.Decide(profile) wrong decision: "))
 		}
 		if d := configs[0].decideI(profiles[1]); d != nil {
-			t.Errorf(d.String("config.Decide(profile) wrong decision: "))
+			t.Error(d.String("config.Decide(profile) wrong decision: "))
 		}
 	})
 }
@@ -271,10 +271,10 @@ func ValueTests_TestFuse(t *testing.T, profiles []ValueProfile, piles []ValuePil
 		configs[0].learnI(piles[1])
 
 		if d := configs[0].decideI(profiles[0]); d != nil {
-			t.Errorf(d.String("config.Decide(profile) wrong decision: "))
+			t.Error(d.String("config.Decide(profile) wrong decision: "))
 		}
 		if d := configs[0].decideI(profiles[1]); d != nil {
-			t.Errorf(d.String("config.Decide(profile) wrong decision: "))
+			t.Error(d.String("config.Decide(profile) wrong decision: "))
 		}
 	})
 }
