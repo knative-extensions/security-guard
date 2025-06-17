@@ -85,28 +85,28 @@ func TestPod_V1(t *testing.T) {
 		pile1.Add(&profile1)
 		config1.Learn(&pile1)
 		if d := config1.Decide(&profile1); d != nil {
-			t.Errorf(d.String("Decide expected to ok but returned error"))
+			t.Error(d.String("Decide expected to ok but returned error"))
 		}
 		if d := config1.Decide(&profile2); d == nil {
-			t.Errorf("Decide return ok when expected an error")
+			t.Error("Decide return ok when expected an error")
 		}
 		if d := config1.Decide(&profile3); d == nil {
-			t.Errorf("Decide return ok when expected an error")
+			t.Error("Decide return ok when expected an error")
 		}
 		pile2.Add(&profile2)
 		pile2.Merge(&pile1)
 		config2.Learn(&pile2)
 		if d := config2.Decide(&profile1); d != nil {
-			t.Errorf(d.String("Decide expected to ok but returned error"))
+			t.Error(d.String("Decide expected to ok but returned error"))
 		}
 		if d := config2.Decide(&profile2); d != nil {
-			t.Errorf(d.String("Decide expected to ok but returned error"))
+			t.Error(d.String("Decide expected to ok but returned error"))
 		}
 		if d := config2.Decide(&profile3); d != nil {
-			t.Errorf(d.String("Decide expected to ok but returned error"))
+			t.Error(d.String("Decide expected to ok but returned error"))
 		}
 		if d := config2.Decide(&profile5); d != nil {
-			t.Errorf(d.String("Decide expected to ok but returned error"))
+			t.Error(d.String("Decide expected to ok but returned error"))
 		}
 
 		pile1.Clear()
@@ -116,14 +116,14 @@ func TestPod_V1(t *testing.T) {
 		config1a.Learn(&pile1)
 		config1a.Learn(&pile2)
 		if d := config1a.Decide(&profile1); d != nil {
-			t.Errorf(d.String("Decide expected to ok but returned error"))
+			t.Error(d.String("Decide expected to ok but returned error"))
 		}
 		if d := config1a.Decide(&profile2); d != nil {
-			t.Errorf(d.String("Decide expected to ok but returned error"))
+			t.Error(d.String("Decide expected to ok but returned error"))
 		}
 
 		if d := config1a.Decide(&profile3); d != nil {
-			t.Errorf(d.String("Decide expected to ok but returned error"))
+			t.Error(d.String("Decide expected to ok but returned error"))
 		}
 
 		pile1.Clear()
@@ -138,11 +138,11 @@ func TestPod_V1(t *testing.T) {
 		config56.Learn(&pile2)
 
 		if d := config56.Decide(&profile3); d != nil {
-			t.Errorf(d.String("Decide expected to ok but returned error"))
+			t.Error(d.String("Decide expected to ok but returned error"))
 		}
 
 		if d := config56.Decide(&profile5); d != nil {
-			t.Errorf(d.String("Decide expected to ok but returned error"))
+			t.Error(d.String("Decide expected to ok but returned error"))
 		}
 
 	})
