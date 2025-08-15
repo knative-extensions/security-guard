@@ -9,13 +9,13 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/zeebo/xxh3 v1.0.2
 	go.uber.org/zap v1.27.0
-	k8s.io/api v0.33.1
-	k8s.io/apimachinery v0.33.1
-	k8s.io/client-go v0.33.1
-	k8s.io/code-generator v0.33.1
+	k8s.io/api v0.33.4
+	k8s.io/apimachinery v0.33.4
+	k8s.io/client-go v0.33.4
+	k8s.io/code-generator v0.33.4
 	knative.dev/hack v0.0.0-20250708013849-70d4b00da6ba
-	knative.dev/pkg v0.0.0-20250813152941-6c39c7c0f363
-	knative.dev/serving v0.46.1-0.20250813121741-7040345eb739
+	knative.dev/pkg v0.0.0-20250814150843-2e0e61e26e24
+	knative.dev/serving v0.46.1-0.20250815124142-4df9185d79e4
 )
 
 require (
@@ -97,7 +97,7 @@ require (
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff // indirect
 	k8s.io/utils v0.0.0-20241210054802-24370beab758 // indirect
-	knative.dev/networking v0.0.0-20250807143752-5be3ba43ad43 // indirect
+	knative.dev/networking v0.0.0-20250812143640-1456f137af1a // indirect
 	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.6.0 // indirect
