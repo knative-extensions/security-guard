@@ -9,13 +9,13 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/zeebo/xxh3 v1.0.2
 	go.uber.org/zap v1.27.0
-	k8s.io/api v0.33.4
-	k8s.io/apimachinery v0.33.4
-	k8s.io/client-go v0.33.4
-	k8s.io/code-generator v0.33.4
+	k8s.io/api v0.33.5
+	k8s.io/apimachinery v0.33.5
+	k8s.io/client-go v0.33.5
+	k8s.io/code-generator v0.33.5
 	knative.dev/hack v0.0.0-20250902153942-1499de21e119
-	knative.dev/pkg v0.0.0-20250915135827-db4c336acdbe
-	knative.dev/serving v0.46.1-0.20250929181602-a026eae5e127
+	knative.dev/pkg v0.0.0-20251001003403-1e71536171b9
+	knative.dev/serving v0.46.1-0.20251002172205-561f348677c0
 )
 
 require (
