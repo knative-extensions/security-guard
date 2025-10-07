@@ -18,7 +18,6 @@ package sharedmain
 
 import (
 	"context"
-	"net"
 	"net/http"
 	"time"
 
@@ -28,11 +27,8 @@ import (
 	"go.uber.org/zap"
 
 	netheader "knative.dev/networking/pkg/http/header"
-	netproxy "knative.dev/networking/pkg/http/proxy"
 	netstats "knative.dev/networking/pkg/http/stats"
 	pkghandler "knative.dev/pkg/network/handlers"
-	"knative.dev/serving/pkg/activator"
-	pkghttp "knative.dev/serving/pkg/http"
 	"knative.dev/serving/pkg/http/handler"
 	"knative.dev/serving/pkg/queue"
 	"knative.dev/serving/pkg/queue/health"
@@ -40,21 +36,14 @@ import (
 
 func mainHandler(
 	env config,
-	transport http.RoundTripper,
+	d Defaults,
 	prober func() bool,
 	stats *netstats.RequestStats,
 	logger *zap.SugaredLogger,
 	mp metric.MeterProvider,
 	tp trace.TracerProvider,
 ) (http.Handler, *pkghandler.Drainer) {
-	target := net.JoinHostPort("127.0.0.1", env.UserPort)
 	tracer := tp.Tracer("knative.dev/serving/pkg/queue")
-
-	httpProxy := pkghttp.NewHeaderPruningReverseProxy(target, pkghttp.NoHostOverride, activator.RevisionHeaders, false /* use HTTP */)
-	httpProxy.Transport = transport
-	httpProxy.ErrorHandler = pkghandler.Error(logger)
-	httpProxy.BufferPool = netproxy.NewBufferPool()
-	httpProxy.FlushInterval = netproxy.FlushInterval
 
 	breaker := buildBreaker(logger, env)
 
@@ -69,14 +58,14 @@ func mainHandler(
 	}
 	// Create queue handler chain.
 	// Note: innermost handlers are specified first, ie. the last handler in the chain will be executed first.
-	var composedHandler http.Handler = httpProxy
+	composedHandler := d.ProxyHandler
 
 	composedHandler = requestAppMetricsHandler(logger, composedHandler, breaker, mp)
 	composedHandler = queue.ProxyHandler(tracer, breaker, stats, composedHandler)
 	composedHandler = queue.ForwardedShimHandler(composedHandler)
 	composedHandler = handler.NewTimeoutHandler(composedHandler, "request timeout", func(r *http.Request) (time.Duration, time.Duration, time.Duration) {
 		return timeout, responseStartTimeout, idleTimeout
-	})
+	}, logger)
 
 	composedHandler = queue.NewRouteTagHandler(composedHandler)
 	composedHandler = withFullDuplex(composedHandler, env.EnableHTTPFullDuplex, logger)
