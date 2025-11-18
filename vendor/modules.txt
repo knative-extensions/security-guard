@@ -118,7 +118,7 @@ github.com/opencontainers/go-digest
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
-# github.com/pmezard/go-difflib v1.0.0
+# github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2
 ## explicit
 github.com/pmezard/go-difflib/difflib
 # github.com/prometheus/client_golang v1.23.2
@@ -893,10 +893,10 @@ k8s.io/utils/lru
 k8s.io/utils/net
 k8s.io/utils/ptr
 k8s.io/utils/trace
-# knative.dev/hack v0.0.0-20251103013745-91eedd9bef96
+# knative.dev/hack v0.0.0-20251117013754-67a5b048bc27
 ## explicit; go 1.24
 knative.dev/hack
-# knative.dev/networking v0.0.0-20251021092443-0bde19154dce
+# knative.dev/networking v0.0.0-20251117014740-e8506646d57f
 ## explicit; go 1.24.0
 knative.dev/networking/pkg/apis/networking
 knative.dev/networking/pkg/apis/networking/v1alpha1
@@ -906,7 +906,7 @@ knative.dev/networking/pkg/http
 knative.dev/networking/pkg/http/header
 knative.dev/networking/pkg/http/proxy
 knative.dev/networking/pkg/http/stats
-# knative.dev/pkg v0.0.0-20251104154049-5037c4760829
+# knative.dev/pkg v0.0.0-20251117013452-7e6a0208dd36
 ## explicit; go 1.24.0
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -945,7 +945,7 @@ knative.dev/pkg/signals
 knative.dev/pkg/system
 knative.dev/pkg/tracker
 knative.dev/pkg/websocket
-# knative.dev/serving v0.47.1-0.20251107122051-78814e1e51a1
+# knative.dev/serving v0.47.1-0.20251117205120-9efd94748850
 ## explicit; go 1.24.0
 knative.dev/serving/pkg/activator
 knative.dev/serving/pkg/apis/autoscaling
