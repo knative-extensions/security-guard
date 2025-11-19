@@ -906,7 +906,7 @@ knative.dev/networking/pkg/http
 knative.dev/networking/pkg/http/header
 knative.dev/networking/pkg/http/proxy
 knative.dev/networking/pkg/http/stats
-# knative.dev/pkg v0.0.0-20251118173915-745990698d3c
+# knative.dev/pkg v0.0.0-20251119125415-ab67eb7f8660
 ## explicit; go 1.24.0
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -945,7 +945,7 @@ knative.dev/pkg/signals
 knative.dev/pkg/system
 knative.dev/pkg/tracker
 knative.dev/pkg/websocket
-# knative.dev/serving v0.47.1-0.20251118201414-090b6ae3ac3a
+# knative.dev/serving v0.47.1-0.20251119122515-0fcf7624a4ff
 ## explicit; go 1.24.0
 knative.dev/serving/pkg/activator
 knative.dev/serving/pkg/apis/autoscaling
