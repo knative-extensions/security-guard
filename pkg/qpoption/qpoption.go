@@ -85,6 +85,11 @@ func (p *GateQPOption) ProcessAnnotations() bool {
 	p.config = make(map[string]string)
 
 	scanner := bufio.NewScanner(file)
+
+	// To support large tokens
+	scannerBuf := make([]byte, 0, 64*1024)
+	scanner.Buffer(scannerBuf, 1024*1024)
+
 	for scanner.Scan() {
 		txt := scanner.Text()
 		txt = strings.ToLower(txt)
