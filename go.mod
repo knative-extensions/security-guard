@@ -15,7 +15,7 @@ require (
 	k8s.io/code-generator v0.34.3
 	knative.dev/hack v0.0.0-20260114013932-ee8a1b2d08eb
 	knative.dev/pkg v0.0.0-20260114161248-8c840449eed2
-	knative.dev/serving v0.47.1-0.20260115015547-c97d0402149e
+	knative.dev/serving v0.47.1-0.20260115221548-c4ea5a72e453
 )
 
 require (
