@@ -959,7 +959,7 @@ knative.dev/pkg/signals
 knative.dev/pkg/system
 knative.dev/pkg/tracker
 knative.dev/pkg/websocket
-# knative.dev/serving v0.47.1-0.20260115221548-c4ea5a72e453
+# knative.dev/serving v0.47.1-0.20260117171449-e307b71c6299
 ## explicit; go 1.24.0
 knative.dev/serving/pkg/activator
 knative.dev/serving/pkg/apis/autoscaling
