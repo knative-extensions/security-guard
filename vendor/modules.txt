@@ -382,7 +382,7 @@ google.golang.org/genproto/googleapis/api/httpbody
 ## explicit; go 1.24.0
 google.golang.org/genproto/googleapis/rpc/errdetails
 google.golang.org/genproto/googleapis/rpc/status
-# google.golang.org/grpc v1.79.2
+# google.golang.org/grpc v1.79.3
 ## explicit; go 1.24.0
 google.golang.org/grpc
 google.golang.org/grpc/attributes
@@ -909,10 +909,10 @@ k8s.io/utils/lru
 k8s.io/utils/net
 k8s.io/utils/ptr
 k8s.io/utils/trace
-# knative.dev/hack v0.0.0-20260310014051-c448fdb867e2
+# knative.dev/hack v0.0.0-20260318014029-7eede7fdcbad
 ## explicit; go 1.24
 knative.dev/hack
-# knative.dev/networking v0.0.0-20260313010219-0055e9277729
+# knative.dev/networking v0.0.0-20260317015751-91b576b3d619
 ## explicit; go 1.25.0
 knative.dev/networking/pkg/apis/networking
 knative.dev/networking/pkg/apis/networking/v1alpha1
@@ -922,7 +922,7 @@ knative.dev/networking/pkg/http
 knative.dev/networking/pkg/http/header
 knative.dev/networking/pkg/http/proxy
 knative.dev/networking/pkg/http/stats
-# knative.dev/pkg v0.0.0-20260316154451-5d1c12d99335
+# knative.dev/pkg v0.0.0-20260319144801-8c68e18a5cc7
 ## explicit; go 1.25.0
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -962,7 +962,7 @@ knative.dev/pkg/signals
 knative.dev/pkg/system
 knative.dev/pkg/tracker
 knative.dev/pkg/websocket
-# knative.dev/serving v0.48.1-0.20260316224151-10d950c3a0d7
+# knative.dev/serving v0.48.1-0.20260318220159-5237de8fe037
 ## explicit; go 1.25.0
 knative.dev/serving/pkg/activator
 knative.dev/serving/pkg/apis/autoscaling
