@@ -280,7 +280,7 @@ go.uber.org/automaxprocs/maxprocs
 # go.uber.org/multierr v1.11.0
 ## explicit; go 1.19
 go.uber.org/multierr
-# go.uber.org/zap v1.27.1
+# go.uber.org/zap v1.28.0
 ## explicit; go 1.19
 go.uber.org/zap
 go.uber.org/zap/buffer
@@ -909,7 +909,7 @@ k8s.io/utils/lru
 k8s.io/utils/net
 k8s.io/utils/ptr
 k8s.io/utils/trace
-# knative.dev/hack v0.0.0-20260421155212-aeb7b4a9bf96
+# knative.dev/hack v0.0.0-20260428014158-b2a37f1b6e7b
 ## explicit; go 1.24
 knative.dev/hack
 # knative.dev/networking v0.0.0-20260422140718-e9578ef11562
@@ -922,7 +922,7 @@ knative.dev/networking/pkg/http
 knative.dev/networking/pkg/http/header
 knative.dev/networking/pkg/http/proxy
 knative.dev/networking/pkg/http/stats
-# knative.dev/pkg v0.0.0-20260422015212-ec452872dcc1
+# knative.dev/pkg v0.0.0-20260505204821-021ad709ec68
 ## explicit; go 1.25.0
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -962,7 +962,7 @@ knative.dev/pkg/signals
 knative.dev/pkg/system
 knative.dev/pkg/tracker
 knative.dev/pkg/websocket
-# knative.dev/serving v0.49.0
+# knative.dev/serving v0.49.1-0.20260504070613-3d28fb878e74
 ## explicit; go 1.25.0
 knative.dev/serving/pkg/activator
 knative.dev/serving/pkg/apis/autoscaling
