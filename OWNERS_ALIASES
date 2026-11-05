@@ -8,52 +8,39 @@ aliases:
   - Leo6Leo
   - aliok
   - cali0707
-  - pierDipi
   backstage-plugins-writers:
   - Leo6Leo
   - aliok
   - cali0707
-  - pierDipi
   client-wg-leads:
   - dsimansk
   client-writers:
   - dsimansk
-  discovery-approvers:
-  - lberk
+  discovery-approvers: []
   eventing-autoscaler-keda-approvers: []
   eventing-awssqs-approvers:
-  - lberk
   - matzew
   eventing-ceph-approvers:
-  - lberk
   - matzew
   eventing-couchdb-approvers:
-  - lberk
   - matzew
   eventing-github-approvers:
-  - lberk
   - matzew
   eventing-gitlab-approvers:
-  - lberk
   - matzew
   eventing-kafka-approvers:
   - aliok
-  - lberk
   - matzew
-  - pierDipi
   eventing-kafka-broker-approvers:
   - aliok
   - matzew
-  - pierDipi
   eventing-kafka-broker-reviewers:
   - Leo6Leo
   - cali0707
   eventing-kafka-writers: []
   eventing-natss-approvers:
   - astelmashenko
-  - dan-j
   eventing-prometheus-approvers:
-  - lberk
   - matzew
   eventing-rabbitmq-approvers:
   - deadtrickster
@@ -65,14 +52,12 @@ aliases:
   - creydr
   eventing-wg-leads:
   - creydr
-  - pierDipi
   eventing-writers:
   - Leo6Leo
   - aliok
   - cali0707
   - creydr
   - matzew
-  - pierDipi
   func-tastic-approvers:
   - lkingland
   - matejvasek
@@ -86,6 +71,7 @@ aliases:
   - matejvasek
   - matzew
   function-runtime-writers:
+  - gauron99
   - lkingland
   - matejvasek
   - matzew
@@ -107,8 +93,7 @@ aliases:
   - dsimansk
   kn-plugin-source-kafka-approvers:
   - dsimansk
-  kn-plugin-source-kamelet-approvers:
-  - christophd
+  kn-plugin-source-kamelet-approvers: []
   knative-admin:
   - aliok
   - arsenetar
@@ -116,6 +101,7 @@ aliases:
   - dprotaso
   - dsimansk
   - evankanderson
+  - gauron99
   - knative-automation
   - knative-prow-releaser-robot
   - knative-prow-robot
@@ -126,6 +112,7 @@ aliases:
   knative-release-leads:
   - dprotaso
   - dsimansk
+  - gauron99
   knative-robots:
   - knative-automation
   - knative-prow-releaser-robot
@@ -187,17 +174,11 @@ aliases:
   - evankanderson
   - matzew
   ux-approvers:
-  - ankitajana21
   - prajjwalyd
   ux-wg-leads:
   - Leo6Leo
   - cali0707
-  - mmejia02
-  - zainabhusain227
   ux-writers:
   - Leo6Leo
-  - ankitajana21
   - cali0707
-  - mmejia02
   - prajjwalyd
-  - zainabhusain227
