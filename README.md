@@ -7,11 +7,12 @@
 
 <h1><img src="img/guard.png" width="80"/> Security-Guard</h1>
 
-## End of life
-
-This project is being retired and this repository will be archived. It will no longer receive maintenance or new releases. Existing source code and release assets will remain available.
-
-See [knative/community#1802](https://github.com/knative/community/issues/1802) for details.
+> [!IMPORTANT]
+> **End of life**
+>
+> This project is being retired and this repository will be archived. It will no longer receive maintenance or new releases. Existing source code and release assets will remain available.
+>
+> See [knative/community#1802](https://github.com/knative/community/issues/1802) for details.
 
 Guard help secure microservices, serverless containers and serverless function. It detects and block exploits sent to services and can detect and restart compromised service pods.
 
